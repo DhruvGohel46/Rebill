@@ -6,11 +6,11 @@
     /* Light Theme Default */
     background: #f6f8fb;
 
-    padding: calc(32px * var(--ui-scale));
+    padding: 32px;
     height: 100vh;
     display: flex;
     flex-direction: column;
-    gap: calc(32px * var(--ui-scale));
+    gap: 32px;
     box-sizing: border-box;
     overflow: hidden;
     position: relative;
@@ -26,7 +26,7 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    gap: calc(32px * var(--ui-scale));
+    gap: 32px;
 }
 
 /* --- Dark Theme Overrides --- */
@@ -43,8 +43,8 @@
     display: flex;
     align-items: center;
     gap: 0;
-    padding: 0 calc(4px * var(--ui-scale));
-    height: calc(48px * var(--ui-scale));
+    padding: 0 4px;
+    height: 48px;
     transition: all 0.3s ease;
     width: 100%;
     /* Remove external borders and background to blend into main card */
@@ -69,14 +69,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: calc(12px * var(--ui-scale));
-    padding: 0 calc(16px * var(--ui-scale));
+    gap: 12px;
+    padding: 0 16px;
     min-width: 0;
 }
 
 .invStatDivider {
     width: 1px;
-    height: calc(24px * var(--ui-scale));
+    height: 24px;
     flex-shrink: 0;
 }
 
@@ -89,8 +89,8 @@
 }
 
 .invStatLabel {
-    font-size: calc(11px * var(--ui-font-scale));
-    font-weight: 600;
+    font-size: var(--font-sm);
+    font-weight: var(--weight-semibold);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: #6b7280;
@@ -102,8 +102,8 @@
 }
 
 .invStatValue {
-    font-size: calc(16px * var(--ui-font-scale));
-    font-weight: 700;
+    font-size: var(--font-lg);
+    font-weight: var(--weight-bold);
     color: #111827;
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
@@ -130,7 +130,7 @@
 
     background: #ffffff;
     border: 1px solid #e4e7ec;
-    border-radius: calc(20px * var(--ui-scale));
+    border-radius: 20px;
     padding: 0;
     /* Internal padding handled by children for full-width headers */
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
@@ -145,7 +145,7 @@
 
 /* --- Header Section (Title + Filters) --- */
 .invHeaderSection {
-    padding: calc(28px * var(--ui-scale)) calc(32px * var(--ui-scale)) calc(24px * var(--ui-scale)) calc(32px * var(--ui-scale));
+    padding: 28px 32px 24px 32px;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -156,14 +156,14 @@
 .invTitleBlock {
     display: flex;
     flex-direction: column;
-    gap: calc(6px * var(--ui-scale));
+    gap: 6px;
 }
 
 .invPageTitle {
-    font-size: calc(22px * var(--ui-font-scale));
-    font-weight: 600;
+    font-size: var(--font-2xl);
+    font-weight: var(--weight-semibold);
     color: #111827;
-    letter-spacing: -0.01em;
+    letter-spacing: var(--tracking-tight);
 }
 
 [data-theme="dark"] .invPageTitle {
@@ -171,7 +171,7 @@
 }
 
 .invPageDesc {
-    font-size: calc(14px * var(--ui-font-scale));
+    font-size: var(--font-md);
     color: #6b7280;
 }
 
@@ -182,18 +182,18 @@
 /* Controls */
 .invControlsRow {
     display: flex;
-    gap: calc(12px * var(--ui-scale));
+    gap: 12px;
     align-items: center;
 }
 
 /* Search & Filters Mockup */
 .invFilterInput {
-    height: calc(42px * var(--ui-scale));
+    height: 42px;
     background: #ffffff;
     border: 1px solid #e4e7ec;
-    border-radius: calc(10px * var(--ui-scale));
-    padding: 0 calc(14px * var(--ui-scale));
-    font-size: calc(14px * var(--ui-font-scale));
+    border-radius: 10px;
+    padding: 0 14px;
+    font-size: var(--font-md);
     color: #111827;
     outline: none;
     transition: all 0.2s ease;
@@ -217,18 +217,18 @@
 
 /* Add Button */
 .invAddButton {
-    height: calc(42px * var(--ui-scale));
-    padding: 0 calc(20px * var(--ui-scale));
+    height: 42px;
+    padding: 0 20px;
     background: linear-gradient(135deg, #ff7a18, #ff4d00);
     border: none;
-    border-radius: calc(10px * var(--ui-scale));
+    border-radius: 10px;
     color: white;
-    font-weight: 600;
-    font-size: calc(14px * var(--ui-font-scale));
+    font-weight: var(--weight-semibold);
+    font-size: var(--font-md);
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: calc(8px * var(--ui-scale));
+    gap: 8px;
     box-shadow: 0 2px 8px rgba(255, 122, 24, 0.25);
     transition: all 0.2s ease;
 }
@@ -246,7 +246,7 @@
 .invTableWrapper {
     flex: 1;
     overflow-y: auto;
-    padding: 0 calc(32px * var(--ui-scale));
+    padding: 0 32px;
     /* Inner padding matches header */
 }
 
@@ -258,10 +258,10 @@
 
 /* Header */
 .invTable th {
-    height: calc(48px * var(--ui-scale));
+    height: 48px;
     text-align: left;
-    font-size: calc(13px * var(--ui-font-scale));
-    font-weight: 500;
+    font-size: var(--font-md);
+    font-weight: var(--weight-medium);
     color: #6b7280;
     border-bottom: 1px solid #e4e7ec;
     position: sticky;
@@ -269,7 +269,7 @@
     background: #ffffff;
     /* Sticky header needs bg */
     z-index: 10;
-    padding: 0 calc(16px * var(--ui-scale));
+    padding: 0 16px;
     white-space: nowrap;
 }
 
@@ -281,7 +281,7 @@
 
 /* Rows */
 .invTableRow {
-    height: calc(64px * var(--ui-scale));
+    height: 64px;
     transition: all 0.2s ease;
     cursor: pointer;
     /* Enable row click */
@@ -290,7 +290,7 @@
 .invTableRow td {
     border-bottom: 1px solid #f3f4f6;
     /* Very subtle separation */
-    padding: 0 calc(16px * var(--ui-scale));
+    padding: 0 16px;
     vertical-align: middle;
 }
 
@@ -316,10 +316,10 @@
 
 /* Product Cell */
 .invProductName {
-    font-size: calc(15px * var(--ui-font-scale));
-    font-weight: 500;
+    font-size: var(--font-lg);
+    font-weight: var(--weight-medium);
     color: #111827;
-    margin-bottom: calc(4px * var(--ui-scale));
+    margin-bottom: 4px;
 }
 
 [data-theme="dark"] .invProductName {
@@ -328,10 +328,10 @@
 
 .invProductTag {
     display: inline-block;
-    font-size: calc(11px * var(--ui-font-scale));
-    font-weight: 600;
-    padding: calc(2px * var(--ui-scale)) calc(8px * var(--ui-scale));
-    border-radius: calc(6px * var(--ui-scale));
+    font-size: var(--font-sm);
+    font-weight: var(--weight-semibold);
+    padding: 2px 8px;
+    border-radius: 6px;
     background: #eff6ff;
     color: #3b82f6;
 }
@@ -343,13 +343,13 @@
 
 /* Stock Bar */
 .invStockBarBG {
-    height: calc(6px * var(--ui-scale));
+    height: 6px;
     border-radius: 999px;
     background: #f3f4f6;
     overflow: hidden;
     width: 100%;
-    max-width: calc(120px * var(--ui-scale));
-    margin-top: calc(6px * var(--ui-scale));
+    max-width: 120px;
+    margin-top: 6px;
 }
 
 [data-theme="dark"] .invStockBarBG {
@@ -366,10 +366,10 @@
 .invBadge {
     display: inline-flex;
     align-items: center;
-    padding: calc(4px * var(--ui-scale)) calc(10px * var(--ui-scale));
+    padding: 4px 10px;
     border-radius: 999px;
-    font-size: calc(12px * var(--ui-font-scale));
-    font-weight: 500;
+    font-size: var(--font-md);
+    font-weight: var(--weight-medium);
 }
 
 .invBadge.active {
@@ -394,12 +394,12 @@
 
 /* Action Buttons */
 .invActionBtn {
-    width: calc(36px * var(--ui-scale));
-    height: calc(36px * var(--ui-scale));
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: calc(8px * var(--ui-scale));
+    border-radius: 8px;
     background: transparent;
     border: 1px solid transparent;
     /* Invisible by default for cleaner look, or subtle */
@@ -420,23 +420,23 @@
 }
 
 [data-theme="dark"] .invActionBtn:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #ffffff;
+background: rgba(255, 255, 255, 0.05);
+color: #ffffff;
 }
 
 /* Footer Info */
 .invFooter {
-    padding: calc(20px * var(--ui-scale)) calc(32px * var(--ui-scale));
-    border-top: 1px solid #e4e7ec;
-    display: flex;
-    justify-content: space-between;
-    font-size: calc(13px * var(--ui-font-scale));
-    color: #6b7280;
+padding: 20px 32px;
+border-top: 1px solid #e4e7ec;
+display: flex;
+justify-content: space-between;
+font-size: var(--font-md);
+color: #6b7280;
 }
 
 [data-theme="dark"] .invFooter {
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    color: #8b949e;
+border-top: 1px solid rgba(255, 255, 255, 0.06);
+color: #8b949e;
 }
 
 /* Empty State */
@@ -445,14 +445,14 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: calc(60px * var(--ui-scale)) 0;
+    padding: 60px 0;
     text-align: center;
     color: #9ca3af;
 }
 
 .invEmptyIcon {
-    font-size: calc(48px * var(--ui-font-scale));
-    margin-bottom: calc(16px * var(--ui-scale));
+    font-size: var(--font-4xl);
+    margin-bottom: 16px;
     opacity: 0.5;
 }
 
@@ -467,14 +467,14 @@
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    padding: calc(20px * var(--ui-scale));
+    padding: 20px;
 }
 
 .invModal {
     background: #ffffff;
     width: 100%;
-    max-width: calc(500px * var(--ui-scale));
-    border-radius: calc(16px * var(--ui-scale));
+    max-width: 500px;
+    border-radius: 16px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
     overflow: hidden;
     display: flex;
@@ -487,7 +487,7 @@
 }
 
 .invModalHeader {
-    padding: calc(20px * var(--ui-scale)) calc(24px * var(--ui-scale));
+    padding: 20px 24px;
     border-bottom: 1px solid #e4e7ec;
     display: flex;
     justify-content: space-between;
@@ -501,8 +501,8 @@
 }
 
 .invModalTitle {
-    font-weight: 600;
-    font-size: calc(16px * var(--ui-font-scale));
+    font-weight: var(--weight-semibold);
+    font-size: var(--font-lg);
     color: #111827;
 }
 
@@ -511,21 +511,21 @@
 }
 
 .invModalBody {
-    padding: calc(24px * var(--ui-scale));
+    padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: calc(16px * var(--ui-scale));
+    gap: 16px;
 }
 
 .invFormGroup {
     display: flex;
     flex-direction: column;
-    gap: calc(8px * var(--ui-scale));
+    gap: 8px;
 }
 
 .invLabel {
-    font-size: calc(13px * var(--ui-font-scale));
-    font-weight: 500;
+    font-size: var(--font-md);
+    font-weight: var(--weight-medium);
     color: #4b5563;
 }
 
@@ -534,11 +534,11 @@
 }
 
 .invInput {
-    padding: calc(10px * var(--ui-scale)) calc(12px * var(--ui-scale));
-    border-radius: calc(8px * var(--ui-scale));
+    padding: 10px 12px;
+    border-radius: 8px;
     border: 1px solid #e4e7ec;
     background: #ffffff;
-    font-size: calc(14px * var(--ui-font-scale));
+    font-size: var(--font-md);
     color: #111827;
     outline: none;
     width: 100%;
@@ -557,12 +557,12 @@
 .invModalFooter {
     display: flex;
     justify-content: flex-end;
-    gap: calc(12px * var(--ui-scale));
+    gap: 12px;
 }
 
 .invBtn {
-    padding: calc(10px * var(--ui-scale)) calc(16px * var(--ui-scale));
-    border-radius: calc(8px * var(--ui-scale));
+    padding: 10px 16px;
+    border-radius: 8px;
     background: transparent;
     border: 1px solid #e4e7ec;
     color: #374151;
@@ -584,8 +584,8 @@
 }
 
 .invPrimaryBtn {
-    padding: calc(10px * var(--ui-scale)) calc(20px * var(--ui-scale));
-    border-radius: calc(8px * var(--ui-scale));
+    padding: 10px 20px;
+    border-radius: 8px;
     background: linear-gradient(135deg, #ff7a18, #ff4d00);
     color: white;
     font-weight: 600;

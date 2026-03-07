@@ -48,6 +48,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AlertProvider, useAlert } from './context/AlertContext';
 import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { useTheme } from './context/ThemeContext';
+import './styles/typography.css'; // Import global typography system
 import { useAnimation } from './hooks/useAnimation';
 import { formatCurrency } from './utils/api';
 import './styles/fonts.css';
@@ -300,49 +301,36 @@ function AppContent() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35, ease: "easeOut" }}
           whileHover={{ filter: 'brightness(1.05)' }}
+          className="glass-header"
           style={{
-            height: 'var(--header-height)',
+            height: '64px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '0 var(--header-padding-x)',
-            borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)',
-            backgroundColor: isDark ? 'rgba(11,11,12,0.72)' : 'rgba(255,255,255,0.75)',
-            backdropFilter: 'blur(14px)',
-            WebkitBackdropFilter: 'blur(14px)',
+            padding: '0 var(--spacing-6)',
             zIndex: 40,
             flexShrink: 0,
-            transition: 'filter 0.2s ease',
+            transition: 'filter var(--transition-normal) var(--ease-out)',
           }}
         >
           {/* Left Side - New Bill Button */}
           <div style={{ width: '200px' }}>
             <motion.button
               whileHover={{
-                transform: 'translateY(-1px)',
-                boxShadow: '0 6px 16px rgba(249,115,22,0.45)'
+                transform: 'var(--hover-lift)',
+                boxShadow: 'var(--shadow-button-hover)'
               }}
               whileTap={{
-                transform: 'translateY(0px) scale(0.97)'
+                transform: 'var(--active-scale)'
               }}
               onClick={() => {
                 setPosKey(prev => prev + 1);
                 navigate('/');
               }}
+              className="liquid-glass-button"
               style={{
-                background: '#F97316',
-                boxShadow: '0 4px 12px rgba(249,115,22,0.35), inset 0 1px 0 rgba(255,255,255,0.2)',
-                border: 'none',
-                borderRadius: '8px',
-                padding: 'calc(8px * var(--ui-scale)) calc(16px * var(--ui-scale))',
-                color: 'white',
-                fontWeight: 600,
-                fontSize: 'var(--font-size-ui-base)',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: '180ms ease'
+                fontSize: 'var(--text-sm)',
+                fontWeight: 'var(--font-medium)',
               }}
             >
               Start New Bill
@@ -358,14 +346,14 @@ function AppContent() {
           }}>
             <h1
               style={{
-                fontSize: 'var(--font-size-ui-xl)',
-                fontWeight: 600,
+                fontSize: 'var(--text-2xl)',
+                fontWeight: 'var(--font-semibold)',
                 letterSpacing: '0.3px',
-                color: '#F97316',
+                color: 'var(--primary-500)',
                 textShadow: '0 0 12px rgba(249,115,22,0.25)',
                 margin: 0,
                 cursor: 'default',
-                transition: 'opacity 200ms ease',
+                transition: 'opacity var(--transition-normal) var(--ease-out)',
                 display: 'flex',
                 alignItems: 'center'
               }}
@@ -374,11 +362,11 @@ function AppContent() {
             >
               ReBill
               <span style={{
-                fontSize: '14px',
-                fontWeight: 400,
-                color: currentTheme.colors.text.secondary,
+                fontSize: 'var(--text-sm)',
+                fontWeight: 'var(--font-normal)',
+                color: 'var(--text-secondary)',
                 opacity: 0.65,
-                marginLeft: '8px'
+                marginLeft: 'var(--spacing-2)'
               }}>
                 ({settings.shop_name || 'Burger Bhau'})
               </span>
@@ -391,23 +379,25 @@ function AppContent() {
             display: 'flex',
             justifyContent: 'flex-end',
             alignItems: 'center',
-            gap: '16px'
+            gap: 'var(--spacing-4)'
           }}>
             {/* Date Chip */}
             <div
+              className="rounded-pill"
               style={{
-                padding: '6px 12px',
-                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
-                border: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)',
-                borderRadius: '999px',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                color: currentTheme.colors.text.secondary,
+                padding: 'var(--spacing-2) var(--spacing-3)',
+                backgroundColor: 'var(--glass-card)',
+                border: '1px solid var(--glass-border)',
+                fontSize: 'var(--text-sm)',
+                fontWeight: 'var(--font-medium)',
+                color: 'var(--text-secondary)',
                 cursor: 'default',
-                transition: 'background 0.2s'
+                transition: 'background var(--transition-normal) var(--ease-out)',
+                backdropFilter: 'var(--glass-blur)',
+                WebkitBackdropFilter: 'var(--glass-blur)',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--glass-header)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'var(--glass-card)'}
             >
               {todayLabel}
             </div>
@@ -415,22 +405,26 @@ function AppContent() {
             {/* Theme Toggle */}
             <motion.button
               whileHover={{
-                backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'
+                backgroundColor: 'var(--glass-header)'
               }}
               whileTap={{ scale: 0.92 }}
               onClick={toggleTheme}
+              className="rounded-lg"
               style={{
                 width: '40px',
                 height: '40px',
                 padding: 0,
-                borderRadius: '12px',
                 border: 'none',
-                backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
-                color: currentTheme.colors.text.primary,
+                backgroundColor: 'var(--glass-card)',
+                color: 'var(--text-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                backdropFilter: 'var(--glass-blur)',
+                WebkitBackdropFilter: 'var(--glass-blur)',
+                border: '1px solid var(--glass-border)',
+                transition: 'all var(--transition-normal) var(--ease-out)',
               }}
             >
               {isDark ? (
@@ -484,35 +478,89 @@ function AppContent() {
           <div style={{
             position: 'fixed', inset: 0, zIndex: 2000,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)'
+            backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)'
           }}>
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="liquid-glass-card"
               style={{
-                background: isDark ? '#1e293b' : 'white',
-                padding: '32px', borderRadius: '16px',
-                maxWidth: '400px', width: '90%',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                border: '1px solid #FF6B00'
+                padding: 'var(--spacing-8)',
+                maxWidth: '420px',
+                width: '90%',
+                borderRadius: '20px',
+                border: '1px solid rgba(255, 140, 0, 0.2)',
+                background: 'rgba(22, 26, 32, 0.8)',
+                backdropFilter: 'blur(14px)',
+                WebkitBackdropFilter: 'blur(14px)',
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)'
               }}
             >
-              <h2 style={{
-                marginTop: 0,
-                color: currentTheme.colors.text.primary,
-                display: 'flex', alignItems: 'center', gap: '12px'
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--spacing-4)',
+                marginBottom: 'var(--spacing-5)'
               }}>
-                <span style={{ fontSize: '1.5rem' }}>⏰</span>
-                Mark Attendance?
-              </h2>
-              <p style={{ color: currentTheme.colors.text.secondary }}>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '14px',
+                  background: 'rgba(255, 140, 0, 0.12)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.5rem'
+                }}>
+                  ⏰
+                </div>
+                <div>
+                  <h2 style={{
+                    margin: 0,
+                    color: 'var(--text-primary)',
+                    fontSize: 'var(--text-xl)',
+                    fontWeight: 'var(--font-semibold)',
+                    letterSpacing: '0.2px',
+                    lineHeight: '1.3'
+                  }}>
+                    Mark Attendance?
+                  </h2>
+                  <p style={{
+                    margin: 'var(--spacing-1) 0 0 0',
+                    color: 'var(--text-tertiary)',
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: 'var(--font-medium)'
+                  }}>
+                    Daily reminder
+                  </p>
+                </div>
+              </div>
+              <p style={{ 
+                color: 'var(--text-secondary)',
+                fontSize: 'var(--text-base)',
+                lineHeight: '1.6',
+                margin: '0 0 var(--spacing-6) 0',
+                fontWeight: 'var(--font-normal)'
+              }}>
                 You haven't marked worker attendance for today yet. Would you like to do it now?
               </p>
-              <div style={{ display: 'flex', gap: '12px', marginTop: '24px', justifyContent: 'flex-end' }}>
+              <div style={{ 
+                display: 'flex', 
+                gap: 'var(--spacing-3)', 
+                justifyContent: 'flex-end' 
+              }}>
                 <Button
                   variant="ghost"
                   onClick={() => setShowAttendancePrompt(false)}
+                  style={{
+                    padding: 'var(--spacing-3) var(--spacing-5)',
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: 'var(--font-medium)',
+                    borderRadius: 'var(--radius-lg)'
+                  }}
                 >
                   Later
                 </Button>
@@ -522,7 +570,15 @@ function AppContent() {
                     setShowAttendancePrompt(false);
                     navigate('/workers/attendance');
                   }}
-                  style={{ background: '#FF6B00', border: 'none' }}
+                  style={{ 
+                    background: 'var(--primary-500)', 
+                    border: 'none',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: 'var(--spacing-3) var(--spacing-5)',
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: 'var(--font-semibold)',
+                    boxShadow: '0 4px 12px rgba(255, 106, 0, 0.25)'
+                  }}
                 >
                   Yes, Mark Now
                 </Button>
@@ -538,35 +594,89 @@ function AppContent() {
           <div style={{
             position: 'fixed', inset: 0, zIndex: 2000,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)'
+            backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)'
           }}>
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="liquid-glass-card"
               style={{
-                background: isDark ? '#1e293b' : 'white',
-                padding: '32px', borderRadius: '16px',
-                maxWidth: '400px', width: '90%',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                border: '1px solid #10B981'
+                padding: 'var(--spacing-8)',
+                maxWidth: '420px',
+                width: '90%',
+                borderRadius: '20px',
+                border: '1px solid rgba(76, 175, 80, 0.2)',
+                background: 'rgba(22, 26, 32, 0.8)',
+                backdropFilter: 'blur(14px)',
+                WebkitBackdropFilter: 'blur(14px)',
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)'
               }}
             >
-              <h2 style={{
-                marginTop: 0,
-                color: currentTheme.colors.text.primary,
-                display: 'flex', alignItems: 'center', gap: '12px'
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--spacing-4)',
+                marginBottom: 'var(--spacing-5)'
               }}>
-                <span style={{ fontSize: '1.5rem' }}>💰</span>
-                It's Salary Day!
-              </h2>
-              <p style={{ color: currentTheme.colors.text.secondary }}>
-                Today is the designated salary day. Would you like to review and process worker salaries now?
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '14px',
+                  background: 'rgba(76, 175, 80, 0.12)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.5rem'
+                }}>
+                  💰
+                </div>
+                <div>
+                  <h2 style={{
+                    margin: 0,
+                    color: 'var(--text-primary)',
+                    fontSize: 'var(--text-xl)',
+                    fontWeight: 'var(--font-semibold)',
+                    letterSpacing: '0.2px',
+                    lineHeight: '1.3'
+                  }}>
+                    It's Salary Day!
+                  </h2>
+                  <p style={{
+                    margin: 'var(--spacing-1) 0 0 0',
+                    color: 'var(--text-tertiary)',
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: 'var(--font-medium)'
+                  }}>
+                    Monthly reminder
+                  </p>
+                </div>
+              </div>
+              <p style={{ 
+                color: 'var(--text-secondary)',
+                fontSize: 'var(--text-base)',
+                lineHeight: '1.6',
+                margin: '0 0 var(--spacing-6) 0',
+                fontWeight: 'var(--font-normal)'
+              }}>
+                Today is designated salary day. Would you like to review and process worker salaries now?
               </p>
-              <div style={{ display: 'flex', gap: '12px', marginTop: '24px', justifyContent: 'flex-end' }}>
+              <div style={{ 
+                display: 'flex', 
+                gap: 'var(--spacing-3)', 
+                justifyContent: 'flex-end' 
+              }}>
                 <Button
                   variant="ghost"
                   onClick={() => setSalaryNotification(false)}
+                  style={{
+                    padding: 'var(--spacing-3) var(--spacing-5)',
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: 'var(--font-medium)',
+                    borderRadius: 'var(--radius-lg)'
+                  }}
                 >
                   Later
                 </Button>
@@ -576,7 +686,15 @@ function AppContent() {
                     setSalaryNotification(false);
                     navigate('/workers/salary');
                   }}
-                  style={{ background: '#10B981', border: 'none' }}
+                  style={{ 
+                    background: 'var(--success-500)', 
+                    border: 'none',
+                    borderRadius: 'var(--radius-lg)',
+                    padding: 'var(--spacing-3) var(--spacing-5)',
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: 'var(--font-semibold)',
+                    boxShadow: '0 4px 12px rgba(76, 175, 80, 0.25)'
+                  }}
                 >
                   Go to Salary Manager
                 </Button>

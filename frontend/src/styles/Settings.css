@@ -10,8 +10,8 @@
 .stPage {
     display: flex;
     flex-direction: column;
-    gap: calc(24px * var(--ui-scale));
-    padding: 0 0 calc(24px * var(--ui-scale)) 0;
+    gap: 24px;
+    padding: 0 0 24px 0;
 }
 
 /* Header */
@@ -21,8 +21,8 @@
     z-index: 100;
     background: color-mix(in srgb, var(--bg-primary) 80%, transparent);
     backdrop-filter: blur(20px);
-    padding: calc(12px * var(--ui-scale)) 0;
-    margin-bottom: calc(24px * var(--ui-scale));
+    padding: 12px 0;
+    margin-bottom: 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -31,15 +31,16 @@
 .stHeader {
     display: flex;
     align-items: center;
-    gap: calc(16px * var(--ui-scale));
+    gap: 16px;
     width: auto;
 }
 
 .stTitle {
-    font-size: calc(32px * var(--ui-font-scale));
-    line-height: 1.2;
-    letter-spacing: -0.02em;
-    font-weight: 700;
+    font-size: var(--font-4xl);
+    /* Larger title */
+    line-height: var(--line-tight);
+    letter-spacing: var(--tracking-tight);
+    font-weight: var(--weight-bold);
     color: var(--text-primary);
 }
 
@@ -47,12 +48,12 @@
 .stTabs {
     display: flex;
     justify-content: flex-start;
-    padding: calc(4px * var(--ui-scale));
+    padding: 4px;
     background: var(--surface-secondary);
     border: 1px solid var(--border-primary);
     width: fit-content;
     z-index: 90;
-    border-radius: calc(14px * var(--ui-scale));
+    border-radius: 14px;
     box-shadow:
         0 4px 20px -5px rgba(0, 0, 0, 0.1),
         inset 0 0 0 1px rgba(255, 255, 255, 0.05);
@@ -68,7 +69,7 @@
 
 .stTabList {
     display: flex;
-    gap: calc(4px * var(--ui-scale));
+    gap: 4px;
     position: relative;
     padding: 0;
 }
@@ -77,13 +78,13 @@
     position: relative;
     display: flex;
     align-items: center;
-    gap: calc(10px * var(--ui-scale));
-    padding: calc(10px * var(--ui-scale)) calc(18px * var(--ui-scale));
+    gap: 10px;
+    padding: 10px 18px;
     border: none;
     background: transparent;
     color: var(--text-secondary);
-    font-size: calc(14px * var(--ui-font-scale));
-    font-weight: 500;
+    font-size: var(--font-md);
+    font-weight: var(--weight-medium);
     cursor: pointer;
     border-radius: 10px;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -133,29 +134,29 @@
     /* Card component handles background, border, shadow, radius, padding */
     display: flex;
     flex-direction: column;
-    gap: calc(28px * var(--ui-scale));
+    gap: 28px;
     min-height: 60vh;
     width: 100%;
     /* Removed max-width to cover full screen */
 }
 
 .stSectionTitle {
-    font-size: calc(20px * var(--ui-font-scale));
-    font-weight: 600;
+    font-size: var(--font-2xl);
+    font-weight: var(--weight-semibold);
     color: var(--text-primary);
-    margin-bottom: calc(8px * var(--ui-scale));
-    padding-bottom: calc(16px * var(--ui-scale));
+    margin-bottom: 8px;
+    padding-bottom: 16px;
     border-bottom: 1px solid var(--border-primary);
     display: flex;
     align-items: center;
-    gap: calc(12px * var(--ui-scale));
+    gap: 12px;
 }
 
 /* Sections - Refined Visual Hierarchy */
 .stSection {
     background: var(--surface-primary) !important;
     border: 1px solid var(--border-primary) !important;
-    border-radius: calc(20px * var(--ui-scale)) !important;
+    border-radius: 20px !important;
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -168,29 +169,29 @@
 }
 
 .stSectionTitle {
-    font-size: calc(18px * var(--ui-font-scale));
-    font-weight: 600;
+    font-size: var(--font-xl);
+    font-weight: var(--weight-semibold);
     color: var(--text-primary);
-    padding: calc(24px * var(--ui-scale)) calc(32px * var(--ui-scale));
+    padding: 24px 32px;
     margin-bottom: 0;
     border-bottom: 1px solid var(--border-secondary);
     display: flex;
     align-items: center;
-    gap: calc(14px * var(--ui-scale));
+    gap: 14px;
     background: color-mix(in srgb, var(--text-primary) 2%, transparent);
 }
 
 .stSectionContent {
-    padding: calc(8px * var(--ui-scale)) calc(32px * var(--ui-scale)) calc(32px * var(--ui-scale)) calc(32px * var(--ui-scale));
+    padding: 8px 32px 32px 32px;
 }
 
 /* Forms - Elegant Spacing and Layout */
 .stFormGroup {
     display: grid;
-    grid-template-columns: calc(280px * var(--ui-scale)) 1fr;
-    gap: calc(40px * var(--ui-scale));
+    grid-template-columns: 280px 1fr;
+    gap: 40px;
     align-items: center;
-    padding: calc(24px * var(--ui-scale)) 0;
+    padding: 24px 0;
     border-bottom: 1px solid var(--border-tertiary);
 }
 
@@ -209,34 +210,34 @@
 .stLabel {
     display: flex;
     flex-direction: column;
-    gap: calc(4px * var(--ui-scale));
+    gap: 4px;
 }
 
 .stLabelTitle {
-    font-size: calc(14px * var(--ui-font-scale));
-    font-weight: 600;
+    font-size: var(--font-md);
+    font-weight: var(--weight-semibold);
     color: var(--text-primary);
 }
 
 .stLabelDesc {
-    font-size: calc(13px * var(--ui-font-scale));
+    font-size: var(--font-sm);
     color: var(--text-tertiary);
-    line-height: 1.5;
+    line-height: var(--line-normal);
 }
 
 /* Inputs - Premium Tactile Feel */
 .stInput {
     width: 100%;
-    max-width: calc(440px * var(--ui-scale));
-    padding: calc(10px * var(--ui-scale)) calc(16px * var(--ui-scale));
-    border-radius: calc(12px * var(--ui-scale));
+    max-width: 440px;
+    padding: 10px 16px;
+    border-radius: 12px;
     border: 1px solid var(--border-primary);
     background: var(--bg-secondary);
     color: var(--text-primary);
-    font-size: calc(14px * var(--ui-font-scale));
-    font-weight: 500;
+    font-size: var(--font-md);
+    font-weight: var(--weight-medium);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    height: calc(42px * var(--ui-scale));
+    height: 42px;
 }
 
 .stInput:hover {
@@ -263,8 +264,8 @@
 .stToggle {
     position: relative;
     display: inline-block;
-    width: calc(44px * var(--ui-scale));
-    height: calc(24px * var(--ui-scale));
+    width: 44px;
+    height: 24px;
 }
 
 .stToggle input {
@@ -315,12 +316,12 @@ input:checked+.stSlider:before {
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: calc(16px * var(--ui-scale));
-    margin-top: calc(32px * var(--ui-scale));
-    padding: calc(24px * var(--ui-scale)) calc(32px * var(--ui-scale));
+    gap: 16px;
+    margin-top: 32px;
+    padding: 24px 32px;
     background: color-mix(in srgb, var(--surface-primary) 95%, white);
     border-top: 1px solid var(--border-secondary);
-    border-radius: 0 0 calc(20px * var(--ui-scale)) calc(20px * var(--ui-scale));
+    border-radius: 0 0 20px 20px;
 }
 
 [data-theme="dark"] .stActions {
@@ -328,14 +329,14 @@ input:checked+.stSlider:before {
 }
 
 .stButton {
-    padding: calc(12px * var(--ui-scale)) calc(24px * var(--ui-scale));
+    padding: 12px 24px;
     border-radius: var(--radius-lg);
     font-weight: 600;
     cursor: pointer;
     border: 1px solid var(--border-primary);
     background: var(--bg-primary);
     color: var(--text-primary);
-    font-size: calc(14px * var(--ui-font-scale));
+    font-size: var(--font-md);
     transition: all 0.2s ease;
 }
 
@@ -367,65 +368,4 @@ input:checked+.stSlider:before {
     opacity: 0.6;
     cursor: not-allowed;
     filter: grayscale(0.5);
-}
-
-/* ================================================================
-   SIZE PICKER - Pill button group for Screen Size & Font Size
-   ================================================================ */
-.stSizePicker {
-    display: flex;
-    gap: calc(8px * var(--ui-scale));
-    align-items: center;
-}
-
-.stSizeOption {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: calc(4px * var(--ui-scale));
-    padding: calc(10px * var(--ui-scale)) calc(20px * var(--ui-scale));
-    min-width: calc(80px * var(--ui-scale));
-    border-radius: calc(12px * var(--ui-scale));
-    border: 1.5px solid var(--border-primary);
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    font-family: inherit;
-}
-
-.stSizeOption:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-    background: color-mix(in srgb, var(--primary) 6%, transparent);
-}
-
-.stSizeOptionActive {
-    border-color: var(--primary) !important;
-    background: color-mix(in srgb, var(--primary) 12%, transparent) !important;
-    color: var(--primary) !important;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
-}
-
-[data-theme="dark"] .stSizeOption {
-    border-color: rgba(255, 255, 255, 0.08);
-}
-
-[data-theme="dark"] .stSizeOptionActive {
-    background: color-mix(in srgb, var(--primary) 18%, transparent) !important;
-}
-
-.stSizeOptionIcon {
-    font-weight: 700;
-    line-height: 1;
-    transition: font-size 0.2s ease;
-}
-
-.stSizeOptionLabel {
-    font-size: calc(11px * var(--ui-font-scale));
-    font-weight: 500;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-    opacity: 0.85;
 }

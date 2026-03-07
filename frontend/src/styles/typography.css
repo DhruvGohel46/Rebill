@@ -1,0 +1,379 @@
+/**
+ * =============================================================================
+ * GLOBAL TYPOGRAPHY SYSTEM - TYPOGRAPHY.CSS
+ * =============================================================================
+ * 
+ * ROLE: Unified typography scaling system for the entire application
+ * 
+ * RESPONSIBILITIES:
+ * - Define consistent typography tokens using CSS variables
+ * - Enable global text scaling with multiplier
+ * - Maintain visual hierarchy across all screen sizes
+ * - Ensure responsive stability and layout integrity
+ * 
+ * KEY FEATURES:
+ * - Scale-based typography system using --text-scale multiplier
+ * - Responsive font sizes that adapt to screen constraints
+ * - Consistent line heights and spacing
+ * - Smooth transitions when scale changes
+ * - Professional typography hierarchy
+ * 
+ * USAGE:
+ * - All components should use var(--font-*) tokens instead of fixed px values
+ * - Settings component controls --text-scale value (0.9 to 1.2)
+ * - System automatically scales all text proportionally
+ * - Layout remains stable at all scale levels
+ * =============================================================================
+ */
+
+:root {
+  /* Base scale multipliers - controlled by Settings */
+  --text-scale: 1;
+  --display-zoom: 1;
+
+  /* Typography Scale - All sizes calculated from base values */
+  --font-xs: calc(12px * var(--text-scale)) !important;     /* 12px → 10.8px - 14.4px */
+  --font-sm: calc(13px * var(--text-scale)) !important;     /* 13px → 11.7px - 15.6px */
+  --font-md: calc(14px * var(--text-scale)) !important;     /* 14px → 12.6px - 16.8px */
+  --font-lg: calc(16px * var(--text-scale)) !important;     /* 16px → 14.4px - 19.2px */
+  --font-xl: calc(18px * var(--text-scale)) !important;     /* 18px → 16.2px - 21.6px */
+  --font-2xl: calc(22px * var(--text-scale)) !important;    /* 22px → 19.8px - 26.4px */
+  --font-3xl: calc(26px * var(--text-scale)) !important;    /* 26px → 23.4px - 31.2px */
+  --font-4xl: calc(32px * var(--text-scale)) !important;    /* 32px → 28.8px - 38.4px */
+
+  /* Display Zoom Scale - For UI elements, sections, cards */
+  --scale-xs: calc(0.875rem * var(--display-zoom)) !important;    /* 14px → 12.6px - 17.5px */
+  --scale-sm: calc(0.9375rem * var(--display-zoom)) !important;   /* 15px → 13.5px - 18.8px */
+  --scale-md: calc(1rem * var(--display-zoom)) !important;        /* 16px → 14.4px - 19.2px */
+  --scale-lg: calc(1.125rem * var(--display-zoom)) !important;      /* 18px → 16.2px - 21.6px */
+  --scale-xl: calc(1.25rem * var(--display-zoom)) !important;       /* 20px → 18px - 24px */
+  --scale-2xl: calc(1.5rem * var(--display-zoom)) !important;      /* 24px → 21.6px - 28.8px */
+  --scale-3xl: calc(1.875rem * var(--display-zoom)) !important;     /* 30px → 26.3px - 35px */
+  --scale-4xl: calc(2.25rem * var(--display-zoom)) !important;     /* 36px → 31.5px - 42px */
+
+  /* Spacing Scale - Proportional padding and margins */
+  --spacing-xs: calc(4px * var(--display-zoom)) !important;     /* 4px → 3.6px - 4.8px */
+  --spacing-sm: calc(8px * var(--display-zoom)) !important;     /* 8px → 7.2px - 9.6px */
+  --spacing-md: calc(12px * var(--display-zoom)) !important;    /* 12px → 10.8px - 14.4px */
+  --spacing-lg: calc(16px * var(--display-zoom)) !important;    /* 16px → 14.4px - 19.2px */
+  --spacing-xl: calc(24px * var(--display-zoom)) !important;    /* 24px → 21.6px - 28.8px */
+  --spacing-2xl: calc(32px * var(--display-zoom)) !important;   /* 32px → 28.8px - 38.4px */
+
+  /* Line Heights - Consistent readability */
+  --line-tight: 1.2;
+  --line-normal: 1.5;
+  --line-loose: 1.7;
+
+  /* Letter Spacing - Enhanced readability */
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+
+  /* Font Weights - Consistent hierarchy */
+  --weight-light: 300;
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
+
+  /* Responsive Clamp - Prevent layout breakage */
+  --font-clamp-sm: clamp(11px, var(--font-sm), 15px);
+  --font-clamp-md: clamp(12px, var(--font-md), 16px);
+  --font-clamp-lg: clamp(14px, var(--font-lg), 18px);
+  --font-clamp-xl: clamp(16px, var(--font-xl), 20px);
+  --font-clamp-2xl: clamp(18px, var(--font-2xl), 24px);
+}
+
+/* Global smooth transitions for scaling */
+* {
+  transition: font-size 0.15s ease;
+}
+
+/* Typography Hierarchy Classes */
+.text-xs {
+  font-size: var(--font-xs);
+  line-height: var(--line-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.text-sm {
+  font-size: var(--font-sm);
+  line-height: var(--line-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.text-md {
+  font-size: var(--font-md);
+  line-height: var(--line-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.text-lg {
+  font-size: var(--font-lg);
+  line-height: var(--line-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.text-xl {
+  font-size: var(--font-xl);
+  line-height: var(--line-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.text-2xl {
+  font-size: var(--font-2xl);
+  line-height: var(--line-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.text-3xl {
+  font-size: var(--font-3xl);
+  line-height: var(--line-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.text-4xl {
+  font-size: var(--font-4xl);
+  line-height: var(--line-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+/* Responsive Typography */
+@media (max-width: 768px) {
+  :root {
+    /* Slightly smaller base scale on mobile for better fit */
+    --text-scale: calc(var(--text-scale) * 0.95);
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    /* Even smaller on very small screens */
+    --text-scale: calc(var(--text-scale) * 0.9);
+  }
+}
+
+/* Prevent layout breakage */
+.text-clamp-xs {
+  font-size: var(--font-clamp-sm);
+}
+
+.text-clamp-sm {
+  font-size: var(--font-clamp-sm);
+}
+
+.text-clamp-md {
+  font-size: var(--font-clamp-md);
+}
+
+.text-clamp-lg {
+  font-size: var(--font-clamp-lg);
+}
+
+.text-clamp-xl {
+  font-size: var(--font-clamp-xl);
+}
+
+.text-clamp-2xl {
+  font-size: var(--font-clamp-2xl);
+}
+
+/* Typography utilities for hierarchy */
+.page-title {
+  font-size: var(--font-3xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--line-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.section-title {
+  font-size: var(--font-2xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--line-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.card-title {
+  font-size: var(--font-xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--line-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.primary-text {
+  font-size: var(--font-lg);
+  font-weight: var(--weight-normal);
+  line-height: var(--line-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.body-text {
+  font-size: var(--font-md);
+  font-weight: var(--weight-normal);
+  line-height: var(--line-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.label-text {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-medium);
+  line-height: var(--line-normal);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.meta-text {
+  font-size: var(--font-xs);
+  font-weight: var(--weight-normal);
+  line-height: var(--line-normal);
+  letter-spacing: var(--tracking-normal);
+  opacity: 0.8;
+}
+
+/* Component-specific typography */
+.button-text {
+  font-size: var(--font-md);
+  font-weight: var(--weight-medium);
+  line-height: var(--line-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.input-text {
+  font-size: var(--font-md);
+  font-weight: var(--weight-normal);
+  line-height: var(--line-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.table-header {
+  font-size: var(--font-sm);
+  font-weight: var(--weight-semibold);
+  line-height: var(--line-normal);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.table-cell {
+  font-size: var(--font-md);
+  font-weight: var(--weight-normal);
+  line-height: var(--line-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.sidebar-item {
+  font-size: var(--font-md);
+  font-weight: var(--weight-medium);
+  line-height: var(--line-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+.navbar-title {
+  font-size: var(--font-xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--line-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+/* Ensure text doesn't overflow containers */
+.text-overflow-protect {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Focus states with proper typography */
+.focus-visible {
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+}
+
+/* =============================================================================
+ * DISPLAY ZOOM SYSTEM - UI ELEMENT SCALING
+ * =============================================================================
+ * 
+ * ROLE: Scale sections, cards, buttons, and other UI elements
+ * 
+ * USAGE:
+ * - Apply .scale-* classes to UI elements for display zoom
+ * - Use --spacing-* tokens for proportional spacing
+ * - Cards, sections, buttons scale with --display-zoom multiplier
+ * =============================================================================
+ */
+
+/* Display Zoom Utility Classes */
+.scale-xs {
+  font-size: var(--scale-xs);
+  padding: var(--spacing-xs);
+  margin: var(--spacing-xs);
+}
+
+.scale-sm {
+  font-size: var(--scale-sm);
+  padding: var(--spacing-sm);
+  margin: var(--spacing-sm);
+}
+
+.scale-md {
+  font-size: var(--scale-md);
+  padding: var(--spacing-md);
+  margin: var(--spacing-md);
+}
+
+.scale-lg {
+  font-size: var(--scale-lg);
+  padding: var(--spacing-lg);
+  margin: var(--spacing-lg);
+}
+
+.scale-xl {
+  font-size: var(--scale-xl);
+  padding: var(--spacing-xl);
+  margin: var(--spacing-xl);
+}
+
+.scale-2xl {
+  font-size: var(--scale-2xl);
+  padding: var(--spacing-2xl);
+  margin: var(--spacing-2xl);
+}
+
+/* Component-specific display zoom classes */
+.card-zoom {
+  transform: scale(var(--display-zoom)) !important;
+  transform-origin: center;
+  transition: transform 0.2s ease;
+  margin: calc(8px * (var(--display-zoom) - 1)); /* Compensate for scaling */
+}
+
+.section-zoom {
+  padding: var(--spacing-lg);
+  margin: var(--spacing-md);
+  /* Remove transform from section to keep screen size intact */
+}
+
+.button-zoom {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--scale-md);
+  transform: scale(var(--display-zoom)) !important;
+  transform-origin: center;
+  transition: transform 0.2s ease;
+}
+
+.input-zoom {
+  padding: var(--spacing-sm);
+  font-size: var(--scale-md);
+  transform: scale(var(--display-zoom)) !important;
+  transform-origin: center;
+  transition: transform 0.2s ease;
+}
+
+/* Global smooth transitions for display zoom */
+.card-zoom,
+.section-zoom,
+.button-zoom,
+.input-zoom {
+  transition: transform 0.2s ease, font-size 0.15s ease, padding 0.15s ease, margin 0.15s ease;
+}

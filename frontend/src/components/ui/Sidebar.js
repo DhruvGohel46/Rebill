@@ -52,22 +52,18 @@ const Sidebar = ({
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             onDoubleClick={toggleCollapse}
             onTouchEnd={handleDoubleTap}
+            className="glass-sidebar"
             style={{
                 height: '100%',
-                // 1. Sidebar Surface Depth
-                backgroundColor: isDark ? '#0C0C0D' : '#FAFAFA',
-                backgroundImage: isDark
-                    ? 'radial-gradient(circle at 0% 50%, rgba(249,115,22,0.05), transparent 60%)'
-                    : 'none',
-                boxShadow: isDark
-                    ? 'inset -1px 0 0 rgba(255,255,255,0.04)'
-                    : 'inset -1px 0 0 rgba(0,0,0,0.06)',
+                backgroundImage: 'radial-gradient(circle at 0% 50%, rgba(249,115,22,0.05), transparent 60%)',
                 display: 'flex',
                 flexDirection: 'column',
                 zIndex: 50,
                 flexShrink: 0,
                 userSelect: 'none',
-                position: 'relative'
+                position: 'relative',
+                borderRadius: '0 var(--radius-sidebar) var(--radius-sidebar) 0',
+                margin: 'var(--spacing-2) 0',
             }}
         >
             {/* Header / Logo Area */}
@@ -76,8 +72,8 @@ const Sidebar = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: isCollapsed ? 'center' : 'flex-start',
-                padding: isCollapsed ? '0' : '0 24px',
-                marginBottom: '8px'
+                padding: isCollapsed ? '0' : '0 var(--spacing-6)',
+                marginBottom: 'var(--spacing-2)'
             }}>
                 <AnimatePresence mode="wait">
                     {!isCollapsed ? (
@@ -88,10 +84,10 @@ const Sidebar = ({
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.4 }}
                             style={{
-                                fontSize: '20px',
-                                fontWeight: 600,
+                                fontSize: 'var(--text-xl)',
+                                fontWeight: 'var(--font-semibold)',
                                 letterSpacing: '0.3px',
-                                color: '#F97316',
+                                color: 'var(--primary-500)',
                                 cursor: 'default'
                             }}
                             whileHover={{ filter: 'brightness(1.1)' }}
@@ -105,9 +101,9 @@ const Sidebar = ({
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0 }}
                             style={{
-                                fontSize: '20px',
-                                fontWeight: 600,
-                                color: '#F97316',
+                                fontSize: 'var(--text-xl)',
+                                fontWeight: 'var(--font-semibold)',
+                                color: 'var(--primary-500)',
                             }}
                         >
                             {acronym}
@@ -119,10 +115,10 @@ const Sidebar = ({
             {/* Navigation Items */}
             <div style={{
                 flex: 1,
-                padding: '0 12px',
+                padding: '0 var(--spacing-3)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '8px', // 10. Vertical Rhythm
+                gap: 'var(--spacing-2)',
                 overflowY: 'auto',
             }}>
                 {navItems.map((item) => {
@@ -137,16 +133,16 @@ const Sidebar = ({
                             title={isCollapsed ? item.label : ''}
                             initial={false}
                             animate={{
-                                backgroundColor: isActive ? '#F97316' : 'transparent',
-                                color: isActive ? '#FFFFFF' : (isDark ? '#A1A1AA' : '#52525B'),
+                                backgroundColor: isActive ? 'var(--primary-500)' : 'transparent',
+                                color: isActive ? 'var(--text-inverse)' : 'var(--text-secondary)',
                                 boxShadow: isActive
-                                    ? '0 4px 12px rgba(249,115,22,0.25), inset 0 1px 0 rgba(255,255,255,0.2)'
+                                    ? 'var(--shadow-button)'
                                     : 'none',
                             }}
                             whileHover={!isActive ? {
                                 x: 3,
-                                backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.05)',
-                                color: isDark ? '#FFFFFF' : '#18181B', // White on dark, Black on light
+                                backgroundColor: 'var(--glass-card)',
+                                color: 'var(--text-primary)',
                                 transition: { duration: 0.16 }
                             } : {
                                 x: 3,
@@ -159,12 +155,15 @@ const Sidebar = ({
                                 alignItems: 'center',
                                 justifyContent: isCollapsed ? 'center' : 'flex-start',
                                 width: '100%',
-                                padding: '10px 14px',
-                                borderRadius: '10px',
+                                padding: 'var(--spacing-3) var(--spacing-4)',
+                                borderRadius: 'var(--radius-md)',
                                 border: 'none',
                                 cursor: 'pointer',
                                 outline: 'none',
-                                transition: 'all 0.2s ease' // Smooth transition for non-framer props
+                                transition: 'all var(--transition-normal) var(--ease-out)',
+                                backdropFilter: 'var(--glass-blur)',
+                                WebkitBackdropFilter: 'var(--glass-blur)',
+                                border: '1px solid var(--glass-border)',
                             }}
                         >
                             {/* Icon Wrapper */}
@@ -174,8 +173,8 @@ const Sidebar = ({
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     fontSize: '20px',
-                                    marginRight: isCollapsed ? 0 : '12px',
-                                    color: 'currentColor' // Inherits from parent
+                                    marginRight: isCollapsed ? 0 : 'var(--spacing-3)',
+                                    color: 'currentColor'
                                 }}
                                 animate={isActive ? {
                                     scale: [1, 1.05, 1],
@@ -194,8 +193,8 @@ const Sidebar = ({
                                         exit={{ opacity: 0, x: -10 }}
                                         transition={{ duration: 0.2 }}
                                         style={{
-                                            fontWeight: isActive ? 600 : 500,
-                                            fontSize: '14px',
+                                            fontWeight: isActive ? 'var(--font-semibold)' : 'var(--font-medium)',
+                                            fontSize: 'var(--text-sm)',
                                             whiteSpace: 'nowrap'
                                         }}
                                     >
@@ -210,29 +209,31 @@ const Sidebar = ({
 
             {/* Collapse Toggle */}
             <div style={{
-                padding: '24px',
+                padding: 'var(--spacing-6)',
                 display: 'flex',
                 justifyContent: isCollapsed ? 'center' : 'flex-end',
             }}>
                 <motion.button
                     onClick={toggleCollapse}
                     whileHover={{
-                        backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                        backgroundColor: 'var(--glass-card)',
                         scale: 1.05
                     }}
                     whileTap={{ scale: 0.92 }}
+                    className="rounded-lg"
                     style={{
                         background: 'transparent',
-                        border: 'none',
-                        borderRadius: '12px',
+                        border: '1px solid var(--glass-border)',
                         width: '32px',
                         height: '32px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         cursor: 'pointer',
-                        color: isDark ? '#71717A' : '#A1A1AA',
-                        transition: 'color 0.2s'
+                        color: 'var(--text-muted)',
+                        transition: 'all var(--transition-normal) var(--ease-out)',
+                        backdropFilter: 'var(--glass-blur)',
+                        WebkitBackdropFilter: 'var(--glass-blur)',
                     }}
                 >
                     <svg

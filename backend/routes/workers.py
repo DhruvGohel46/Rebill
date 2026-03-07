@@ -234,6 +234,38 @@ def mark_attendance(worker_id):
     entry = WorkerService.record_attendance(worker_id, status, check_in, check_out)
     return jsonify({'success': True, 'status': entry.status})
 
+@workers_bp.route('/api/workers/<worker_id>/attendance', methods=['PUT'])
+def update_attendance(worker_id):
+    """Update attendance record (e.g., for check-out)"""
+    data = request.json
+    date_str = data.get('date', date.today().isoformat())
+    check_out = datetime.strptime(data['check_out'], '%H:%M').time() if data.get('check_out') else None
+    
+    try:
+        # Find today's attendance record
+        attendance = Attendance.query.filter_by(
+            worker_id=worker_id,
+            date=datetime.strptime(date_str, '%Y-%m-%d').date()
+        ).first()
+        
+        if not attendance:
+            return jsonify({'success': False, 'message': 'Attendance record not found'}), 404
+        
+        # Update check-out time
+        attendance.check_out = check_out
+        attendance.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'check_out': check_out.strftime('%H:%M') if check_out else None
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 400
+
 @workers_bp.route('/api/workers/attendance/bulk', methods=['POST'])
 def bulk_attendance():
     """Mark all active workers as Present"""

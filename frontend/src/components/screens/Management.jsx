@@ -514,42 +514,200 @@ const ProductManagement = () => {
       {/* Password Confirmation Modal */}
       <AnimatePresence>
         {showPasswordModal && (
-          <motion.div className="pmOverlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={cancelPermanentDelete}>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={cancelPermanentDelete}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 2000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(0,0,0,0.6)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)'
+            }}
+          >
             <motion.div
-              className="pmDialog"
-              initial={{ y: 20, scale: 0.95, opacity: 0 }}
-              animate={{ y: 0, scale: 1, opacity: 1 }}
-              exit={{ y: 20, scale: 0.95, opacity: 0 }}
+              className="liquid-glass-card"
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
               onClick={(e) => e.stopPropagation()}
-              style={{ maxWidth: '400px' }}
+              style={{
+                position: 'relative',
+                width: '90%',
+                maxWidth: '460px',
+                padding: 'var(--spacing-8)',
+                borderRadius: '20px',
+                background: 'rgba(22, 26, 32, 0.8)',
+                backdropFilter: 'blur(14px)',
+                WebkitBackdropFilter: 'blur(14px)',
+                border: '1px solid rgba(239, 68, 68, 0.2)',
+                boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)'
+              }}
             >
-              <div className="pmDialogTitle" style={{ color: '#EF4444' }}>
-                <IconTrash style={{ width: '24px', height: '24px' }} />
-                Permanent Deletion
+              {/* Header Section */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--spacing-4)',
+                marginBottom: 'var(--spacing-5)'
+              }}>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '14px',
+                  background: 'rgba(239, 68, 68, 0.12)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--error-500)',
+                  flexShrink: 0
+                }}>
+                  <IconTrash style={{ width: '24px', height: '24px' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h3 style={{
+                    margin: 0,
+                    color: 'var(--text-primary)',
+                    fontSize: 'var(--text-xl)',
+                    fontWeight: 'var(--font-semibold)',
+                    letterSpacing: '0.2px',
+                    lineHeight: '1.3'
+                  }}>
+                    Permanent Deletion
+                  </h3>
+                  <p style={{
+                    margin: 'var(--spacing-1) 0 0 0',
+                    color: 'var(--text-tertiary)',
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: 'var(--font-medium)'
+                  }}>
+                    Admin authentication required
+                  </p>
+                </div>
               </div>
-              <div className="pmDialogContent">
-                <p>You are about to <strong>permanently delete</strong> "{itemToDelete?.name}".</p>
-                <div className="pmWarningBox" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '12px', borderRadius: '8px', marginTop: '12px', fontSize: '0.9rem', color: '#B91C1C' }}>
-                  <strong style={{ display: 'block', marginBottom: '4px' }}>⚠️ Irreversible Action</strong>
-                  This will remove the product, all sales history, and inventory records. This cannot be undone.
+
+              {/* Content */}
+              <div style={{ marginBottom: 'var(--spacing-6)' }}>
+                <p style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: 'var(--text-base)',
+                  lineHeight: '1.6',
+                  margin: '0 0 var(--spacing-4) 0',
+                  fontWeight: 'var(--font-normal)'
+                }}>
+                  You are about to <strong style={{ color: 'var(--error-500)' }}>permanently delete</strong> "{itemToDelete?.name}".
+                </p>
+                
+                {/* Warning Box */}
+                <div style={{
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  border: '1px solid rgba(239, 68, 68, 0.15)',
+                  padding: 'var(--spacing-3)',
+                  borderRadius: 'var(--radius-lg)',
+                  marginTop: 'var(--spacing-3)',
+                  fontSize: 'var(--text-sm)',
+                  color: 'var(--error-600)',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 'var(--spacing-2)'
+                }}>
+                  <span style={{ fontSize: '1rem', marginTop: '1px' }}>⚠️</span>
+                  <div>
+                    <strong style={{ display: 'block', marginBottom: 'var(--spacing-1)', fontWeight: 'var(--font-semibold)' }}>
+                      Irreversible Action
+                    </strong>
+                    This will remove the product, all sales history, and inventory records. This cannot be undone.
+                  </div>
                 </div>
 
-                <div style={{ marginTop: '20px' }}>
-                  <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 600 }}>Enter Admin Password</label>
+                {/* Password Input */}
+                <div style={{ marginTop: 'var(--spacing-5)' }}>
+                  <label style={{
+                    display: 'block',
+                    fontSize: 'var(--text-sm)',
+                    marginBottom: 'var(--spacing-2)',
+                    fontWeight: 'var(--font-semibold)',
+                    color: 'var(--text-primary)'
+                  }}>
+                    Enter Admin Password
+                  </label>
                   <input
                     type="password"
-                    className="pmInput"
                     value={deletePassword}
                     onChange={(e) => setDeletePassword(e.target.value)}
                     placeholder="Type password..."
                     autoFocus
-                    style={{ borderColor: error && error.includes('Password') ? '#EF4444' : undefined }}
+                    style={{
+                      width: '100%',
+                      padding: 'var(--spacing-3)',
+                      fontSize: 'var(--text-base)',
+                      borderRadius: 'var(--radius-lg)',
+                      border: error && error.includes('Password') ? '1px solid var(--error-500)' : '1px solid var(--glass-border)',
+                      background: 'var(--glass-card)',
+                      color: 'var(--text-primary)',
+                      transition: 'all var(--transition-normal) var(--ease-out)',
+                      outline: 'none'
+                    }}
+                    onFocus={(e) => {
+                      if (!error || !error.includes('Password')) {
+                        e.target.style.borderColor = 'var(--primary-500)';
+                        e.target.style.boxShadow = '0 0 0 3px rgba(255, 106, 0, 0.1)';
+                      }
+                    }}
+                    onBlur={(e) => {
+                      if (!error || !error.includes('Password')) {
+                        e.target.style.borderColor = 'var(--glass-border)';
+                        e.target.style.boxShadow = 'none';
+                      }
+                    }}
                   />
                 </div>
               </div>
-              <div className="pmDialogActions">
-                <button className="pmSecondaryBtn" onClick={cancelPermanentDelete}>Cancel</button>
-                <button className="pmPrimaryCta" onClick={confirmPermanentDelete} style={{ backgroundColor: '#EF4444' }}>
+
+              {/* Actions */}
+              <div style={{
+                display: 'flex',
+                gap: 'var(--spacing-3)',
+                justifyContent: 'flex-end'
+              }}>
+                <button
+                  onClick={cancelPermanentDelete}
+                  style={{
+                    padding: 'var(--spacing-3) var(--spacing-5)',
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: 'var(--font-medium)',
+                    borderRadius: 'var(--radius-lg)',
+                    background: 'var(--glass-card)',
+                    color: 'var(--text-secondary)',
+                    border: '1px solid var(--glass-border)',
+                    cursor: 'pointer',
+                    transition: 'all var(--transition-normal) var(--ease-out)'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmPermanentDelete}
+                  style={{
+                    padding: 'var(--spacing-3) var(--spacing-5)',
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: 'var(--font-semibold)',
+                    borderRadius: 'var(--radius-lg)',
+                    background: 'var(--error-500)',
+                    color: 'white',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all var(--transition-normal) var(--ease-out)',
+                    boxShadow: '0 4px 12px rgba(239, 68, 68, 0.25)'
+                  }}
+                >
                   Delete Permanently
                 </button>
               </div>
@@ -592,7 +750,7 @@ const ProductManagement = () => {
                 variants={staggerItem}
               >
                 <Card
-                  className={`pmCard ${!product.active ? 'pmCardInactive' : ''}`}
+                  className={`pmCard ${!product.active ? 'pmCardInactive' : ''} card-zoom`}
                   padding={showImages ? '20px' : '16px'}
                   hover={true}
                   style={{

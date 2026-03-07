@@ -50,7 +50,7 @@ const ICONS = {
 };
 
 const ToastItem = ({ toast, onClose }) => {
-    const { type, title, description, duration, action } = toast;
+    const { type, title, description, duration, action, timestamp } = toast;
     const [progress, setProgress] = useState(100);
     const [isPaused, setIsPaused] = useState(false);
     const startTimeRef = useRef(Date.now());
@@ -107,8 +107,8 @@ const ToastItem = ({ toast, onClose }) => {
             layout
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
             className={`rb-toast rb-toast--${type}`}
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
@@ -122,6 +122,7 @@ const ToastItem = ({ toast, onClose }) => {
             <div className="rb-toast__content">
                 {title && <p className="rb-toast__title">{title}</p>}
                 {description && <p className="rb-toast__description">{description}</p>}
+                {timestamp && <p className="rb-toast__meta">{timestamp}</p>}
                 {action && (
                     <button
                         className={`rb-toast__action rb-toast__action--${type}`}
@@ -140,14 +141,7 @@ const ToastItem = ({ toast, onClose }) => {
                 <CloseIcon />
             </button>
 
-            {/* Progress bar */}
-            {duration > 0 && (
-                <div
-                    className={`rb-toast__progress rb-toast__progress--${type}`}
-                    style={{ width: `${progress}%` }}
-                />
-            )}
-        </motion.div>
+                    </motion.div>
     );
 };
 

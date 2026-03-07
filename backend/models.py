@@ -134,3 +134,48 @@ class Attendance(db.Model):
     created_at = db.Column(db.DateTime, default=func.now())
 
 
+# ==========================================
+# REMINDER SYSTEM MODELS
+# ==========================================
+
+class Reminder(db.Model):
+    __tablename__ = 'reminders'
+    
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text)
+    reminder_time = db.Column(db.DateTime, nullable=False)
+    repeat_type = db.Column(db.Enum('once', 'daily', name='repeat_type_enum'), nullable=False, default='once')
+    is_active = db.Column(db.Boolean, default=True)
+    last_triggered_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=func.now())
+    updated_at = db.Column(db.DateTime, default=func.now(), onupdate=func.now())
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'description': self.description,
+            'reminder_time': self.reminder_time.isoformat() if self.reminder_time else None,
+            'repeat_type': self.repeat_type,
+            'is_active': self.is_active,
+            'last_triggered_at': self.last_triggered_at.isoformat() if self.last_triggered_at else None,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    @classmethod
+    def from_dict(cls, data):
+        reminder = cls()
+        reminder.id = data.get('id')
+        reminder.title = data.get('title')
+        reminder.description = data.get('description')
+        if data.get('reminder_time'):
+            reminder.reminder_time = datetime.fromisoformat(data['reminder_time'].replace('Z', '+00:00'))
+        reminder.repeat_type = data.get('repeat_type', 'once')
+        reminder.is_active = data.get('is_active', True)
+        if data.get('last_triggered_at'):
+            reminder.last_triggered_at = datetime.fromisoformat(data['last_triggered_at'].replace('Z', '+00:00'))
+        return reminder
+
+

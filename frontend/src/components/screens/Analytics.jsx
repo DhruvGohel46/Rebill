@@ -1,152 +1,113 @@
 /**
  * =============================================================================
- * ANALYTICS DASHBOARD - ANALYTICS.JSX
+ * ANALYTICS DASHBOARD — REDESIGNED
  * =============================================================================
- * 
- * ROLE: Business intelligence dashboard for sales analytics and reporting
- * 
- * RESPONSIBILITIES:
- * - Real-time sales data visualization and KPI tracking
- * - Product sales breakdown with pie chart representation
- * - Daily summary reports with key metrics
- * - Data export functionality (CSV reports)
- * - Interactive charts and responsive design
- * - Data management (clear/refresh operations)
- * 
- * KEY FEATURES:
- * - Total sales and bill count KPI cards
- * - Interactive pie chart for category-wise sales
- * - Daily revenue tracking and trends
- * - Export reports in CSV format
- * - Data refresh and clear functionality
- * - Management-style header design
- * - Responsive grid layout for KPIs
- * 
- * DATA VISUALIZATIONS:
- * - PieChart: Category-wise sales distribution
- * - KPI Cards: Total sales, total bills, revenue metrics
- * - Progress indicators and trend analysis
- * 
- * API INTEGRATION:
- * - summaryAPI: Daily sales summaries and KPIs
- * - reportsAPI: Report generation and data export
- * - loadProductSales: Detailed product sales data
- * 
- * STATE MANAGEMENT:
- * - summary: Daily sales summary data
- * - productSales: Individual product sales data
- * - availableReports: Generated report list
- * - loading/error states for async operations
- * 
- * COMPONENTS:
- * - KPI Cards: Animated metric displays
- * - PieChart: Interactive sales visualization
- * - Export buttons: CSV download functionality
- * - Management-style header: Consistent design
- * 
- * DESIGN PATTERNS:
- * - Functional component with animation hooks
- * - Staggered animations for visual appeal
- * - Theme-aware styling throughout
- * - Responsive grid layouts
- * - Error boundaries and loading states
- * 
- * USER INTERACTIONS:
- * - Real-time data refresh
- * - Report generation and download
- * - Data clearing with confirmation
- * - Interactive chart exploration
+ *
+ * Two-tab layout: Report (default) | Transactions
+ *   - Report: KPI bar, Day/Week/Month range toggle, interactive bar + pie charts,
+ *             download section (daily/monthly/weekly Excel)
+ *   - Transactions: sortable table of all bills with Edit/Cancel actions
+ *
+ * Dependencies: recharts, framer-motion, react-icons
  * =============================================================================
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
+  ResponsiveContainer, PieChart, Pie, Cell, Sector
+} from 'recharts';
 import { useTheme } from '../../context/ThemeContext';
-import { useAnimation } from '../../hooks/useAnimation';
 import api, { summaryAPI, reportsAPI, billingAPI, getLocalDateString } from '../../utils/api';
 import { formatCurrency, handleAPIError, downloadFile } from '../../utils/api';
-import { CATEGORY_COLORS, CATEGORY_NAMES, ANIMATION_DURATIONS, EASINGS } from '../../utils/constants';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import Skeleton from '../ui/Skeleton';
-import AnimatedList from '../ui/AnimatedList';
 import GlobalDatePicker from '../ui/GlobalDatePicker';
 import PageContainer from '../layout/PageContainer';
 import {
   IoBarChartOutline,
   IoReceiptOutline,
-  IoDocumentTextOutline
+  IoDownloadOutline,
+  IoCalendarOutline,
+  IoRefreshOutline,
+  IoTodayOutline,
+  IoTrashOutline,
+  IoCreateOutline,
+  IoCloseCircleOutline,
 } from 'react-icons/io5';
 import '../../styles/Analytics.css';
 
-// ... other imports ...
+// ─── Color palette for charts ───
+const CHART_COLORS = [
+  '#6366F1', '#10B981', '#F59E0B', '#3B82F6', '#EF4444',
+  '#8B5CF6', '#EC4899', '#06B6D4', '#F43F5E', '#14B8A6',
+  '#A855F7', '#FB923C', '#22D3EE', '#84CC16', '#E11D48',
+];
 
+// ─── Custom Tooltip for Bar Chart ───
+const BarTooltip = ({ active, payload }) => {
+  if (!active || !payload || !payload.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="analytics-tooltip">
+      <div className="analytics-tooltip-label">{d.name}</div>
+      <div className="analytics-tooltip-value">
+        Amount: {formatCurrency(d.total_amount)}
+      </div>
+      <div className="analytics-tooltip-value">
+        Qty: {d.quantity} units
+      </div>
+    </div>
+  );
+};
 
+// ─── Custom Active Shape for Pie Chart ───
+const renderActiveShape = (props) => {
+  const {
+    cx, cy, innerRadius, outerRadius, startAngle, endAngle,
+    fill, payload, percent
+  } = props;
+  return (
+    <g>
+      <Sector
+        cx={cx} cy={cy}
+        innerRadius={innerRadius - 4}
+        outerRadius={outerRadius + 8}
+        startAngle={startAngle} endAngle={endAngle}
+        fill={fill}
+        style={{ filter: `drop-shadow(0 4px 12px ${fill}55)`, transition: 'all 0.3s ease' }}
+      />
+      <text x={cx} y={cy - 12} textAnchor="middle" fill="var(--text-primary)"
+        style={{ fontSize: '0.82rem', fontWeight: 700 }}>
+        {payload.name}
+      </text>
+      <text x={cx} y={cy + 10} textAnchor="middle" fill="var(--text-secondary)"
+        style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+        {formatCurrency(payload.total_amount)}
+      </text>
+      <text x={cx} y={cy + 28} textAnchor="middle" fill="var(--text-secondary)"
+        style={{ fontSize: '0.7rem' }}>
+        {(percent * 100).toFixed(1)}%
+      </text>
+    </g>
+  );
+};
 
-// Icon components
-const TrendingUpIcon = ({ color }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color }}>
-    <path d="M22 12H18L15 21L9 3L6 12H2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const ReceiptIcon = ({ color }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color }}>
-    <path d="M6.5 6.5h14l-1.5 8.5H8.2L6.5 6.5Z" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" />
-    <path d="M6.5 6.5L6 4H3.5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const DollarSignIcon = ({ color }) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color }}>
-    <path d="M12 2V22M17 5H9.5C8.57174 5 7.6815 5.36875 7.02513 6.02513C6.36875 6.6815 6 7.57174 6 8.5C6 9.42826 6.36875 10.3185 7.02513 10.9749C7.6815 11.6313 8.57174 12 9.5 12H14.5C15.4283 12 16.3185 12.3687 16.9749 13.0251C17.6313 13.6815 18 14.5717 18 15.5C18 16.4283 17.6313 17.3185 16.9749 17.9749C16.3185 18.6313 15.4283 19 14.5 19H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const ClockIcon = ({ color }) => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color }}>
-    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-    <path d="M12 6V12L16 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const TrashIcon = ({ color }) => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color }}>
-    <path d="M3 6H5H21M8 6V20C8 21.1046 8.89543 22 10 22H14C15.1046 22 16 21.1046 16 20V6M19 6V20C19 21.1046 19.1046 22 18 22H10C8.89543 22 8 21.1046 8 20V6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M10 11L14 11M10 15L14 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const DownloadIcon = ({ color }) => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color }}>
-    <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M7 10L12 15L17 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M12 15V3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const RefreshIcon = ({ color }) => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ color }}>
-    <path d="M23 4V10H17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M1 20V14H7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
+// ─── KPI Stat Bar ───
 const AnalyticsStats = ({ stats }) => {
-  const { currentTheme, isDark } = useTheme();
-
   const items = [
-    { label: 'Net Sales', value: formatCurrency(stats.total_sales || 0), color: '#10B981', icon: <TrendingUpIcon /> },
-    { label: 'Total Orders', value: stats.total_bills || 0, color: '#3B82F6', icon: <ReceiptIcon /> },
-    { label: 'Avg. Value', value: formatCurrency(stats.average_bill_value || 0), color: '#F59E0B', icon: <DollarSignIcon /> },
+    { label: 'Net Sales', value: formatCurrency(stats.total_sales || 0), color: '#10B981' },
+    { label: 'Total Orders', value: stats.total_bills || 0, color: '#3B82F6' },
+    { label: 'Avg. Value', value: formatCurrency(stats.average_bill_value || 0), color: '#F59E0B' },
   ];
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.2 }}
+      transition={{ duration: 0.45, delay: 0.15 }}
       className="analytics-stats-bar"
     >
       {items.map((item, i) => (
@@ -163,75 +124,98 @@ const AnalyticsStats = ({ stats }) => {
   );
 };
 
+// ─── Helpers ───
+function getWeekDates(refDate) {
+  const d = new Date(refDate + 'T00:00:00');
+  const day = d.getDay() || 7;
+  d.setDate(d.getDate() - (day - 1));
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const dd = new Date(d);
+    dd.setDate(d.getDate() + i);
+    dates.push(dd.toISOString().split('T')[0]);
+  }
+  return dates;
+}
+
+function getMonthDates(refDate) {
+  const d = new Date(refDate + 'T00:00:00');
+  const year = d.getFullYear();
+  const month = d.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const dates = [];
+  for (let i = 1; i <= daysInMonth; i++) {
+    const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+    if (ds > todayStr) break;
+    dates.push(ds);
+  }
+  return dates;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════════════
 const Analytics = () => {
   const { currentTheme, isDark } = useTheme();
-  const { cardVariants, staggerContainer, staggerItem } = useAnimation();
+  const navigate = useNavigate();
 
-  // Summary state
+  // ─── Tabs ───
+  const [activeTab, setActiveTab] = useState('report');
+  const tabs = [
+    { id: 'report', label: 'Report', icon: IoBarChartOutline },
+    { id: 'transactions', label: 'Transactions', icon: IoReceiptOutline },
+  ];
+
+  // ─── Summary / Product Sales ───
   const [summary, setSummary] = useState(null);
+  const [productSales, setProductSales] = useState([]);
   const [selectedDate, setSelectedDate] = useState(getLocalDateString());
   const [loading, setLoading] = useState(true);
-  const [currentDate] = useState(new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  }));
-
-  // Reports state
-  const [availableReports, setAvailableReports] = useState(null);
-  const [downloading, setDownloading] = useState({});
   const [error, setError] = useState('');
+
+  // ─── Range toggle ───
+  const [viewRange, setViewRange] = useState('day');       // 'day' | 'week' | 'month'
+  const [rangeProductSales, setRangeProductSales] = useState([]);
+  const [rangeSummary, setRangeSummary] = useState(null);
+  const [rangeLoading, setRangeLoading] = useState(false);
+
+  // ─── Reports / Download ───
+  const [downloading, setDownloading] = useState({});
+  const [dailyReportDate, setDailyReportDate] = useState(getLocalDateString());
+  const [exportMonth, setExportMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [exportYear] = useState(new Date().getFullYear());
+  const [exportWeekDate, setExportWeekDate] = useState(getLocalDateString());
+
+  // ─── Bills / Transactions ───
+  const [bills, setBills] = useState([]);
+  const [loadingBills, setLoadingBills] = useState(false);
+  const [selectedBillDate, setSelectedBillDate] = useState(getLocalDateString());
+  const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
+
+  // ─── Clear Data Modal ───
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearPassword, setClearPassword] = useState('');
   const [showClearPassword, setShowClearPassword] = useState(false);
   const [clearingData, setClearingData] = useState(false);
 
-  const [productSales, setProductSales] = useState([]);
-
-  // Monthly Export state
-  const [exportMonth, setExportMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  });
-  const [exportYear, setExportYear] = useState(new Date().getFullYear());
-
-  // Weekly Export state
-  const [exportWeekDate, setExportWeekDate] = useState(getLocalDateString());
-
-  // Daily Report state
-  const [dailyReportDate, setDailyReportDate] = useState(getLocalDateString());
-
-  // Bill Management State
-  const navigate = useNavigate();
-  const [bills, setBills] = useState([]);
-  const [loadingBills, setLoadingBills] = useState(false);
+  // ─── Cancel Bill Modal ───
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [selectedBill, setSelectedBill] = useState(null);
 
-  // Date filter for Bills (defaults to today)
-  const [selectedBillDate, setSelectedBillDate] = useState(getLocalDateString());
+  // ─── Pie chart active sector ───
+  const [activePieIndex, setActivePieIndex] = useState(-1);
 
-  // Safeguard so we never read properties from null
   const safeSummary = summary || {};
 
-  /* State for Pie Chart Interaction */
-  const [hoveredProduct, setHoveredProduct] = useState(null);
-  const [selectedProduct, setSelectedProduct] = useState(null); // New: Persistent selection
+  // ═══════════════ DATA LOADING ═══════════════
 
-  // Sub-tabs state
-  const [activeTab, setActiveTab] = useState('overview');
-
-  const tabs = [
-    { id: 'overview', label: 'Overview', icon: IoBarChartOutline },
-    { id: 'transactions', label: 'Transactions', icon: IoReceiptOutline },
-    { id: 'reports', label: 'Reports', icon: IoDocumentTextOutline }
-  ];
-
-  // Load data when date changes
   useEffect(() => {
     loadSummary(selectedDate);
-    loadAvailableReports();
     loadProductSales(selectedDate);
   }, [selectedDate]);
 
@@ -239,37 +223,27 @@ const Analytics = () => {
     loadBills(selectedBillDate);
   }, [selectedBillDate]);
 
+  // Aggregate range data when viewRange or selectedDate changes
+  useEffect(() => {
+    if (viewRange === 'day') {
+      setRangeProductSales(productSales);
+      setRangeSummary(summary);
+    } else {
+      loadRangeData();
+    }
+  }, [viewRange, selectedDate, productSales, summary]);
+
   async function loadSummary(date) {
     try {
       setLoading(true);
       setError('');
-
       const response = date
         ? await summaryAPI.getSummaryForDate(date)
         : await summaryAPI.getTodaySummary();
       setSummary(response.data.summary);
-
     } catch (err) {
       const apiError = handleAPIError(err);
       setError(apiError.message);
-      console.error('Error loading summary:', err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadAvailableReports() {
-    try {
-      setLoading(true);
-      setError('');
-
-      const response = await reportsAPI.getAvailableReports();
-      setAvailableReports(response.data.reports);
-
-    } catch (err) {
-      const apiError = handleAPIError(err);
-      setError(apiError.message);
-      console.error('Error loading reports:', err);
     } finally {
       setLoading(false);
     }
@@ -282,7 +256,6 @@ const Analytics = () => {
         : '/api/summary/product-sales';
       const response = await fetch(url);
       const data = await response.json();
-
       if (data.success) {
         setProductSales(data.product_sales);
       }
@@ -291,23 +264,69 @@ const Analytics = () => {
     }
   }
 
+  async function loadRangeData() {
+    try {
+      setRangeLoading(true);
+      const dates = viewRange === 'week'
+        ? getWeekDates(selectedDate)
+        : getMonthDates(selectedDate);
+
+      // Fetch product sales for each date and aggregate
+      const allProducts = {};
+      let totalSales = 0;
+      let totalBills = 0;
+
+      await Promise.all(dates.map(async (d) => {
+        try {
+          const [psRes, sumRes] = await Promise.all([
+            fetch(`/api/summary/product-sales?date=${d}`).then(r => r.json()),
+            summaryAPI.getSummaryForDate(d).then(r => r.data.summary).catch(() => null),
+          ]);
+
+          if (psRes.success && psRes.product_sales) {
+            psRes.product_sales.forEach(p => {
+              if (allProducts[p.product_id]) {
+                allProducts[p.product_id].quantity += p.quantity;
+                allProducts[p.product_id].total_amount += Number(p.total_amount);
+              } else {
+                allProducts[p.product_id] = { ...p, total_amount: Number(p.total_amount) };
+              }
+            });
+          }
+
+          if (sumRes) {
+            totalSales += Number(sumRes.total_sales || 0);
+            totalBills += Number(sumRes.total_bills || 0);
+          }
+        } catch { /* skip failed days */ }
+      }));
+
+      const aggregated = Object.values(allProducts).sort((a, b) => b.total_amount - a.total_amount);
+      setRangeProductSales(aggregated);
+      setRangeSummary({
+        total_sales: totalSales,
+        total_bills: totalBills,
+        average_bill_value: totalBills > 0 ? totalSales / totalBills : 0,
+      });
+    } catch (err) {
+      console.error('Error loading range data:', err);
+    } finally {
+      setRangeLoading(false);
+    }
+  }
+
   async function loadBills(date) {
     try {
       setLoadingBills(true);
-      // Use specific endpoint for date filtering (defaults to today if date matches or is null)
       const targetDate = date || new Date().toISOString().split('T')[0];
-      const url = `/api/bill/date/${targetDate}`;
-
-      const response = await api.get(url);
+      const response = await api.get(`/api/bill/date/${targetDate}`);
       if (response.data.success) {
-        // Sort bills in descending order by created_at (latest first)
-        // ensure created_at is strictly used, fallback to bill_no if created_at is identical
-        const sortedBills = response.data.bills.sort((a, b) => {
+        const sorted = response.data.bills.sort((a, b) => {
           const dateA = new Date(a.created_at || 0);
           const dateB = new Date(b.created_at || 0);
           return dateB - dateA || b.bill_no - a.bill_no;
         });
-        setBills(sortedBills);
+        setBills(sorted);
       }
     } catch (err) {
       console.error('Error loading bills:', err);
@@ -316,62 +335,46 @@ const Analytics = () => {
     }
   }
 
+  // ═══════════════ HANDLERS ═══════════════
+
   const handleEditBill = (bill) => {
-    // Only allow editing active bills
     if (bill.status === 'CANCELLED') return;
     navigate('/bill', { state: { bill } });
-  };
-
-  const handleCancelBillInitiate = (bill) => {
-    setSelectedBill(bill);
-    setShowCancelConfirm(true);
   };
 
   const handleCancelBillConfirm = async () => {
     try {
       if (!selectedBill) return;
-
       const response = await billingAPI.cancelBill(selectedBill.bill_no);
-
       if (response.data.success) {
         setShowCancelConfirm(false);
         setSelectedBill(null);
-        // Refresh all data
         await Promise.all([
           loadBills(selectedBillDate),
-          loadSummary(),
-          loadProductSales()
+          loadSummary(selectedDate),
+          loadProductSales(selectedDate),
         ]);
       }
     } catch (err) {
       const apiError = handleAPIError(err);
       setError(apiError.message);
-      console.error("Error cancelling bill", err);
     }
   };
 
-  // Download report
   const handleDownload = async (reportType, reportName, filename, date = null) => {
     try {
       setDownloading(prev => ({ ...prev, [reportType]: true }));
       setError('');
-
       let response;
-
       if (reportType === 'excel') {
         response = await reportsAPI.exportTodayExcel('detailed', date);
       } else if (reportType === 'csv') {
         response = await reportsAPI.exportTodayCSV();
       }
-
-      if (response && response.data) {
-        downloadFile(response.data, filename);
-      }
-
+      if (response && response.data) downloadFile(response.data, filename);
     } catch (err) {
       const apiError = handleAPIError(err);
       setError(apiError.message);
-      console.error('Error downloading report:', err);
     } finally {
       setDownloading(prev => ({ ...prev, [reportType]: false }));
     }
@@ -381,16 +384,13 @@ const Analytics = () => {
     try {
       setDownloading(prev => ({ ...prev, monthly: true }));
       setError('');
-
       const response = await reportsAPI.exportMonthlyExcel(exportMonth, exportYear);
-
       if (response && response.data) {
         downloadFile(response.data, `Monthly_Sales_Report_${String(exportMonth).padStart(2, '0')}_${exportYear}.xlsx`);
       }
     } catch (err) {
       const apiError = handleAPIError(err);
       setError(apiError.message);
-      console.error('Error downloading monthly report:', err);
     } finally {
       setDownloading(prev => ({ ...prev, monthly: false }));
     }
@@ -400,988 +400,375 @@ const Analytics = () => {
     try {
       setDownloading(prev => ({ ...prev, weekly: true }));
       setError('');
-
       const response = await reportsAPI.exportWeeklyExcel(exportWeekDate);
-
-      // Filename is handled by backend, but we can set a fallback here if needed.
       const d = new Date(exportWeekDate);
-      const day = d.getDay() || 7; // Get current day number, converting Sun (0) to 7
-      if (day !== 1) d.setHours(-24 * (day - 1)); // Set to Monday
-
+      const day = d.getDay() || 7;
+      if (day !== 1) d.setHours(-24 * (day - 1));
       const start = new Date(d);
       const end = new Date(d);
       end.setDate(end.getDate() + 6);
-
       const sStr = `${String(start.getDate()).padStart(2, '0')}${String(start.getMonth() + 1).padStart(2, '0')}${start.getFullYear()}`;
       const eStr = `${String(end.getDate()).padStart(2, '0')}${String(end.getMonth() + 1).padStart(2, '0')}${end.getFullYear()}`;
       const filename = `Weekly_Sales_Report_${sStr}_to_${eStr}.xlsx`;
-
-      if (response && response.data) {
-        downloadFile(response.data, filename);
-      }
+      if (response && response.data) downloadFile(response.data, filename);
     } catch (err) {
       const apiError = handleAPIError(err);
       setError(apiError.message);
-      console.error('Error downloading weekly report:', err);
     } finally {
       setDownloading(prev => ({ ...prev, weekly: false }));
     }
   };
 
-  // Clear all bills data
   const handleClearBills = async () => {
     try {
       setClearingData(true);
       setError('');
-
       const response = await fetch('/api/bill/clear', {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          password: clearPassword
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: clearPassword }),
       });
-
       const result = await response.json();
-
       if (response.ok) {
         setShowClearConfirm(false);
         setClearPassword('');
-        // Reload data after clearing
-        await loadSummary();
-        await loadAvailableReports();
-        await loadProductSales();
+        await loadSummary(selectedDate);
+        await loadProductSales(selectedDate);
         await loadBills(selectedBillDate);
       } else {
         throw new Error(result.message || 'Failed to clear bills data');
       }
-
     } catch (err) {
       const apiError = handleAPIError(err);
       setError(apiError.message);
-      console.error('Error clearing bills:', err);
     } finally {
       setClearingData(false);
     }
   };
 
-  // Format time for display (handles UTC to Local conversion as needed)
+  // ─── Sort helpers ───
+  const handleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+    }));
+  };
+
+  const sortedBills = useMemo(() => {
+    const arr = [...bills];
+    const { key, direction } = sortConfig;
+    arr.sort((a, b) => {
+      let aVal, bVal;
+      switch (key) {
+        case 'bill_no':
+          aVal = a.bill_no; bVal = b.bill_no; break;
+        case 'created_at':
+          aVal = new Date(a.created_at || 0).getTime();
+          bVal = new Date(b.created_at || 0).getTime(); break;
+        case 'total_amount':
+          aVal = Number(a.total_amount); bVal = Number(b.total_amount); break;
+        case 'status':
+          aVal = a.status || 'ACTIVE'; bVal = b.status || 'ACTIVE'; break;
+        case 'items':
+          aVal = a.items?.length || 0; bVal = b.items?.length || 0; break;
+        default:
+          return 0;
+      }
+      if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return arr;
+  }, [bills, sortConfig]);
+
+  // ─── Time formatting ───
   const formatTime = (timestamp) => {
     if (!timestamp) return 'N/A';
     try {
-      // The backend stores timestamps in local system time.
-      // We parse as a local date string to avoid UTC conversion shifts.
-      const localDate = new Date(timestamp.replace(' ', 'T'));
-      return localDate.toLocaleTimeString([], {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      });
-    } catch (err) {
-      console.error('Error formatting time:', err);
-      return timestamp;
-    }
+      const d = new Date(timestamp.replace(' ', 'T'));
+      return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+    } catch { return timestamp; }
   };
 
-  // Format date for display
   const formatDate = (timestamp) => {
     if (!timestamp) return 'N/A';
     try {
-      const localDate = new Date(timestamp.replace(' ', 'T'));
-      return localDate.toLocaleDateString();
-    } catch (err) {
-      return timestamp.split(' ')[0];
-    }
+      return new Date(timestamp.replace(' ', 'T')).toLocaleDateString();
+    } catch { return timestamp.split(' ')[0]; }
   };
 
-  // ... (imports remain same)
+  // Decide which data to render in charts
+  const chartProductSales = viewRange === 'day' ? productSales : rangeProductSales;
+  const chartSummary = viewRange === 'day' ? safeSummary : (rangeSummary || safeSummary);
 
-  // Loading state with Skeleton
-  if (loading) {
+  // ═══════════════ RENDER ═══════════════
+
+  // Loading skeleton
+  if (loading && !summary) {
     return (
-      <div style={{
-        height: '100%',
-        overflowY: 'auto',
-        background: currentTheme.colors.background,
-        paddingTop: currentTheme.spacing[8],
-        paddingLeft: currentTheme.spacing[8],
-        paddingRight: currentTheme.spacing[8],
-        paddingBottom: currentTheme.spacing[12],
-      }}>
-        {/* Header Skeleton */}
-        <div style={{ marginBottom: currentTheme.spacing[8], display: 'flex', justifyContent: 'space-between' }}>
-          <Skeleton height="80px" width="40%" borderRadius="20px" />
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <Skeleton height="50px" width="140px" borderRadius="12px" />
-            <Skeleton height="50px" width="140px" borderRadius="12px" />
+      <PageContainer>
+        <div style={{ padding: '32px' }}>
+          <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between' }}>
+            <Skeleton height="60px" width="35%" borderRadius="16px" />
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <Skeleton height="44px" width="120px" borderRadius="12px" />
+              <Skeleton height="44px" width="120px" borderRadius="12px" />
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '20px' }}>
+            <Skeleton height="380px" borderRadius="16px" />
+            <Skeleton height="380px" borderRadius="16px" />
           </div>
         </div>
-
-        {/* KPI Cards Skeleton */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: currentTheme.spacing[6],
-          marginBottom: currentTheme.spacing[8],
-        }}>
-          {[...Array(3)].map((_, i) => (
-            <Card key={i} style={{ height: '160px', padding: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                <div style={{ width: '60%' }}>
-                  <Skeleton height="20px" width="80px" style={{ marginBottom: '10px' }} />
-                  <Skeleton height="40px" width="120px" />
-                </div>
-                <Skeleton height="48px" width="48px" borderRadius="12px" />
-              </div>
-              <Skeleton height="16px" width="100%" />
-            </Card>
-          ))}
-        </div>
-
-        {/* Charts Skeleton */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: currentTheme.spacing[6] }}>
-          <Card style={{ height: '400px' }}>
-            <Skeleton height="100%" width="100%" />
-          </Card>
-          <Card style={{ height: '400px' }}>
-            <Skeleton height="100%" width="100%" />
-          </Card>
-        </div>
-      </div>
+      </PageContainer>
     );
   }
 
   // Error state
-  if (error) {
+  if (error && !summary) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        background: currentTheme.colors.background,
-        padding: currentTheme.spacing[8],
-      }}>
+      <PageContainer>
         <div style={{
-          background: currentTheme.colors.surface,
-          border: `1px solid ${isDark ? '#ef4444' : '#dc2626'}`,
-          borderRadius: '12px',
-          padding: currentTheme.spacing[6],
-          textAlign: 'center',
-          maxWidth: '400px',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', minHeight: '60vh', padding: '32px',
         }}>
           <div style={{
-            fontSize: '1.125rem',
-            fontWeight: 600,
-            color: isDark ? '#ef4444' : '#dc2626',
-            marginBottom: currentTheme.spacing[2],
+            background: 'var(--surface-primary)', border: '1px solid var(--error-500, #ef4444)',
+            borderRadius: '14px', padding: '32px', textAlign: 'center', maxWidth: '400px',
           }}>
-            Error Loading Data
+            <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--error-500, #ef4444)', marginBottom: '8px' }}>
+              Error Loading Data
+            </div>
+            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+              {error}
+            </div>
+            <Button onClick={() => { setError(''); loadSummary(selectedDate); }} variant="primary" size="sm">
+              Try Again
+            </Button>
           </div>
-          <div style={{
-            fontSize: '0.875rem',
-            color: isDark ? '#94a3b8' : '#64748b',
-            marginBottom: currentTheme.spacing[4],
-          }}>
-            {error}
-          </div>
-          <Button
-            onClick={() => {
-              setError('');
-              loadSummary();
-              loadAvailableReports();
-            }}
-            variant="primary"
-            size="sm"
-          >
-            Try Again
-          </Button>
         </div>
-      </div>
+      </PageContainer>
     );
   }
 
-  // Calculate product sales data
-  const totalSales = safeSummary.total_sales || 0;
-  const productSalesData = Object.entries(safeSummary.category_totals || {}).map(([category, amount]) => ({
-    category,
-    amount,
-    percentage: totalSales > 0 ? (amount / totalSales) * 100 : 0,
-    color: CATEGORY_COLORS[category] || '#6b7280',
-    name: CATEGORY_NAMES[category] || category
-  })).sort((a, b) => b.amount - a.amount);
-
-  // Calculate colors dynamically based on theme
-  const COLORS = [
-    // Primary Theme Colors (Orange)
-    currentTheme.colors.primary[500],
-    currentTheme.colors.primary[600],
-    currentTheme.colors.primary[400],
-
-    // Semantic Colors
-    currentTheme.colors.success[500],   // Green
-    currentTheme.colors.warning[500],   // Amber
-    currentTheme.colors.info[500],      // Blue
-    currentTheme.colors.error[500],     // Red
-
-    // Secondary/Neutral
-    currentTheme.colors.neutral[600],   // Gray
-    currentTheme.colors.neutral[500],
-
-    // Variations
-    currentTheme.colors.success[600],
-    currentTheme.colors.warning[600],
-    currentTheme.colors.info[600],
-    currentTheme.colors.error[600],
-
-    // Extended Palette (complementary to Orange)
-    '#8B5CF6', // Violet
-    '#EC4899', // Pink
-    '#06B6D4', // Cyan
-    '#10B981', // Emerald
-    '#F43F5E', // Rose
-    '#6366F1', // Indigo
-  ];
-
   return (
     <PageContainer>
-      {/* Header Section */}
+      {/* ════════════════ HEADER ════════════════ */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="analytics-header-container"
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        className="analytics-header-glass"
       >
-        <div className="analytics-header-card" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '20px' }}>
-          <div className="analytics-header-top">
-            <div className="analytics-header-left">
-              <div className="analytics-title-wrapper">
-                <div className="analytics-title">Analytics</div>
-              </div>
-
-              {/* Integrated Navigation Tabs */}
-              <div className="analytics-tabs">
-                <div className="analytics-tab-list">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      className={`analytics-tab-button ${activeTab === tab.id ? 'analytics-tab-active' : ''}`}
-                      onClick={() => setActiveTab(tab.id)}
-                    >
-                      <tab.icon size={18} />
-                      {tab.label}
-                    </button>
-                  ))}
-
-                  {/* Sliding Indicator */}
-                  <motion.div
-                    className="analytics-tab-indicator"
-                    layoutId="analyticsTabIndicator"
-                    animate={{
-                      left: tabs.findIndex(t => t.id === activeTab) * (100 / tabs.length) + '%',
-                      width: (100 / tabs.length) + '%'
-                    }}
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.5 }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="analytics-btn-group">
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button onClick={() => setShowClearConfirm(true)} variant="error" size="lg"
-                  className="analytics-action-btn"
-                  style={{
-                    background: `linear-gradient(135deg, ${isDark ? (currentTheme.colors.error?.[600] || '#DC2626') : (currentTheme.colors.error?.[500] || '#EF4444')}, ${isDark ? (currentTheme.colors.error?.[700] || '#B91C1C') : (currentTheme.colors.error?.[600] || '#DC2626')})`,
-                    boxShadow: isDark ? '0 4px 12px rgba(220, 38, 38, 0.2)' : '0 4px 12px rgba(239, 68, 68, 0.15)',
-                  }}
+        <div className="analytics-header-top">
+          {/* Left: Title + Tabs */}
+          <div className="analytics-header-left">
+            <h1 className="analytics-title">Analytics</h1>
+            <div className="analytics-tab-bar">
+              {tabs.map((tab) => (
+                <motion.button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`analytics-tab-btn ${activeTab === tab.id ? 'analytics-tab-btn--active' : ''}`}
+                  whileTap={{ scale: 0.97 }}
                 >
-                  <div style={{ width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <TrashIcon color="#ffffff" />
-                  </div>
-                  Clear Data
-                </Button>
-              </motion.div>
-
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button onClick={() => { loadSummary(selectedDate); loadAvailableReports(); }} variant="primary" size="lg"
-                  className="analytics-action-btn"
-                  style={{
-                    background: `linear-gradient(135deg, ${isDark ? currentTheme.colors.primary[600] : currentTheme.colors.primary[500]}, ${isDark ? currentTheme.colors.primary[700] : currentTheme.colors.primary[600]})`,
-                    boxShadow: isDark ? '0 4px 12px rgba(14, 165, 233, 0.2)' : '0 4px 12px rgba(59, 130, 246, 0.15)',
-                  }}
-                >
-                  <div style={{ width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <RefreshIcon color="#ffffff" />
-                  </div>
-                  Refresh Data
-                </Button>
-              </motion.div>
+                  <tab.icon size={17} />
+                  {tab.label}
+                </motion.button>
+              ))}
             </div>
           </div>
 
-          <AnalyticsStats stats={safeSummary} />
+          {/* Right: Action buttons */}
+          <div className="analytics-actions">
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+              <Button
+                onClick={() => setShowClearConfirm(true)}
+                variant="error"
+                size="lg"
+                style={{
+                  background: 'var(--error-500, #EF4444)',
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                }}
+              >
+                <IoTrashOutline size={18} />
+                Clear Data
+              </Button>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+              <Button
+                onClick={() => { loadSummary(selectedDate); loadProductSales(selectedDate); }}
+                variant="primary"
+                size="lg"
+                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <IoRefreshOutline size={18} />
+                Refresh
+              </Button>
+            </motion.div>
+          </div>
         </div>
+
+        <AnalyticsStats stats={chartSummary} />
       </motion.div>
 
-
-
-      <AnimatePresence mode="wait">
-        {activeTab === 'overview' && (
-          <motion.div
-            key="overview"
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 10 }}
-            transition={{ duration: 0.3 }}
-          >
-            {/* Product Sales Breakdown Section */}
+      {/* ════════════════ TAB CONTENT ════════════════ */}
+      <div className="analytics-tab-content">
+        <AnimatePresence mode="wait">
+          {/* ──────────── REPORT TAB ──────────── */}
+          {activeTab === 'report' && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              style={{
-                marginBottom: currentTheme.spacing[8],
-              }}
+              key="report"
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 12 }}
+              transition={{ duration: 0.3 }}
             >
-              <Card>
-                {/* ... (Header remains same) ... */}
-                <div className="analytics-header-container" style={{ marginBottom: currentTheme.spacing[6] }}>
-                  <div style={{
-                    position: 'relative',
-                    paddingLeft: currentTheme.spacing[4],
-                  }}>
-                    <div style={{
-                      position: 'absolute',
-                      left: 0,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      width: '4px',
-                      height: '24px',
-                      background: `linear-gradient(to bottom, ${currentTheme.colors.primary[500]}, ${currentTheme.colors.primary[600]})`,
-                      borderRadius: '2px',
-                    }} />
-                    <h2 style={{
-                      fontSize: '1.25rem',
-                      fontWeight: 600,
-                      color: isDark ? '#f1f5f9' : '#1e293b',
-                      margin: 0,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.1em',
-                      position: 'relative',
-                      zIndex: 1,
-                    }}>
-                      Product Sales Breakdown
-                    </h2>
-                  </div>
-                </div>
-
-                {/* Pie Chart and Products Grid */}
-                {productSales.length > 0 ? (
-                  <div className="analytics-chart-grid">
-                    {/* Pie Chart */}
-                    <div
-                      className="chart-card"
-                      style={{ height: 'auto', alignItems: 'center', justifyContent: 'center' }}
+              {/* Range Toggle + Date Picker */}
+              <div className="analytics-range-bar">
+                <div className="analytics-range-toggle">
+                  {['day', 'week', 'month'].map((r) => (
+                    <button
+                      key={r}
+                      className={`range-btn ${viewRange === r ? 'range-btn--active' : ''}`}
+                      onClick={() => setViewRange(r)}
                     >
-                      <div
-                        style={{
-                          position: 'relative',
-                          width: '320px',
-                          height: '320px',
-                          marginBottom: currentTheme.spacing[4],
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }}
-                        onMouseLeave={() => setHoveredProduct(null)}
+                      {r === 'day' ? '1 Day' : r === 'week' ? '1 Week' : '1 Month'}
+                    </button>
+                  ))}
+                </div>
+                <div className="analytics-range-date">
+                  <IoCalendarOutline size={18} color="var(--text-secondary)" />
+                  <GlobalDatePicker
+                    value={selectedDate}
+                    onChange={(val) => setSelectedDate(val)}
+                    placeholder="Select Date"
+                    className="report-select-override"
+                  />
+                </div>
+              </div>
+
+              {/* Charts Grid */}
+              {rangeLoading ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '20px', marginBottom: '28px' }}>
+                  <Skeleton height="380px" borderRadius="16px" />
+                  <Skeleton height="380px" borderRadius="16px" />
+                </div>
+              ) : chartProductSales.length > 0 ? (
+                <div className="analytics-charts-grid">
+                  {/* Bar Chart */}
+                  <motion.div
+                    className="analytics-chart-card"
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                  >
+                    <h3 className="chart-card-title">Product Sales</h3>
+                    <ResponsiveContainer width="100%" height={320}>
+                      <BarChart
+                        data={chartProductSales.slice(0, 15)}
+                        margin={{ top: 8, right: 16, left: 0, bottom: 60 }}
+                        barCategoryGap="20%"
                       >
-                        <svg
-                          width="320"
-                          height="320"
-                          viewBox="0 0 320 320"
-                          style={{
-                            transform: 'rotate(-90deg)',
-                            overflow: 'visible',
-                          }}
+                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'} />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
+                          angle={-40}
+                          textAnchor="end"
+                          interval={0}
+                          height={70}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
+                          tickFormatter={(v) => `₹${v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v}`}
+                        />
+                        <RechartsTooltip content={<BarTooltip />} cursor={{ fill: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)' }} />
+                        <Bar dataKey="total_amount" radius={[6, 6, 0, 0]} animationDuration={800}>
+                          {chartProductSales.slice(0, 15).map((_, i) => (
+                            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </motion.div>
+
+                  {/* Pie Chart */}
+                  <motion.div
+                    className="analytics-chart-card"
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                  >
+                    <h3 className="chart-card-title">Category Distribution</h3>
+                    <ResponsiveContainer width="100%" height={320}>
+                      <PieChart>
+                        <Pie
+                          data={chartProductSales}
+                          dataKey="total_amount"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={100}
+                          paddingAngle={3}
+                          activeIndex={activePieIndex}
+                          activeShape={renderActiveShape}
+                          onMouseEnter={(_, i) => setActivePieIndex(i)}
+                          onMouseLeave={() => setActivePieIndex(-1)}
+                          animationDuration={800}
                         >
-                          {/* Background Circle/Track */}
-                          <circle
-                            cx="160"
-                            cy="160"
-                            r="120"
-                            fill="none"
-                            stroke={isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}
-                            strokeWidth="35"
-                          />
-
-                          {(() => {
-                            // Sort products by total_amount desc to make the chart look better
-                            const sortedProductSales = [...productSales].sort((a, b) => Number(b.total_amount) - Number(a.total_amount));
-                            const totalRevenue = sortedProductSales.reduce((sum, p) => sum + Number(p.total_amount), 0);
-
-                            return sortedProductSales.map((product, index) => {
-                              const productAmount = Number(product.total_amount);
-                              const percentage = totalRevenue > 0 ? (productAmount / totalRevenue) * 100 : 0;
-
-                              // Calculate accumulation for start position based on SORTED list
-                              const previousAmount = sortedProductSales.slice(0, index).reduce((sum, p) => sum + Number(p.total_amount), 0);
-                              const previousPercentage = totalRevenue > 0 ? (previousAmount / totalRevenue) * 100 : 0;
-
-                              const radius = 120;
-                              const circumference = 2 * Math.PI * radius;
-
-                              // Calculate Dash Array
-                              const gapSize = 4;
-                              const strokeLength = ((percentage / 100) * circumference) - gapSize;
-                              const validStrokeLength = Math.max(0, strokeLength);
-                              const dashArray = `${validStrokeLength} ${circumference - validStrokeLength}`;
-
-                              // Calculate Rotation
-                              const rotationAngle = (previousPercentage / 100) * 360;
-
-                              // Consistent colors (using original index might be better for consistency if list changes, but index is fine here)
-                              const segmentColor = COLORS[index % COLORS.length];
-
-                              const isHovered = hoveredProduct === index;
-                              const isSelected = selectedProduct === index;
-                              const isActive = isHovered || isSelected;
-
-                              return (
-                                <g
-                                  key={product.product_id}
-                                  transform={`rotate(${rotationAngle}, 160, 160)`}
-                                >
-                                  {/* Visible Segment */}
-                                  <motion.circle
-                                    cx="160"
-                                    cy="160"
-                                    r={radius}
-                                    fill="none"
-                                    stroke={segmentColor}
-                                    strokeWidth={35}
-                                    strokeDashoffset={-2}
-                                    strokeLinecap="round"
-                                    initial={{ opacity: 0, strokeDasharray: `0 ${circumference}` }}
-                                    animate={{
-                                      opacity: (hoveredProduct !== null || selectedProduct !== null) && !isActive ? 0.3 : 1,
-                                      strokeDasharray: dashArray,
-                                      scale: isActive ? 1.05 : 1
-                                    }}
-                                    transition={{
-                                      duration: 0.8,
-                                      ease: "easeOut",
-                                      scale: { duration: 0.2 }
-                                    }}
-                                    style={{
-                                      // originX: "160px",
-                                      // originY: "160px"
-                                    }}
-                                  />
-
-                                  {/* Invisible Interaction Layer */}
-                                  <circle
-                                    cx="160"
-                                    cy="160"
-                                    r={radius}
-                                    fill="none"
-                                    stroke="transparent"
-                                    strokeWidth={50}
-                                    strokeDasharray={dashArray}
-                                    strokeDashoffset={-2}
-                                    strokeLinecap="round"
-                                    style={{ cursor: 'pointer' }}
-                                    onMouseEnter={() => setHoveredProduct(index)}
-                                    onMouseLeave={() => setHoveredProduct(null)}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedProduct(isSelected ? null : index);
-                                    }}
-                                  />
-                                </g>
-                              );
-                            });
-                          })()}
-                        </svg>
-
-                        {/* Center Text Information */}
-                        <div style={{
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          textAlign: 'center',
-                          pointerEvents: 'none',
-                          zIndex: 10
-                        }}>
-                          <AnimatePresence mode="wait">
-                            {(hoveredProduct !== null || selectedProduct !== null) ? (
-                              (() => {
-                                // Determine which product to show
-                                const sortedProductSales = [...productSales].sort((a, b) => Number(b.total_amount) - Number(a.total_amount));
-                                const targetIndex = hoveredProduct !== null ? hoveredProduct : selectedProduct;
-                                const targetProduct = sortedProductSales[targetIndex]; // Use sorted list
-
-                                if (!targetProduct) return null;
-
-                                const totalRevenue = sortedProductSales.reduce((sum, p) => sum + Number(p.total_amount), 0);
-                                const percent = totalRevenue > 0 ? ((Number(targetProduct.total_amount) / totalRevenue) * 100).toFixed(1) : 0;
-
-                                return (
-                                  <motion.div
-                                    key="active-info"
-                                    initial={{ opacity: 0, y: 5 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -5 }}
-                                    transition={{ duration: 0.2 }}
-                                  >
-                                    <div style={{
-                                      fontSize: '0.875rem',
-                                      fontWeight: 600,
-                                      color: currentTheme.colors.text.secondary,
-                                      textTransform: 'uppercase',
-                                      marginBottom: '4px'
-                                    }}>
-                                      {targetProduct.name}
-                                    </div>
-                                    <div style={{
-                                      fontSize: '2rem',
-                                      fontWeight: 800,
-                                      color: currentTheme.colors.text.primary,
-                                      lineHeight: 1
-                                    }}>
-                                      {percent}%
-                                    </div>
-                                    <div style={{
-                                      fontSize: '0.875rem',
-                                      color: currentTheme.colors.text.tertiary,
-                                      marginTop: '4px'
-                                    }}>
-                                      {formatCurrency(targetProduct.total_amount)}
-                                    </div>
-                                  </motion.div>
-                                )
-                              })()
-                            ) : (
-                              <motion.div
-                                key="default-info"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                              >
-                                <div style={{
-                                  fontSize: '2.5rem',
-                                  fontWeight: 800,
-                                  color: currentTheme.colors.text.primary,
-                                  lineHeight: 1,
-                                  marginBottom: '4px'
-                                }}>
-                                  {productSales.length}
-                                </div>
-                                <div style={{
-                                  fontSize: '0.875rem',
-                                  fontWeight: 600,
-                                  color: currentTheme.colors.text.secondary,
-                                  textTransform: 'uppercase'
-                                }}>
-                                  Categories
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </div>
-
-                      {/* Legend / Key */}
-                      <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: currentTheme.spacing[2],
-                        justifyContent: 'center',
-                        marginTop: currentTheme.spacing[2],
-                        padding: `0 ${currentTheme.spacing[4]}`
-                      }}>
-                        {(() => {
-                          const sortedProductSales = [...productSales].sort((a, b) => Number(b.total_amount) - Number(a.total_amount));
-                          const totalRevenue = sortedProductSales.reduce((sum, p) => sum + Number(p.total_amount), 0);
-
-                          return sortedProductSales.map((product, index) => {
-                            const percentage = totalRevenue > 0 ? ((Number(product.total_amount) / totalRevenue) * 100).toFixed(1) : 0;
-                            const color = COLORS[index % COLORS.length];
-                            const isActive = hoveredProduct === index || selectedProduct === index;
-
-                            return (
-                              <div
-                                key={product.product_id}
-                                onClick={() => setSelectedProduct(selectedProduct === index ? null : index)}
-                                onMouseEnter={() => setHoveredProduct(index)}
-                                onMouseLeave={() => setHoveredProduct(null)}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  padding: '6px 10px',
-                                  borderRadius: '8px',
-                                  backgroundColor: isActive ? (isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)') : 'transparent',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s',
-                                  opacity: (hoveredProduct !== null || selectedProduct !== null) && !isActive ? 0.5 : 1,
-                                  transform: isActive ? 'scale(1.05)' : 'scale(1)'
-                                }}
-                              >
-                                <div style={{
-                                  width: '10px',
-                                  height: '10px',
-                                  borderRadius: '50%',
-                                  backgroundColor: color,
-                                  marginRight: '8px',
-                                  boxShadow: isActive ? `0 0 8px ${color}` : 'none'
-                                }} />
-                                <span style={{
-                                  fontSize: '0.8rem',
-                                  color: currentTheme.colors.text.secondary,
-                                  fontWeight: 500,
-                                  marginRight: '4px'
-                                }}>
-                                  {product.name}
-                                </span>
-                                <span style={{
-                                  fontSize: '0.8rem',
-                                  color: currentTheme.colors.text.primary,
-                                  fontWeight: 700
-                                }}>
-                                  {percentage}%
-                                </span>
-                              </div>
-                            );
-                          });
-                        })()}
-                      </div>
-                    </div>
-
-
-                    {/* Product Cards Grid */}
-                    <AnimatedList
-                      items={[...productSales].sort((a, b) => Number(b.total_amount) - Number(a.total_amount))} // Pass sorted list
-                      onItemSelect={(product, index) => {
-                        console.log('Selected product:', product, index);
-                      }}
-                      showGradients={false}
-                      displayScrollbar={false}
-                      enableArrowNavigation
-                      className="product-list"
-                      itemClassName="product-item"
-                    >
-                      {(product, index) => {
-                        const totalRevenue = productSales.reduce((sum, p) => sum + Number(p.total_amount), 0);
-                        const percentage = totalRevenue > 0 ? ((Number(product.total_amount) / totalRevenue) * 100).toFixed(1) : 0;
-                        return (
-                          <div className="ranking-item">
-                            <div className="ranking-info" style={{ flex: 1, minWidth: 0 }}>
-                              <div className="ranking-badge" style={{ background: COLORS[index % COLORS.length], border: 'none', color: '#ffffff' }}>
-                                {index + 1}
-                              </div>
-
-                              <div style={{ minWidth: 0 }}>
-                                <h3 className="ranking-name">
-                                  {product.name}
-                                </h3>
-                                <div className="ranking-qty">
-                                  {product.quantity} units
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="ranking-meta">
-                              <div className="ranking-amount">
-                                {formatCurrency(product.total_amount)}
-                              </div>
-                              <div className="ranking-qty">
-                                {percentage}%
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      }}
-                    </AnimatedList>
-                  </div >
-                ) : (
-                  <div style={{
-                    textAlign: 'center',
-                    padding: currentTheme.spacing[8],
-                    color: isDark ? '#94a3b8' : '#64748b',
-                  }}>
-                    <div style={{
-                      fontSize: '3rem',
-                      marginBottom: currentTheme.spacing[4],
-                      opacity: 0.5,
-                    }}>
-                      📊
-                    </div>
-                    <h3 style={{
-                      fontSize: '1.125rem',
-                      fontWeight: 600,
-                      color: isDark ? '#f1f5f9' : '#1e293b',
-                      marginBottom: currentTheme.spacing[2],
-                    }}>
-                      No Product Sales Data
-                    </h3>
-                    <p style={{
-                      fontSize: '0.875rem',
-                      margin: 0,
-                      lineHeight: 1.6,
-                    }}>
-                      Start creating bills to see product sales breakdown here.
-                      The pie chart and product list will appear once you have sales data.
-                    </p>
-                  </div>
-                )
-                }
-              </Card>
-            </motion.div>
-          </motion.div>
-        )}
-
-        {activeTab === 'transactions' && (
-          <motion.div
-            key="transactions"
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 10 }}
-            transition={{ duration: 0.3 }}
-          >
-            {/* Bill Management Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-              style={{
-                marginBottom: currentTheme.spacing[8],
-                marginTop: currentTheme.spacing[8],
-              }}
-            >
-              <Card>
-                <div className="bill-management-header">
-                  <div className="bill-header-left">
-                    <div className="bill-header-accent" />
-                    <h2 className="bill-header-title">
-                      Bill Management
-                      <span className="bill-header-badge">
-                        Showing: {selectedBillDate === new Date().toISOString().split('T')[0] ? 'Today' : selectedBillDate}
-                      </span>
-                    </h2>
-                  </div>
-
-                  <div className="bill-header-controls">
-                    {/* Today Button */}
-                    <button
-                      onClick={() => setSelectedBillDate(new Date().toISOString().split('T')[0])}
-                      className={`bill-control-btn ghost ${selectedBillDate === new Date().toISOString().split('T')[0] ? 'active' : ''}`}
-                    >
-                      Today
-                    </button>
-
-                    {/* Date Picker */}
-                    <input
-                      type="date"
-                      value={selectedBillDate}
-                      onChange={(e) => setSelectedBillDate(e.target.value)}
-                      className="bill-date-input"
-                    />
-
-                    {/* Refresh Button */}
-                    <button
-                      onClick={() => loadBills(selectedBillDate)}
-                      className="bill-control-btn secondary"
-                      disabled={loadingBills}
-                    >
-                      <div style={{
-                        display: 'flex',
-                        animation: loadingBills ? 'spin 1s linear infinite' : 'none'
-                      }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M4 12a8 8 0 018-8c4.418 0 8 3.582 8 8s-3.582 8-8 8V12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </div>
-                      Refresh
-                    </button>
-                  </div>
+                          {chartProductSales.map((_, i) => (
+                            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip
+                          formatter={(value) => formatCurrency(value)}
+                          contentStyle={{
+                            background: 'var(--surface-primary)',
+                            border: '1px solid var(--border-primary)',
+                            borderRadius: '10px',
+                            fontSize: '0.82rem',
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </motion.div>
                 </div>
-
-                <div style={{
-                  marginTop: currentTheme.spacing[4],
-                  position: 'relative',
-                }}>
-                  {bills.length > 0 ? (
-                    <AnimatedList
-                      key={`bill-list-${loadingBills ? 'loading' : 'ready'}`}
-                      items={bills}
-                      className="bill-list-animated"
-                      showGradients={false}
-                      displayScrollbar={false}
-                    >
-                      {(bill, index) => {
-                        const isCancelled = bill.status === 'CANCELLED';
-                        const statusText = (!bill.status || bill.status === 'ACTIVE') ? 'CONFIRMED' : bill.status;
-
-                        return (
-                          <div
-                            key={bill.bill_no}
-                            onClick={() => !isCancelled && handleEditBill(bill)}
-                            className={`bill-item ${isCancelled ? 'cancelled' : ''}`}
-                            style={{
-                              position: 'relative',
-                              overflow: 'hidden',
-                              opacity: isCancelled ? 0.6 : 1,
-                              cursor: isCancelled ? 'default' : 'pointer'
-                            }}
-                          >
-
-
-                            {/* Bill Info */}
-                            <div className="bill-info-left" style={{ flex: '1', minWidth: '150px' }}>
-                              <div className="bill-id">
-                                <span style={{ fontSize: '1rem', fontWeight: 700 }}>{bill.bill_no}</span>
-                                <div className="bill-status-badge" style={{
-                                  backgroundColor: isCancelled ? (isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2') : (isDark ? 'rgba(34, 197, 94, 0.15)' : '#dcfce7'),
-                                  color: isCancelled ? (isDark ? '#fca5a5' : '#ef4444') : (isDark ? '#86efac' : '#16a34a'),
-                                  border: `1px solid ${isCancelled ? (isDark ? 'rgba(239, 68, 68, 0.2)' : '#fca5a5') : (isDark ? 'rgba(34, 197, 94, 0.2)' : '#86efac')}`
-                                }}>
-                                  {statusText}
-                                </div>
-                              </div>
-
-                              <div className="bill-meta">
-                                <ClockIcon color={isDark ? currentTheme.colors.primary[500] : currentTheme.colors.primary[600]} size={14} />
-                                {formatDate(bill.created_at)} • {formatTime(bill.created_at)} • <span>{bill.items?.length || 0} items</span>
-                              </div>
-                            </div>
-
-                            <div className="bill-info-right">
-                              <div className="bill-total">
-                                {formatCurrency(bill.total_amount)}
-                              </div>
-
-                              <div className="bill-actions">
-                                <button
-                                  className="bill-action-btn edit"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEditBill(bill);
-                                  }}
-                                  disabled={isCancelled}
-                                  title="Edit Bill"
-                                >
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                  </svg>
-                                  Edit
-                                </button>
-                                <button
-                                  className="bill-action-btn delete"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedBill(bill);
-                                    setShowCancelConfirm(true);
-                                  }}
-                                  disabled={isCancelled}
-                                  title="Cancel Bill"
-                                >
-                                  <TrashIcon color="currentColor" size={14} />
-                                  Delete
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      }}
-                    </AnimatedList>
-                  ) : (
-                    <div className="empty-bills">
-                      <div style={{ marginBottom: currentTheme.spacing[4], opacity: 0.5 }}>
-                        <ReceiptIcon color="currentColor" />
-                      </div>
-                      <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>
-                        {loadingBills ? 'Loading transaction records...' : `No bills found for ${selectedBillDate === new Date().toISOString().split('T')[0] ? 'today' : selectedBillDate}`}
-                      </h3>
-                      <p style={{ margin: `${currentTheme.spacing[2]} 0 0`, fontSize: '0.875rem' }}>
-                        {loadingBills ? 'Please wait while we fetch the latest data.' : 'Your transaction history will appear here once orders are processed.'}
-                      </p>
-                    </div>
-                  )}
+              ) : (
+                <div className="analytics-empty" style={{ marginBottom: '28px' }}>
+                  <div className="analytics-empty-icon">📊</div>
+                  <h3>No Sales Data</h3>
+                  <p>
+                    {viewRange === 'day'
+                      ? 'No product sales for this date. Start creating bills to see insights here.'
+                      : `No product sales found for this ${viewRange}. Try a different date range.`}
+                  </p>
                 </div>
-              </Card>
-            </motion.div>
-          </motion.div>
-        )}
+              )}
 
-        {activeTab === 'reports' && (
-          <motion.div
-            key="reports"
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 10 }}
-            transition={{ duration: 0.3 }}
-          >
-            {/* Reports Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <Card>
-                <div className="analytics-header-container" style={{ marginBottom: currentTheme.spacing[6] }}>
-                  <div style={{
-                    position: 'relative',
-                    paddingLeft: currentTheme.spacing[4],
-                  }}>
-                    <div style={{
-                      position: 'absolute',
-                      left: 0,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      width: '4px',
-                      height: '24px',
-                      background: `linear-gradient(to bottom, ${currentTheme.colors.primary[500]}, ${currentTheme.colors.primary[600]})`,
-                      borderRadius: '2px',
-                    }} />
-                    <h2 style={{
-                      fontSize: '1.25rem',
-                      fontWeight: 600,
-                      color: currentTheme.colors.text.primary,
-                      margin: 0,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.1em',
-                      position: 'relative',
-                      zIndex: 1,
-                    }}>
-                      Sales Reports
-                    </h2>
-                  </div>
-                </div>
-
-                <div className="analytics-report-grid">
-                  {/* Daily Report Section */}
-                  <div className="report-card-content">
-                    <div className="report-header">
-                      <div className="report-icon-box">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M8 2v3M16 2v3M3.5 9.09h17M21 8.5V17c0 3-1.5 5-5 5H8c-3.5 0-5-2-5-5V8.5c0-3 1.5-5 5-5h8c3.5 0 5 2 5 5z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-                          <path d="M15.695 13.7h.009M15.695 16.7h.009M11.995 13.7h.01M11.995 16.7h.01M8.294 13.7h.01M8.294 16.7h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+              {/* Download Reports Section */}
+              <motion.div
+                className="analytics-download-section"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+              >
+                <h3 className="analytics-download-title">Download Reports</h3>
+                <div className="analytics-download-grid">
+                  {/* Daily */}
+                  <div className="download-card">
+                    <div className="download-card-header">
+                      <div className="download-card-icon download-card-icon--daily">
+                        <IoCalendarOutline size={22} />
                       </div>
-                      <div className="report-title-group">
-                        <h3 className="report-title">Daily Report</h3>
-                        <p className="report-desc">Sales summary for selected date</p>
+                      <div>
+                        <h4 className="download-card-name">Daily Report</h4>
+                        <p className="download-card-desc">Sales summary for selected date</p>
                       </div>
                     </div>
-
-                    {/* Date Selection */}
-                    <div className="report-controls">
-                      <label className="report-label">Select Date</label>
+                    <div className="download-card-controls">
+                      <span className="download-card-label">Select Date</span>
                       <GlobalDatePicker
                         value={dailyReportDate}
                         onChange={(val) => setDailyReportDate(val)}
@@ -1389,36 +776,29 @@ const Analytics = () => {
                         className="report-select-override"
                       />
                     </div>
-
-                    <div className="report-actions">
-                      <button
-                        className="report-btn report-btn-primary"
-                        onClick={() => handleDownload('excel', 'detailed', `sales_report_${dailyReportDate}.xlsx`, dailyReportDate)}
-                        disabled={downloading.excel}
-                      >
-                        <DownloadIcon color="#ffffff" />
-                        {downloading.excel ? 'Downloading...' : 'Download Report'}
-                      </button>
-                    </div>
+                    <button
+                      className="download-card-btn"
+                      onClick={() => handleDownload('excel', 'detailed', `sales_report_${dailyReportDate}.xlsx`, dailyReportDate)}
+                      disabled={downloading.excel}
+                    >
+                      <IoDownloadOutline size={16} />
+                      {downloading.excel ? 'Downloading...' : 'Download Report'}
+                    </button>
                   </div>
 
-                  {/* Monthly Report Section */}
-                  <div className="report-card-content">
-                    <div className="report-header">
-                      <div className="report-icon-box">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M8 2v3M16 2v3M3.5 9.09h17M21 8.5V17c0 3-1.5 5-5 5H8c-3.5 0-5-2-5-5V8.5c0-3 1.5-5 5-5h8c3.5 0 5 2 5 5z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-                          <path d="M15.695 13.7h.009M15.695 16.7h.009M11.995 13.7h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+                  {/* Monthly */}
+                  <div className="download-card">
+                    <div className="download-card-header">
+                      <div className="download-card-icon download-card-icon--monthly">
+                        <IoCalendarOutline size={22} />
                       </div>
-                      <div className="report-title-group">
-                        <h3 className="report-title">Monthly Report</h3>
-                        <p className="report-desc">Full month sales analysis</p>
+                      <div>
+                        <h4 className="download-card-name">Monthly Report</h4>
+                        <p className="download-card-desc">Full month sales analysis</p>
                       </div>
                     </div>
-
-                    <div className="report-controls">
-                      <label className="report-label">Select Month</label>
+                    <div className="download-card-controls">
+                      <span className="download-card-label">Select Month</span>
                       <GlobalDatePicker
                         type="month"
                         value={exportMonth}
@@ -1427,36 +807,29 @@ const Analytics = () => {
                         className="report-select-override"
                       />
                     </div>
-
-                    <div className="report-actions">
-                      <button
-                        className="report-btn report-btn-primary"
-                        onClick={() => handleDownload('excel', 'monthly', `monthly_sales_${exportMonth}.xlsx`, exportMonth)}
-                        disabled={downloading.monthly}
-                      >
-                        <DownloadIcon color="#ffffff" />
-                        {downloading.monthly ? 'Downloading...' : 'Download Monthly Report'}
-                      </button>
-                    </div>
+                    <button
+                      className="download-card-btn"
+                      onClick={handleMonthlyExport}
+                      disabled={downloading.monthly}
+                    >
+                      <IoDownloadOutline size={16} />
+                      {downloading.monthly ? 'Downloading...' : 'Download Monthly'}
+                    </button>
                   </div>
 
-                  {/* Weekly Report Section */}
-                  <div className="report-card-content">
-                    <div className="report-header">
-                      <div className="report-icon-box">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M8 2v3M16 2v3M3.5 9.09h17M21 8.5V17c0 3-1.5 5-5 5H8c-3.5 0-5-2-5-5V8.5c0-3 1.5-5 5-5h8c3.5 0 5 2 5 5z" stroke="currentColor" strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
-                          <path d="M15.695 13.7h.009M15.695 16.7h.009M11.995 13.7h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+                  {/* Weekly */}
+                  <div className="download-card">
+                    <div className="download-card-header">
+                      <div className="download-card-icon download-card-icon--weekly">
+                        <IoCalendarOutline size={22} />
                       </div>
-                      <div className="report-title-group">
-                        <h3 className="report-title">Weekly Report</h3>
-                        <p className="report-desc">Select reference date</p>
+                      <div>
+                        <h4 className="download-card-name">Weekly Report</h4>
+                        <p className="download-card-desc">Selected week analysis</p>
                       </div>
                     </div>
-
-                    <div className="report-controls">
-                      <label className="report-label">Select Reference Date</label>
+                    <div className="download-card-controls">
+                      <span className="download-card-label">Select Reference Date</span>
                       <GlobalDatePicker
                         value={exportWeekDate}
                         onChange={(val) => setExportWeekDate(val)}
@@ -1464,26 +837,176 @@ const Analytics = () => {
                         className="report-select-override"
                       />
                     </div>
-
-                    <div className="report-actions">
-                      <button
-                        className="report-btn report-btn-primary"
-                        onClick={handleWeeklyExport}
-                        disabled={downloading.weekly}
-                      >
-                        <DownloadIcon color="#ffffff" />
-                        {downloading.weekly ? 'Downloading...' : 'Download Weekly Report'}
-                      </button>
-                    </div>
+                    <button
+                      className="download-card-btn"
+                      onClick={handleWeeklyExport}
+                      disabled={downloading.weekly}
+                    >
+                      <IoDownloadOutline size={16} />
+                      {downloading.weekly ? 'Downloading...' : 'Download Weekly'}
+                    </button>
                   </div>
                 </div>
-              </Card>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
 
-      {/* Clear Data Confirmation Modal */}
+          {/* ──────────── TRANSACTIONS TAB ──────────── */}
+          {activeTab === 'transactions' && (
+            <motion.div
+              key="transactions"
+              initial={{ opacity: 0, x: -12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 12 }}
+              transition={{ duration: 0.3 }}
+            >
+              {/* Header */}
+              <div className="transactions-header">
+                <div className="transactions-title-row">
+                  <div className="transactions-accent" />
+                  <h2 className="transactions-title">
+                    Transactions
+                  </h2>
+                  <span className="transactions-badge">
+                    {selectedBillDate === new Date().toISOString().split('T')[0] ? 'Today' : selectedBillDate}
+                    {' · '}{bills.length} bills
+                  </span>
+                </div>
+                <div className="transactions-controls">
+                  <button
+                    onClick={() => setSelectedBillDate(new Date().toISOString().split('T')[0])}
+                    className={`transactions-today-btn ${selectedBillDate === new Date().toISOString().split('T')[0] ? 'active' : ''}`}
+                  >
+                    <IoTodayOutline size={15} />
+                    Today
+                  </button>
+                  <input
+                    type="date"
+                    value={selectedBillDate}
+                    onChange={(e) => setSelectedBillDate(e.target.value)}
+                    className="transactions-date-input"
+                  />
+                  <button
+                    onClick={() => loadBills(selectedBillDate)}
+                    className="transactions-refresh-btn"
+                    disabled={loadingBills}
+                  >
+                    <IoRefreshOutline
+                      size={15}
+                      style={{ animation: loadingBills ? 'spin 1s linear infinite' : 'none' }}
+                    />
+                    Refresh
+                  </button>
+                </div>
+              </div>
+
+              {/* Table */}
+              {bills.length > 0 ? (
+                <motion.div
+                  className="transactions-table-wrap"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: 0.1 }}
+                >
+                  <table className="transactions-table">
+                    <thead>
+                      <tr>
+                        {[
+                          { key: 'bill_no', label: 'Bill #' },
+                          { key: 'created_at', label: 'Date / Time' },
+                          { key: 'items', label: 'Items' },
+                          { key: 'total_amount', label: 'Amount' },
+                          { key: 'status', label: 'Status' },
+                          { key: null, label: 'Actions' },
+                        ].map((col) => (
+                          <th
+                            key={col.label}
+                            onClick={() => col.key && handleSort(col.key)}
+                            className={sortConfig.key === col.key ? 'sorted' : ''}
+                            style={col.key ? {} : { cursor: 'default' }}
+                          >
+                            {col.label}
+                            {col.key && (
+                              <span className={`sort-arrow ${sortConfig.key === col.key && sortConfig.direction === 'desc' ? 'sort-arrow--desc' : ''}`}>
+                                ▲
+                              </span>
+                            )}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedBills.map((bill) => {
+                        const isCancelled = bill.status === 'CANCELLED';
+                        const statusText = (!bill.status || bill.status === 'ACTIVE') ? 'CONFIRMED' : bill.status;
+                        return (
+                          <tr
+                            key={bill.bill_no}
+                            className={isCancelled ? 'cancelled-row' : ''}
+                            onClick={() => !isCancelled && handleEditBill(bill)}
+                            style={{ cursor: isCancelled ? 'default' : 'pointer' }}
+                          >
+                            <td style={{ fontWeight: 700 }}>{bill.bill_no}</td>
+                            <td>
+                              <div>{formatDate(bill.created_at)}</div>
+                              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                                {formatTime(bill.created_at)}
+                              </div>
+                            </td>
+                            <td>{bill.items?.length || 0}</td>
+                            <td style={{ fontWeight: 700 }}>{formatCurrency(bill.total_amount)}</td>
+                            <td>
+                              <span className={`status-badge ${isCancelled ? 'status-badge--cancelled' : 'status-badge--confirmed'}`}>
+                                {statusText}
+                              </span>
+                            </td>
+                            <td>
+                              <div className="table-actions-cell">
+                                <button
+                                  className="table-action-btn edit"
+                                  onClick={(e) => { e.stopPropagation(); handleEditBill(bill); }}
+                                  disabled={isCancelled}
+                                >
+                                  <IoCreateOutline size={13} />
+                                  Edit
+                                </button>
+                                <button
+                                  className="table-action-btn cancel"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedBill(bill);
+                                    setShowCancelConfirm(true);
+                                  }}
+                                  disabled={isCancelled}
+                                >
+                                  <IoCloseCircleOutline size={13} />
+                                  Cancel
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </motion.div>
+              ) : (
+                <div className="analytics-empty">
+                  <div className="analytics-empty-icon">🧾</div>
+                  <h3>{loadingBills ? 'Loading transactions...' : 'No bills found'}</h3>
+                  <p>
+                    {loadingBills
+                      ? 'Please wait while we fetch the latest data.'
+                      : `No transactions for ${selectedBillDate === new Date().toISOString().split('T')[0] ? 'today' : selectedBillDate}. Your transaction history will appear here once orders are processed.`}
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* ════════════════ CLEAR DATA MODAL ════════════════ */}
       <AnimatePresence>
         {showClearConfirm && (
           <motion.div
@@ -1491,10 +1014,7 @@ const Analytics = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => {
-              setShowClearConfirm(false);
-              setClearPassword('');
-            }}
+            onClick={() => { setShowClearConfirm(false); setClearPassword(''); }}
           >
             <motion.div
               className="pmDialog"
@@ -1513,7 +1033,7 @@ const Analytics = () => {
                 This will permanently delete all bills and sales data. This action cannot be undone.
                 <div style={{ marginTop: '16px', position: 'relative' }}>
                   <input
-                    type={showClearPassword ? "text" : "password"}
+                    type={showClearPassword ? 'text' : 'password'}
                     className="pmInput"
                     placeholder="Enter password to confirm"
                     value={clearPassword}
@@ -1526,28 +1046,16 @@ const Analytics = () => {
                     type="button"
                     onClick={() => setShowClearPassword(!showClearPassword)}
                     style={{
-                      position: 'absolute',
-                      right: '8px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: '4px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      opacity: 0.6
+                      position: 'absolute', right: '8px', top: '50%',
+                      transform: 'translateY(-50%)', background: 'none',
+                      border: 'none', cursor: 'pointer', padding: '4px',
+                      display: 'flex', alignItems: 'center', opacity: 0.6,
                     }}
                   >
                     {showClearPassword ? (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M3 3l18 18M10.584 10.587a2 2 0 002.828 2.826M9.363 5.365A9.466 9.466 0 0112 5c7 0 10 7 10 7a13.16 13.16 0 01-1.658 2.366M6.632 6.632A9.466 9.466 0 005 12s3 7 7 7a9.466 9.466 0 005.368-1.632" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M3 3l18 18M10.584 10.587a2 2 0 002.828 2.826M9.363 5.365A9.466 9.466 0 0112 5c7 0 10 7 10 7a13.16 13.16 0 01-1.658 2.366M6.632 6.632A9.466 9.466 0 005 12s3 7 7 7a9.466 9.466 0 005.368-1.632" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     ) : (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" /></svg>
                     )}
                   </button>
                 </div>
@@ -1555,10 +1063,7 @@ const Analytics = () => {
               <div className="pmDialogActions">
                 <button
                   className="pmDialogBtn"
-                  onClick={() => {
-                    setShowClearConfirm(false);
-                    setClearPassword('');
-                  }}
+                  onClick={() => { setShowClearConfirm(false); setClearPassword(''); }}
                 >
                   Cancel
                 </button>
@@ -1571,7 +1076,7 @@ const Analytics = () => {
         )}
       </AnimatePresence>
 
-      {/* Cancel Bill Confirmation Modal */}
+      {/* ════════════════ CANCEL BILL MODAL ════════════════ */}
       <AnimatePresence>
         {showCancelConfirm && (
           <motion.div
@@ -1579,17 +1084,9 @@ const Analytics = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(0, 0, 0, 0.5)',
-              backdropFilter: 'blur(5px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              zIndex: 1001,
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(5px)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001,
             }}
             onClick={() => setShowCancelConfirm(false)}
           >
@@ -1599,88 +1096,56 @@ const Analytics = () => {
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
               style={{
-                background: currentTheme.colors.surface,
+                background: 'var(--surface-primary)',
                 borderRadius: '16px',
-                padding: currentTheme.spacing[8],
+                padding: '32px',
                 maxWidth: '400px',
                 width: '90%',
-                border: `1px solid ${currentTheme.colors.border}`,
+                border: '1px solid var(--border-primary)',
                 boxShadow: isDark
-                  ? '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-                  : '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                  ? '0 25px 50px -12px rgba(0,0,0,0.5)'
+                  : '0 25px 50px -12px rgba(0,0,0,0.25)',
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: currentTheme.spacing[3],
-                marginBottom: currentTheme.spacing[4],
-              }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                 <div style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  width: '48px', height: '48px', borderRadius: '12px',
+                  background: 'rgba(239,68,68,0.1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <TrashIcon color="#ef4444" />
+                  <IoTrashOutline size={22} color="#ef4444" />
                 </div>
                 <div>
-                  <h3 style={{
-                    fontSize: '1.25rem',
-                    fontWeight: 600,
-                    color: currentTheme.colors.text.primary,
-                    margin: 0,
-                    marginBottom: currentTheme.spacing[1],
-                  }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0, marginBottom: '4px' }}>
                     Cancel Bill
                   </h3>
-                  <p style={{
-                    fontSize: '0.875rem',
-                    color: currentTheme.colors.text.secondary,
-                    margin: 0,
-                  }}>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>
                     Caution: This affects sales reports
                   </p>
                 </div>
               </div>
 
-              <div style={{ marginBottom: currentTheme.spacing[6] }}>
-                <p style={{
-                  fontSize: '0.875rem',
-                  color: isDark ? '#94a3b8' : '#64748b',
-                  lineHeight: 1.5,
-                }}>
+              <div style={{ marginBottom: '24px' }}>
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                   Are you sure you want to cancel <strong>Bill #{selectedBill?.bill_no}</strong>?
                 </p>
-                <ul style={{
-                  margin: currentTheme.spacing[3] + ' 0 0 ' + currentTheme.spacing[3],
-                  paddingLeft: currentTheme.spacing[4],
-                  fontSize: '0.875rem',
-                  color: isDark ? '#94a3b8' : '#64748b',
-                }}>
+                <ul style={{ margin: '12px 0 0 12px', paddingLeft: '16px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                   <li>Bill amount will be deducted from sales totals.</li>
                   <li>Bill status will change to "CANCELLED".</li>
                 </ul>
               </div>
 
-              <div style={{
-                display: 'flex',
-                gap: currentTheme.spacing[3],
-                justifyContent: 'flex-end',
-              }}>
+              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                 <Button
                   onClick={() => setShowCancelConfirm(false)}
                   variant="secondary"
                   style={{
-                    background: currentTheme.colors.background,
-                    border: `1px solid ${currentTheme.colors.border}`,
-                    color: currentTheme.colors.text.secondary,
+                    background: 'var(--bg-primary)',
+                    border: '1px solid var(--border-primary)',
+                    color: 'var(--text-secondary)',
                     borderRadius: '12px',
-                    padding: `${currentTheme.spacing[3]} ${currentTheme.spacing[6]}`,
+                    padding: '12px 24px',
                     fontWeight: 500,
                   }}
                 >
@@ -1690,18 +1155,18 @@ const Analytics = () => {
                   onClick={handleCancelBillConfirm}
                   variant="secondary"
                   style={{
-                    background: currentTheme.colors.error.primary,
-                    border: `1px solid ${currentTheme.colors.error.primary}`,
+                    background: 'var(--error-500, #EF4444)',
+                    border: '1px solid var(--error-500, #EF4444)',
                     color: '#ffffff',
                     borderRadius: '12px',
-                    padding: `${currentTheme.spacing[3]} ${currentTheme.spacing[6]}`,
+                    padding: '12px 24px',
                     fontWeight: 500,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: currentTheme.spacing[2],
+                    gap: '8px',
                   }}
                 >
-                  <TrashIcon color="#ffffff" />
+                  <IoTrashOutline size={16} />
                   Confirm Cancel
                 </Button>
               </div>

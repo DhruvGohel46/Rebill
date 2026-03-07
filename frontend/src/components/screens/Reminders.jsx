@@ -476,7 +476,7 @@ export default function Reminders() {
                                     animate={{ opacity: completing ? 0.4 : 1, y: 0, scale: completing ? 0.98 : 1 }}
                                     exit={{ opacity: 0, x: -20, scale: 0.95 }}
                                     transition={{ duration: 0.3, delay: idx * 0.03 }}
-                                    className={`${reminder.priority === 'high' && !isCompleted ? 'reminder-priority-high' : ''} ${completing ? 'reminder-completing' : ''}`}
+                                    className={`${reminder.priority === 'high' && !isCompleted ? 'reminder-priority-high' : ''} ${completing ? 'reminder-completing' : ''} card-zoom`}
                                     style={{
                                         background: cardBg, border: cardBorder, borderRadius: '16px',
                                         padding: '16px 20px', boxShadow: cardShadow,

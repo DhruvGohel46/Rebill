@@ -70,6 +70,11 @@ export const workerAPI = {
         return response.data;
     },
 
+    updateAttendance: async (id, data) => {
+        const response = await api.put(`/api/workers/${id}/attendance`, data);
+        return response.data;
+    },
+
     bulkMarkPresent: async () => {
         const response = await api.post('/api/workers/attendance/bulk');
         return response.data;

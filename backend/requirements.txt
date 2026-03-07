@@ -5,7 +5,8 @@ pywin32==307
 python-dotenv==1.0.0
 schedule==1.2.2
 pandas>=2.0.0
-rembg==2.0.57
+rembg==2.0.62
 onnxruntime>=1.16.0
 psycopg2-binary==2.9.11
 Flask-SQLAlchemy==3.1.1
+APScheduler==3.10.4

@@ -39,6 +39,7 @@ def create_app(config_name='default'):
     from routes.settings import settings_bp
     from routes.inventory import inventory_bp
     from routes.workers import workers_bp
+    from routes.reminders import reminders_bp
     
     # Load configuration
     app.config.from_object(config[config_name])
@@ -65,6 +66,11 @@ def create_app(config_name='default'):
     app.register_blueprint(settings_bp)
     app.register_blueprint(inventory_bp)
     app.register_blueprint(workers_bp)
+    app.register_blueprint(reminders_bp)
+    
+    # Initialize reminder service
+    from services.reminder_service import reminder_service
+    reminder_service.init_app(app)
 
     # Serve product images
     @app.route('/api/images/<path:filename>')
@@ -87,7 +93,10 @@ def create_app(config_name='default'):
                 'summary': '/api/summary',
                 'reports': '/api/reports',
                 'categories': '/api/categories',
-                'settings': '/api/settings'
+                'settings': '/api/settings',
+                'inventory': '/api/inventory',
+                'workers': '/api/workers',
+                'reminders': '/api/reminders'
             }
         })
     

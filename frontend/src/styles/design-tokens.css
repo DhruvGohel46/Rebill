@@ -1,0 +1,447 @@
+/**
+ * =============================================================================
+ * LIQUID GLASS DESIGN SYSTEM - DESIGN-TOKENS.CSS
+ * =============================================================================
+ * 
+ * ROLE: Complete design system for Liquid Glass + Soft Rounded Design Language
+ * 
+ * RESPONSIBILITIES:
+ * - Define consistent border radius scale for soft rounded shapes
+ * - Implement liquid glass background system with gradient overlays
+ * - Create premium color palette for calm, professional UI
+ * - Define spacing scale for breathable layouts
+ * - Implement glass morphism effects with proper blur and transparency
+ * 
+ * DESIGN PHILOSOPHY:
+ * - Soft rounded shapes (no sharp edges anywhere)
+ * - Subtle glass layers with depth
+ * - Gentle shadows and soft contrast
+ * - Breathable spacing and calm motion
+ * - Premium, human-crafted appearance
+ * 
+ * USAGE:
+ * - All components should use these tokens for consistency
+ * - Apply --radius-* tokens to all UI elements
+ * - Use --glass-* classes for liquid glass effects
+ * - Implement --spacing-* scale for consistent layouts
+ * =============================================================================
+ */
+
+:root {
+  /* ==============================================
+   * LIQUID GLASS BORDER RADIUS SYSTEM
+   * ==============================================
+   * Consistent soft rounded shapes - no sharp edges
+   */
+  --radius-sm: 10px;    /* Small elements: badges, pills */
+  --radius-md: 16px;    /* Buttons, inputs */
+  --radius-lg: 22px;    /* Cards, containers */
+  --radius-xl: 28px;    /* Large cards, modals */
+  --radius-pill: 999px; /* Fully rounded elements */
+
+  /* Component-specific radius mapping */
+  --radius-button: var(--radius-md);
+  --radius-card: var(--radius-lg);
+  --radius-input: 14px;
+  --radius-table: var(--radius-md);
+  --radius-dropdown: 18px;
+  --radius-navbar: var(--radius-lg);
+  --radius-sidebar: 24px;
+  --radius-modal: 26px;
+  --radius-alert: 18px;
+
+  /* ==============================================
+   * LIQUID GLASS SPACING SYSTEM
+   * ==============================================
+   * Consistent breathable spacing scale
+   */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+
+  /* Component-specific spacing */
+  --spacing-card-padding: var(--spacing-5);
+  --spacing-card-gap: 14px;
+  --spacing-button-padding: var(--spacing-3) var(--spacing-4);
+  --spacing-input-padding: var(--spacing-3) var(--spacing-4);
+
+  /* ==============================================
+   * LIQUID GLASS BACKGROUND SYSTEM
+   * ==============================================
+   * Layered gradient backgrounds for depth and life
+   */
+  
+  /* Dark Theme Base */
+  --bg-dark-primary: #0f1115;
+  --bg-dark-gradient-1: radial-gradient(circle at 20% 20%, rgba(255,150,40,0.08), transparent 40%);
+  --bg-dark-gradient-2: radial-gradient(circle at 80% 80%, rgba(255,120,0,0.06), transparent 50%);
+  
+  /* Light Theme Base */
+  --bg-light-primary: #f6f7f9;
+  --bg-light-gradient-1: radial-gradient(circle at 10% 10%, rgba(255,140,0,0.06), transparent 45%);
+  --bg-light-gradient-2: radial-gradient(circle at 90% 80%, rgba(255,160,50,0.05), transparent 50%);
+
+  /* ==============================================
+   * LIQUID GLASS MORPHISM SYSTEM
+   * ==============================================
+   * Premium glass effects with proper transparency
+   */
+  
+  /* Dark Theme Glass */
+  --glass-dark-card: rgba(22,26,32,0.75);
+  --glass-dark-header: rgba(11,11,12,0.72);
+  --glass-dark-sidebar: rgba(15,17,19,0.80);
+  --glass-dark-modal: rgba(20,24,30,0.85);
+  --glass-dark-border: rgba(255,255,255,0.06);
+  
+  /* Light Theme Glass */
+  --glass-light-card: rgba(255,255,255,0.70);
+  --glass-light-header: rgba(255,255,255,0.75);
+  --glass-light-sidebar: rgba(255,255,255,0.65);
+  --glass-light-modal: rgba(255,255,255,0.80);
+  --glass-light-border: rgba(0,0,0,0.05);
+
+  /* Glass Effects */
+  --glass-blur: blur(16px);
+  --glass-blur-strong: blur(24px);
+  --glass-blur-light: blur(12px);
+
+  /* ==============================================
+   * LIQUID GLASS SHADOW SYSTEM
+   * ==============================================
+   * Soft, gentle shadows for depth and floating effect
+   */
+  
+  /* Dark Theme Shadows */
+  --shadow-dark-card: 0 8px 24px rgba(0,0,0,0.35);
+  --shadow-dark-hover: 0 12px 32px rgba(0,0,0,0.45);
+  --shadow-dark-modal: 0 20px 60px rgba(0,0,0,0.50);
+  --shadow-dark-button: 0 4px 12px rgba(0,0,0,0.25);
+  --shadow-dark-button-hover: 0 6px 16px rgba(0,0,0,0.35);
+  
+  /* Light Theme Shadows */
+  --shadow-light-card: 0 6px 18px rgba(0,0,0,0.08);
+  --shadow-light-hover: 0 8px 24px rgba(0,0,0,0.12);
+  --shadow-light-modal: 0 12px 40px rgba(0,0,0,0.15);
+  --shadow-light-button: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-light-button-hover: 0 4px 12px rgba(0,0,0,0.10);
+
+  /* ==============================================
+   * LIQUID GLASS COLOR PALETTE
+   * ==============================================
+   * Premium, calm colors with orange accent
+   */
+  
+  /* Primary Orange Brand */
+  --primary-50: #fff7ed;
+  --primary-100: #ffedd5;
+  --primary-200: #fed7aa;
+  --primary-300: #fdba74;
+  --primary-400: #fb923c;
+  --primary-500: #f97316;
+  --primary-600: #ea580c;
+  --primary-700: #c2410c;
+  --primary-800: #9a3412;
+  --primary-900: #7c2d12;
+
+  /* Neutral Colors */
+  --neutral-50: #fafafa;
+  --neutral-100: #f5f5f5;
+  --neutral-200: #e5e5e5;
+  --neutral-300: #d4d4d4;
+  --neutral-400: #a3a3a3;
+  --neutral-500: #737373;
+  --neutral-600: #525252;
+  --neutral-700: #404040;
+  --neutral-800: #262626;
+  --neutral-900: #171717;
+
+  /* Semantic Colors */
+  --success-50: #f0fdf4;
+  --success-500: #22c55e;
+  --success-600: #16a34a;
+  
+  --warning-50: #fffbeb;
+  --warning-500: #f59e0b;
+  --warning-600: #d97706;
+  
+  --error-50: #fef2f2;
+  --error-500: #ef4444;
+  --error-600: #dc2626;
+  
+  --info-50: #eff6ff;
+  --info-500: #3b82f6;
+  --info-600: #2563eb;
+
+  /* ==============================================
+   * LIQUID GLASS TYPOGRAPHY
+   * ==============================================
+   * Premium typography with proper hierarchy
+   */
+  
+  /* Font Families */
+  --font-primary: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+
+  /* Font Sizes */
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+  --text-4xl: 36px;
+
+  /* Font Weights */
+  --font-light: 300;
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Line Heights */
+  --line-tight: 1.25;
+  --line-normal: 1.5;
+  --line-relaxed: 1.75;
+
+  /* ==============================================
+   * LIQUID GLASS ANIMATION SYSTEM
+   * ==============================================
+   * Smooth, subtle animations for premium feel
+   */
+  
+  /* Transition Durations */
+  --transition-fast: 150ms;
+  --transition-normal: 250ms;
+  --transition-slow: 350ms;
+
+  /* Transition Easing */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* Hover Transformations */
+  --hover-lift: translateY(-2px);
+  --hover-scale: scale(1.02);
+  --active-scale: scale(0.98);
+
+  /* ==============================================
+   * THEME CONTEXT VARIABLES
+   * ==============================================
+   * These will be overridden by theme context
+   */
+  
+  /* Current Theme (will be set dynamically) */
+  --bg-primary: var(--bg-light-primary);
+  --bg-gradient-overlay-1: var(--bg-light-gradient-1);
+  --bg-gradient-overlay-2: var(--bg-light-gradient-2);
+  
+  --glass-card: var(--glass-light-card);
+  --glass-header: var(--glass-light-header);
+  --glass-sidebar: var(--glass-light-sidebar);
+  --glass-modal: var(--glass-light-modal);
+  --glass-border: var(--glass-light-border);
+  
+  --shadow-card: var(--shadow-light-card);
+  --shadow-hover: var(--shadow-light-hover);
+  --shadow-modal: var(--shadow-light-modal);
+  --shadow-button: var(--shadow-light-button);
+  --shadow-button-hover: var(--shadow-light-button-hover);
+
+  /* Text Colors (will be set by theme) */
+  --text-primary: #171717;
+  --text-secondary: #525252;
+  --text-muted: #737373;
+  --text-inverse: #ffffff;
+
+  /* Border Colors */
+  --border-primary: var(--glass-border);
+  --border-subtle: rgba(0,0,0,0.06);
+  --border-strong: rgba(0,0,0,0.10);
+
+  /* Focus Ring */
+  --focus-color: var(--primary-500);
+  --focus-ring: 0 0 0 2px rgba(249, 115, 22, 0.15);
+}
+
+/* ==============================================
+ * DARK THEME OVERRIDES
+ * ==============================================
+ */
+[data-theme="dark"] {
+  --bg-primary: var(--bg-dark-primary);
+  --bg-gradient-overlay-1: var(--bg-dark-gradient-1);
+  --bg-gradient-overlay-2: var(--bg-dark-gradient-2);
+  
+  --glass-card: var(--glass-dark-card);
+  --glass-header: var(--glass-dark-header);
+  --glass-sidebar: var(--glass-dark-sidebar);
+  --glass-modal: var(--glass-dark-modal);
+  --glass-border: var(--glass-dark-border);
+  
+  --shadow-card: var(--shadow-dark-card);
+  --shadow-hover: var(--shadow-dark-hover);
+  --shadow-modal: var(--shadow-dark-modal);
+  --shadow-button: var(--shadow-dark-button);
+  --shadow-button-hover: var(--shadow-dark-button-hover);
+
+  --text-primary: #fafafa;
+  --text-secondary: #d4d4d4;
+  --text-muted: #a3a3a3;
+  --text-inverse: #171717;
+
+  --border-primary: var(--glass-border);
+  --border-subtle: rgba(255,255,255,0.06);
+  --border-strong: rgba(255,255,255,0.10);
+
+  --focus-ring: 0 0 0 2px rgba(249, 115, 22, 0.25);
+}
+
+/* ==============================================
+ * LIQUID GLASS UTILITY CLASSES
+ * ==============================================
+ */
+
+/* Glass Morphism Components */
+.glass-card {
+  background: var(--glass-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-card);
+}
+
+.glass-header {
+  background: var(--glass-header);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border);
+  border-radius: var(--radius-navbar);
+}
+
+.glass-sidebar {
+  background: var(--glass-sidebar);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-right: 1px solid var(--glass-border);
+  border-radius: var(--radius-sidebar);
+}
+
+.glass-modal {
+  background: var(--glass-modal);
+  backdrop-filter: var(--glass-blur-strong);
+  -webkit-backdrop-filter: var(--glass-blur-strong);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-modal);
+  border-radius: var(--radius-modal);
+}
+
+/* Liquid Glass Button */
+.liquid-glass-button {
+  background: var(--primary-500);
+  border: none;
+  border-radius: var(--radius-button);
+  padding: var(--spacing-button-padding);
+  color: var(--text-inverse);
+  font-weight: var(--font-medium);
+  font-size: var(--text-base);
+  cursor: pointer;
+  transition: all var(--transition-normal) var(--ease-out);
+  box-shadow: var(--shadow-button);
+  transform: translateY(0);
+}
+
+.liquid-glass-button:hover {
+  background: var(--primary-600);
+  transform: var(--hover-lift);
+  box-shadow: var(--shadow-button-hover);
+}
+
+.liquid-glass-button:active {
+  transform: var(--active-scale);
+}
+
+/* Liquid Glass Input */
+.liquid-glass-input {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-input);
+  padding: var(--spacing-input-padding);
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  transition: all var(--transition-normal) var(--ease-out);
+}
+
+.liquid-glass-input:focus {
+  border-color: var(--focus-color);
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+
+/* Liquid Glass Card Hover */
+.liquid-glass-card {
+  transition: all var(--transition-normal) var(--ease-out);
+}
+
+.liquid-glass-card:hover {
+  transform: var(--hover-lift);
+  box-shadow: var(--shadow-hover);
+}
+
+/* Spacing Utilities */
+.space-1 { margin: var(--spacing-1); }
+.space-2 { margin: var(--spacing-2); }
+.space-3 { margin: var(--spacing-3); }
+.space-4 { margin: var(--spacing-4); }
+.space-5 { margin: var(--spacing-5); }
+.space-6 { margin: var(--spacing-6); }
+.space-8 { margin: var(--spacing-8); }
+.space-10 { margin: var(--spacing-10); }
+
+.pad-1 { padding: var(--spacing-1); }
+.pad-2 { padding: var(--spacing-2); }
+.pad-3 { padding: var(--spacing-3); }
+.pad-4 { padding: var(--spacing-4); }
+.pad-5 { padding: var(--spacing-5); }
+.pad-6 { padding: var(--spacing-6); }
+.pad-8 { padding: var(--spacing-8); }
+.pad-10 { padding: var(--spacing-10); }
+
+/* Border Radius Utilities */
+.rounded-sm { border-radius: var(--radius-sm); }
+.rounded-md { border-radius: var(--radius-md); }
+.rounded-lg { border-radius: var(--radius-lg); }
+.rounded-xl { border-radius: var(--radius-xl); }
+.rounded-pill { border-radius: var(--radius-pill); }
+.rounded-button { border-radius: var(--radius-button); }
+.rounded-card { border-radius: var(--radius-card); }
+.rounded-input { border-radius: var(--radius-input); }
+.rounded-dropdown { border-radius: var(--radius-dropdown); }
+
+/* Animation Utilities */
+.hover-lift:hover {
+  transform: var(--hover-lift);
+  transition: transform var(--transition-normal) var(--ease-out);
+}
+
+.hover-scale:hover {
+  transform: var(--hover-scale);
+  transition: transform var(--transition-normal) var(--ease-out);
+}
+
+.active-scale:active {
+  transform: var(--active-scale);
+  transition: transform var(--transition-fast) var(--ease-out);
+}
+
+/* Smooth transitions for all interactive elements */
+button, a, input, textarea, select {
+  transition: all var(--transition-normal) var(--ease-out);
+}

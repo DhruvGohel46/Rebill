@@ -314,12 +314,12 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
   };
 
   const leftSidebarStyle = {
-    width: 'var(--pos-sidebar-width)', // Dynamic width
-    backgroundColor: isDark ? currentTheme.colors.surface : currentTheme.colors.surface,
-    borderRight: `1px solid ${currentTheme.colors.border}`,
+    width: '240px', // Slightly wider for better text fit
+    backgroundColor: 'var(--glass-sidebar)',
+    borderRight: '1px solid var(--glass-border)',
     display: 'flex',
     flexDirection: 'column',
-    height: "100%",
+    height: '100%',
     zIndex: 2,
   };
 
@@ -333,7 +333,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
 
   // rightSectionStyle is unused now as we inlined it to fix nesting, but keeping for safety if referenced elsewhere or cleanup later.
   const rightSectionStyle = {
-    width: 'var(--pos-cart-width)',
+    width: '400px',
     backgroundColor: currentTheme.colors.surface,
     borderLeft: `1px solid ${currentTheme.colors.border}`,
     display: 'flex',
@@ -345,8 +345,8 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
     <div style={mainContainerStyle}>
       <div style={leftSidebarStyle}>
         <div style={{
-          padding: currentTheme.spacing[5],
-          borderBottom: `1px solid ${currentTheme.colors.border}`,
+          padding: 'var(--spacing-5)',
+          borderBottom: '1px solid var(--glass-border)',
         }}>
           <SearchBar
             value={searchTerm}
@@ -358,42 +358,49 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
         <div style={{
           flex: 1,
           overflowY: 'auto',
-          padding: currentTheme.spacing[3],
+          padding: 'var(--spacing-3)',
         }}>
           <h4 style={{
-            fontSize: '12px',
+            fontSize: 'var(--text-xs)',
             textTransform: 'uppercase',
             letterSpacing: '0.05em',
-            color: currentTheme.colors.text.secondary,
-            marginBottom: currentTheme.spacing[3],
-            paddingLeft: currentTheme.spacing[2],
-            fontWeight: 600
+            color: 'var(--text-secondary)',
+            marginBottom: 'var(--spacing-3)',
+            paddingLeft: 'var(--spacing-2)',
+            fontWeight: 'var(--font-semibold)'
           }}>Categories</h4>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--spacing-3)' }}>
             {categories.map((category) => {
               const isActive = selectedCategory === category.id;
               return (
                 <motion.button
                   key={category.id}
                   onClick={() => setSelectedCategory(category.id)}
-                  whileHover={{ backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)' }}
+                  whileHover={!isActive ? { 
+                    backgroundColor: 'var(--glass-card)',
+                    transform: 'translateX(4px)'
+                  } : {
+                    transform: 'translateX(2px)'
+                  }}
                   whileTap={{ scale: 0.98 }}
+                  className="rounded-lg liquid-glass-card"
                   style={{
                     position: 'relative',
                     width: '100%',
                     height: '56px',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: currentTheme.spacing[3],
-                    padding: `0 ${currentTheme.spacing[3]}`,
-                    backgroundColor: isActive ? (isDark ? 'rgba(255, 106, 0, 0.12)' : 'rgba(255, 106, 0, 0.08)') : 'transparent',
-                    border: 'none',
-                    borderRadius: '12px',
+                    gap: 'var(--spacing-3)',
+                    padding: '0 var(--spacing-3)',
+                    backgroundColor: isActive ? 'var(--primary-500)' : 'transparent',
+                    border: isActive ? '1px solid var(--primary-500)' : '1px solid var(--glass-border)',
                     cursor: 'pointer',
-                    color: isActive ? '#FF6A00' : currentTheme.colors.text.secondary,
-                    transition: 'color 0.2s',
-                    textAlign: 'left'
+                    color: isActive ? 'var(--text-inverse)' : 'var(--text-secondary)',
+                    transition: 'all var(--transition-normal) var(--ease-out)',
+                    textAlign: 'left',
+                    backdropFilter: 'var(--glass-blur)',
+                    WebkitBackdropFilter: 'var(--glass-blur)',
                   }}
                 >
                   {isActive && (
@@ -405,8 +412,8 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                         top: '12px',
                         bottom: '12px',
                         width: '4px',
-                        backgroundColor: '#FF6A00',
-                        borderRadius: '0 4px 4px 0',
+                        backgroundColor: 'var(--text-inverse)',
+                        borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
                       }}
                     />
                   )}
@@ -414,22 +421,25 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                   <div style={{
                     width: '32px',
                     height: '32px',
-                    borderRadius: '8px',
-                    backgroundColor: isActive ? '#FF6A00' : (isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9'),
+                    borderRadius: 'var(--radius-md)',
+                    backgroundColor: isActive ? 'var(--text-inverse)' : 'var(--glass-card)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: isActive ? '#FFFFFF' : currentTheme.colors.text.secondary,
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    transition: 'background-color 0.2s, color 0.2s'
+                    color: isActive ? 'var(--primary-500)' : 'var(--text-secondary)',
+                    fontSize: 'var(--text-sm)',
+                    fontWeight: 'var(--font-semibold)',
+                    transition: 'all var(--transition-normal) var(--ease-out)',
+                    border: isActive ? '2px solid var(--text-inverse)' : '1px solid var(--glass-border)',
+                    boxShadow: isActive ? 'none' : 'var(--shadow-button)',
                   }}>
                     {category.name.charAt(0)}
                   </div>
 
                   <span style={{
-                    fontSize: '15px',
-                    fontWeight: isActive ? 600 : 500
+                    fontSize: 'var(--text-base)',
+                    fontWeight: isActive ? 'var(--font-semibold)' : 'var(--font-medium)',
+                    color: isActive ? 'var(--text-inverse)' : 'var(--text-secondary)',
                   }}>
                     {category.name}
                   </span>
@@ -501,7 +511,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
               transition={{ duration: 0.35, staggerChildren: 0.05 }}
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(calc(200px * var(--ui-scale)), 1fr))',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
                 gap: currentTheme.spacing[4],
                 paddingBottom: currentTheme.spacing[8],
               }}
@@ -581,7 +591,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                           style={{
-                            width: 'var(--pos-button-size-sm)', height: 'var(--pos-button-size-sm)',
+                            width: '32px', height: '32px',
                             backgroundColor: '#FF6A00',
                             borderRadius: '50%',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -604,7 +614,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
       </div>
 
       <div style={{
-        width: 'var(--pos-cart-width)',
+        width: '400px',
         backgroundColor: isDark ? '#15161A' : '#FFFFFF', // Secondary Surface
         borderLeft: `1px solid ${currentTheme.colors.border}`,
         display: 'flex',
@@ -721,14 +731,14 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                 }}>
                   <div>
                     <div style={{
-                      fontSize: currentTheme.typography.fontSize.base, // Increased for readability
-                      fontWeight: currentTheme.typography.fontWeight.semibold,
+                      fontSize: currentTheme.typography.fontSize.sm,
+                      fontWeight: currentTheme.typography.fontWeight.medium,
                       color: currentTheme.colors.text.primary,
                     }}>
                       {item.name}
                     </div>
                     <div style={{
-                      fontSize: currentTheme.typography.fontSize.sm, // Increased for readability
+                      fontSize: currentTheme.typography.fontSize.xs,
                       color: currentTheme.colors.text.secondary,
                     }}>
                       {formatCurrency(item.price)} each

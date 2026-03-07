@@ -399,7 +399,7 @@ const Inventory = () => {
                 {showAddModal && (
                     <div className="invModalOverlay">
                         <motion.div
-                            className="invModal"
+                            className="invModal card-zoom"
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}

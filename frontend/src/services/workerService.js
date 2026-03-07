@@ -16,6 +16,7 @@ export const workerService = {
   markPaid: (paymentId) => workerAPI.markPaid(paymentId),
   getWorkerAttendance: (id) => workerAPI.getWorkerAttendance(id),
   markAttendance: (id, data) => workerAPI.markAttendance(id, data),
+  updateAttendance: (id, data) => workerAPI.updateAttendance(id, data),
   bulkMarkPresent: () => workerAPI.bulkMarkPresent(),
   checkAttendanceStatus: () => workerAPI.checkAttendanceStatus(),
 };

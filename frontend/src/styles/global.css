@@ -1,58 +1,7 @@
-/* Global Styles - Unified Theme System for POS Application */
+/* Global Styles - Liquid Glass Design System */
 
-/* ==========================================================================
-   DYNAMIC SCALE SYSTEM
-   --ui-scale     : layout/spacing multiplier (controlled by Screen Size setting)
-   --ui-font-scale: text size multiplier     (controlled by Font Size setting)
-
-   Small  = 0.80 | Medium = 1.00 | Large = 1.15
-   These are set on :root via JS in SettingsContext.applyDisplayPrefs()
-   All universal layout values (header, sidebar, padding, gap) use
-   calc(base * var(--ui-scale)) so they scale without affecting the frame.
-   ========================================================================== */
-:root {
-  --ui-scale: 1;
-  --ui-font-scale: 1;
-
-  /* Header */
-  --header-height: calc(64px * var(--ui-scale));
-  --header-padding-x: calc(24px * var(--ui-scale));
-
-  /* Sidebar */
-  --sidebar-width-expanded: calc(260px * var(--ui-scale));
-  --sidebar-width-collapsed: calc(80px * var(--ui-scale));
-  --sidebar-logo-height: calc(80px * var(--ui-scale));
-  --sidebar-nav-padding: calc(12px * var(--ui-scale));
-  --sidebar-item-padding-y: calc(10px * var(--ui-scale));
-  --sidebar-item-padding-x: calc(14px * var(--ui-scale));
-  --sidebar-item-gap: calc(8px * var(--ui-scale));
-
-  /* Page Content */
-  --page-padding-top: calc(28px * var(--ui-scale));
-  --page-padding-x: calc(32px * var(--ui-scale));
-  --page-padding-bottom: calc(32px * var(--ui-scale));
-  --page-section-gap: calc(24px * var(--ui-scale));
-
-  /* Typography (universal) */
-  --font-size-ui-base: calc(14px * var(--ui-font-scale));
-  --font-size-ui-lg: calc(20px * var(--ui-font-scale));
-  --font-size-ui-xl: calc(22px * var(--ui-font-scale));
-
-  /* POS / Management specific */
-  --pos-sidebar-width: calc(240px * var(--ui-scale));
-  --pos-cart-width: calc(400px * var(--ui-scale));
-  --pos-grid-gap: calc(16px * var(--ui-scale));
-  --pos-card-padding: calc(14px * var(--ui-scale));
-  --pos-input-height: calc(42px * var(--ui-scale));
-  --pos-button-size-sm: calc(32px * var(--ui-scale));
-
-  /* Typography Scale (Additional) */
-  --font-size-ui-xs: calc(12px * var(--ui-font-scale));
-  --font-size-ui-sm: calc(14px * var(--ui-font-scale));
-  --font-size-ui-2xl: calc(20px * var(--ui-font-scale));
-  --font-size-ui-3xl: calc(24px * var(--ui-font-scale));
-  --font-size-ui-4xl: calc(30px * var(--ui-font-scale));
-}
+/* Import Design Tokens */
+@import './design-tokens.css';
 
 /* CSS Reset and Base Styles */
 * {
@@ -62,9 +11,6 @@
 }
 
 html {
-  /* font-size is overridden by SettingsContext when a font size is saved.    */
-  /* Default 16px (medium) — all rem sizes scale from this automatically.     */
-  font-size: 16px;
   scroll-behavior: smooth;
 }
 
@@ -75,13 +21,16 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-primary);
-  background-image: var(--gradient-glow);
+  background-image: 
+    var(--bg-gradient-overlay-1),
+    var(--bg-gradient-overlay-2);
   background-attachment: fixed;
   background-size: cover;
   background-repeat: no-repeat;
   color: var(--text-primary);
   min-height: 100vh;
-  transition: background 0.3s ease, color 0.3s ease;
+  transition: background var(--transition-normal) var(--ease-out), 
+              color var(--transition-normal) var(--ease-out);
 }
 
 /* Glassmorphism Utilities */
@@ -129,7 +78,7 @@ body {
 
 /* Focus styles */
 :focus-visible {
-  outline: 2px solid var(--focus);
+  outline: 2px solid var(--focus-color);
   outline-offset: 2px;
 }
 
@@ -167,46 +116,6 @@ body {
 
 .text-inverse {
   color: var(--text-inverse);
-}
-
-.text-xs {
-  font-size: 0.75rem;
-}
-
-.text-sm {
-  font-size: 0.875rem;
-}
-
-.text-base {
-  font-size: 0.9375rem;
-}
-
-.text-lg {
-  font-size: 1rem;
-}
-
-.text-xl {
-  font-size: 1.125rem;
-}
-
-.text-2xl {
-  font-size: 1.25rem;
-}
-
-.text-3xl {
-  font-size: 1.5rem;
-}
-
-.text-4xl {
-  font-size: 1.875rem;
-}
-
-.text-5xl {
-  font-size: 2.25rem;
-}
-
-.text-6xl {
-  font-size: 3rem;
 }
 
 .font-light {
