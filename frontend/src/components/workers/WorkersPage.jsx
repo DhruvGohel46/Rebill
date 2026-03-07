@@ -120,9 +120,9 @@ const WorkersPage = () => {
                     transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                 >
                     <h1 style={{
-                        fontSize: 28,
+                        fontSize: 'calc(28px * var(--text-scale))',
                         fontWeight: 600,
-                        margin: '0 0 2px 0',
+                        margin: '0 0 calc(2px * var(--display-zoom)) 0',
                         color: isDark ? '#FFFFFF' : '#111827',
                         letterSpacing: '-0.02em',
                     }}>
@@ -131,7 +131,7 @@ const WorkersPage = () => {
                     <p style={{
                         margin: 0,
                         color: isDark ? '#71717A' : '#6B7280',
-                        fontSize: 13,
+                        fontSize: 'calc(13px * var(--text-scale))',
                         fontWeight: 400,
                     }}>
                         Manage your staff, attendance and salary
@@ -144,7 +144,7 @@ const WorkersPage = () => {
                     transition={{ duration: 0.3, delay: 0.08 }}
                     style={{
                         display: 'flex',
-                        gap: '12px'
+                        gap: 'calc(12px * var(--display-zoom))'
                     }}
                 >
                     <Button
@@ -153,14 +153,14 @@ const WorkersPage = () => {
                         style={{
                             background: isDark ? 'rgba(59, 130, 246, 0.1)' : 'rgba(59, 130, 246, 0.05)',
                             border: `1px solid ${isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.15)'}`,
-                            borderRadius: 10,
-                            padding: '9px 18px',
-                            fontSize: 13,
+                            borderRadius: 'calc(10px * var(--display-zoom))',
+                            padding: 'calc(9px * var(--display-zoom)) calc(18px * var(--display-zoom))',
+                            fontSize: 'calc(13px * var(--text-scale))',
                             fontWeight: 600,
                             color: '#3B82F6',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 6,
+                            gap: 'calc(6px * var(--display-zoom))',
                             transition: 'all 0.2s ease',
                         }}
                         whileHover={{
@@ -183,13 +183,13 @@ const WorkersPage = () => {
                         style={{
                             background: '#F97316',
                             border: 'none',
-                            borderRadius: 10,
-                            padding: '9px 18px',
-                            fontSize: 13,
+                            borderRadius: 'calc(10px * var(--display-zoom))',
+                            padding: 'calc(9px * var(--display-zoom)) calc(18px * var(--display-zoom))',
+                            fontSize: 'calc(13px * var(--text-scale))',
                             fontWeight: 600,
                             display: 'flex',
                             alignItems: 'center',
-                            gap: 6,
+                            gap: 'calc(6px * var(--display-zoom))',
                             boxShadow: '0 2px 8px rgba(249,115,22,0.25)',
                         }}
                         whileHover={{
@@ -208,7 +208,7 @@ const WorkersPage = () => {
             {/* ─── Content ─── */}
             <div style={{
                 background: isDark ? 'rgba(255,255,255,0.02)' : '#FFFFFF',
-                borderRadius: 16,
+                borderRadius: 'calc(16px * var(--display-zoom))',
                 border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
                 overflow: 'hidden', // Ensure stats bar borders don't overflow
             }}>
@@ -220,12 +220,12 @@ const WorkersPage = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        padding: '14px 16px',
+                        padding: 'calc(14px * var(--display-zoom)) calc(16px * var(--display-zoom))',
                         borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}`,
                     }}>
                         <div style={{
                             position: 'relative',
-                            width: 260,
+                            width: 'calc(260px * var(--display-zoom))',
                         }}>
                             <IoSearch
                                 size={14}
@@ -244,12 +244,12 @@ const WorkersPage = () => {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 style={{
                                     width: '100%',
-                                    padding: '8px 10px 8px 32px',
-                                    borderRadius: 8,
+                                    padding: 'calc(8px * var(--display-zoom)) calc(10px * var(--display-zoom)) calc(8px * var(--display-zoom)) calc(32px * var(--display-zoom))',
+                                    borderRadius: 'calc(8px * var(--display-zoom))',
                                     border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)'}`,
                                     background: isDark ? 'rgba(255,255,255,0.03)' : '#F9FAFB',
                                     color: isDark ? '#FAFAFA' : '#111827',
-                                    fontSize: 13,
+                                    fontSize: 'calc(13px * var(--text-scale))',
                                     outline: 'none',
                                     transition: 'all 0.15s ease',
                                 }}
@@ -265,7 +265,7 @@ const WorkersPage = () => {
                         </div>
 
                         <span style={{
-                            fontSize: 12,
+                            fontSize: 'calc(12px * var(--text-scale))',
                             color: isDark ? '#52525B' : '#9CA3AF',
                             fontWeight: 500,
                             fontVariantNumeric: 'tabular-nums',
@@ -276,7 +276,7 @@ const WorkersPage = () => {
                 )}
 
                 {/* Body */}
-                <div style={{ padding: workers.length > 0 ? '8px 0 4px 0' : 0 }}>
+                <div style={{ padding: workers.length > 0 ? 'calc(8px * var(--display-zoom)) 0 calc(4px * var(--display-zoom)) 0' : 0 }}>
                     {loading ? (
                         <SkeletonRows />
                     ) : workers.length > 0 ? (

@@ -334,7 +334,7 @@ const ProductManagement = () => {
     <div className="pmSectionContent" ref={topRef}>
 
       {/* Controls */}
-      <Card className="pmPanel pmPanelTight" padding="20px">
+      <Card className="pmPanel pmPanelTight" padding="calc(20px * var(--display-zoom))">
         <div className="pmControls">
           <div className="pmField">
             <div className="pmLabel">Search</div>
@@ -359,7 +359,7 @@ const ProductManagement = () => {
 
           <div className="pmField">
             <div className="pmLabel">View</div>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: 'calc(8px * var(--display-zoom))' }}>
               <Button
                 variant={productViewTab === 'active' ? 'primary' : 'secondary'}
                 onClick={() => setProductViewTab('active')}
@@ -420,11 +420,11 @@ const ProductManagement = () => {
 
               <div className="pmField" style={{ gridColumn: '1 / -1' }}>
                 <div className="pmLabel">Product Image (Optional)</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'calc(20px * var(--display-zoom))' }}>
                   <div style={{
-                    width: '80px',
-                    height: '80px',
-                    borderRadius: '8px',
+                    width: 'calc(80px * var(--display-zoom))',
+                    height: 'calc(80px * var(--display-zoom))',
+                    borderRadius: 'calc(8px * var(--display-zoom))',
                     border: '1px dashed var(--border-primary)',
                     display: 'flex',
                     alignItems: 'center',
@@ -447,8 +447,8 @@ const ProductManagement = () => {
                         zIndex: 10
                       }}>
                         <div style={{
-                          width: '24px',
-                          height: '24px',
+                          width: 'calc(24px * var(--display-zoom))',
+                          height: 'calc(24px * var(--display-zoom))',
                           border: '3px solid rgba(255, 255, 255, 0.3)',
                           borderTop: '3px solid white',
                           borderRadius: '50%',
@@ -468,14 +468,14 @@ const ProductManagement = () => {
                       type="file"
                       accept="image/*"
                       onChange={handleImageChange}
-                      style={{ marginBottom: '10px', display: 'block', width: '100%' }}
+                      style={{ marginBottom: 'calc(10px * var(--display-zoom))', display: 'block', width: '100%' }}
                     />
                     {(previewImage && (selectedImage || formData.image_filename)) && (
                       <button
                         type="button"
                         onClick={handleRemoveImage}
                         className="pmActionBtn pmActionDanger"
-                        style={{ padding: '4px 8px', fontSize: '12px' }}
+                        style={{ padding: 'calc(4px * var(--display-zoom)) calc(8px * var(--display-zoom))', fontSize: 'calc(12px * var(--text-scale))' }}
                       >
                         Remove Image
                       </button>
@@ -490,13 +490,13 @@ const ProductManagement = () => {
                   {imageUploading ? (
                     <>
                       <div style={{
-                        width: '16px',
-                        height: '16px',
+                        width: 'calc(16px * var(--display-zoom))',
+                        height: 'calc(16px * var(--display-zoom))',
                         border: '2px solid rgba(255, 255, 255, 0.3)',
                         borderTop: '2px solid white',
                         borderRadius: '50%',
                         animation: 'spin 1s linear infinite',
-                        marginRight: '8px'
+                        marginRight: 'calc(8px * var(--display-zoom))'
                       }} />
                       Processing Image...
                     </>
@@ -559,9 +559,9 @@ const ProductManagement = () => {
                 marginBottom: 'var(--spacing-5)'
               }}>
                 <div style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '14px',
+                  width: 'calc(48px * var(--display-zoom))',
+                  height: 'calc(48px * var(--display-zoom))',
+                  borderRadius: 'calc(14px * var(--display-zoom))',
                   background: 'rgba(239, 68, 68, 0.12)',
                   display: 'flex',
                   alignItems: 'center',
@@ -569,13 +569,13 @@ const ProductManagement = () => {
                   color: 'var(--error-500)',
                   flexShrink: 0
                 }}>
-                  <IconTrash style={{ width: '24px', height: '24px' }} />
+                  <IconTrash style={{ width: 'calc(24px * var(--display-zoom))', height: 'calc(24px * var(--display-zoom))' }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <h3 style={{
                     margin: 0,
                     color: 'var(--text-primary)',
-                    fontSize: 'var(--text-xl)',
+                    fontSize: 'calc(var(--text-xl) * 1)',
                     fontWeight: 'var(--font-semibold)',
                     letterSpacing: '0.2px',
                     lineHeight: '1.3'
@@ -583,9 +583,9 @@ const ProductManagement = () => {
                     Permanent Deletion
                   </h3>
                   <p style={{
-                    margin: 'var(--spacing-1) 0 0 0',
+                    margin: 'calc(var(--spacing-1) * 1) 0 0 0',
                     color: 'var(--text-tertiary)',
-                    fontSize: 'var(--text-sm)',
+                    fontSize: 'calc(var(--text-sm) * 1)',
                     fontWeight: 'var(--font-medium)'
                   }}>
                     Admin authentication required
@@ -721,9 +721,9 @@ const ProductManagement = () => {
 
       {/* Products Grid */}
       <div className="pmGridSection">
-        <div className="pmGridHeader" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div className="pmGridHeader" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'calc(16px * var(--display-zoom))' }}>
           <div>
-            <div className="pmGridTitle" style={{ fontSize: '1.5rem', fontWeight: 700 }}>{productViewTab === 'active' ? 'Active Products' : 'Inactive Products'}</div>
+            <div className="pmGridTitle" style={{ fontSize: 'calc(1.5rem * var(--text-scale))', fontWeight: 700 }}>{productViewTab === 'active' ? 'Active Products' : 'Inactive Products'}</div>
             <div className="pmGridHint" style={{ opacity: 0.7 }}>{loading ? 'Refreshing…' : `${filteredProducts.length} shown`}</div>
           </div>
           <div className="pmHeaderActions">
@@ -751,7 +751,7 @@ const ProductManagement = () => {
               >
                 <Card
                   className={`pmCard ${!product.active ? 'pmCardInactive' : ''} card-zoom`}
-                  padding={showImages ? '20px' : '16px'}
+                  padding={showImages ? 'calc(20px * var(--display-zoom))' : 'calc(16px * var(--display-zoom))'}
                   hover={true}
                   style={{
                     minHeight: showImages ? '180px' : 'auto',
@@ -781,9 +781,9 @@ const ProductManagement = () => {
                     </div>
                   )}
 
-                  <div className="pmCardContent" style={{ padding: showImages ? '16px' : '0 0 8px 0', gap: showImages ? '12px' : '8px' }}>
+                  <div className="pmCardContent" style={{ padding: showImages ? 'calc(16px * var(--display-zoom))' : '0 0 calc(8px * var(--display-zoom)) 0', gap: showImages ? 'calc(12px * var(--display-zoom))' : 'calc(8px * var(--display-zoom))' }}>
                     <div className="pmCardHeader">
-                      <div className="pmName" title={product.name} style={{ fontSize: showImages ? '16px' : '17px', WebkitLineClamp: showImages ? 2 : 1 }}>{product.name}</div>
+                      <div className="pmName" title={product.name} style={{ fontSize: showImages ? 'calc(16px * var(--text-scale))' : 'calc(17px * var(--text-scale))', WebkitLineClamp: showImages ? 2 : 1 }}>{product.name}</div>
                       <div className="pmPriceRow">
                         <div className="pmPrice">{formatCurrency(product.price)}</div>
                         <div className="pmBadge">{product.category_name || product.category || 'Other'}</div>
@@ -879,20 +879,20 @@ const Management = () => {
         {/* Header - Simple Tab Navigation */}
         <div style={{
           display: 'flex',
-          marginBottom: '20px',
+          marginBottom: 'calc(20px * var(--display-zoom))',
           borderBottom: '1px solid var(--border-primary)',
-          gap: '24px'
+          gap: 'calc(24px * var(--display-zoom))'
         }}>
           <button
             onClick={() => setActiveTab('products')}
             style={{
-              padding: '12px 4px',
+              padding: 'calc(12px * var(--display-zoom)) calc(4px * var(--display-zoom))',
               background: 'none',
               border: 'none',
               borderBottom: activeTab === 'products' ? '2px solid #F97316' : '2px solid transparent',
               color: activeTab === 'products' ? '#F97316' : 'var(--text-secondary)',
               fontWeight: activeTab === 'products' ? 600 : 500,
-              fontSize: '16px',
+              fontSize: 'calc(16px * var(--text-scale))',
               cursor: 'pointer',
               transition: 'all 0.2s'
             }}
@@ -902,13 +902,13 @@ const Management = () => {
           <button
             onClick={() => setActiveTab('categories')}
             style={{
-              padding: '12px 4px',
+              padding: 'calc(12px * var(--display-zoom)) calc(4px * var(--display-zoom))',
               background: 'none',
               border: 'none',
               borderBottom: activeTab === 'categories' ? '2px solid #F97316' : '2px solid transparent',
               color: activeTab === 'categories' ? '#F97316' : 'var(--text-secondary)',
               fontWeight: activeTab === 'categories' ? 600 : 500,
-              fontSize: '16px',
+              fontSize: 'calc(16px * var(--text-scale))',
               cursor: 'pointer',
               transition: 'all 0.2s'
             }}

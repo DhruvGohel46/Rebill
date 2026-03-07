@@ -135,7 +135,7 @@ const CategoryManagement = () => {
     return (
         <div className="pmSectionContent">
             {/* Header Actions */}
-            <div className="pmHeader" style={{ border: 'none', boxShadow: 'none', background: 'transparent', padding: '16px 0', display: 'flex', justifyContent: 'flex-end' }}>
+            <div className="pmHeader" style={{ border: 'none', boxShadow: 'none', background: 'transparent', padding: 'calc(16px * var(--display-zoom)) 0', display: 'flex', justifyContent: 'flex-end' }}>
                 <div className="pmHeaderActions">
                     <Button
                         variant="primary"
@@ -161,7 +161,7 @@ const CategoryManagement = () => {
                             <div className="pmFormTitle">{editingCategory ? 'Edit Category' : 'Add New Category'}</div>
                         </div>
                         <form onSubmit={handleSubmit}>
-                            <div className="pmFormGrid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+                            <div className="pmFormGrid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: 'calc(10px * var(--display-zoom))' }}>
                                 <div className="pmField">
                                     <div className="pmLabel">Category Name</div>
                                     <input
@@ -197,7 +197,7 @@ const CategoryManagement = () => {
             {/* Categories Grid */}
             <div className="pmGridSection">
                 <div className="pmGridHeader">
-                    <div className="pmGridTitle" style={{ fontSize: '20px' }}>Available Categories</div>
+                    <div className="pmGridTitle" style={{ fontSize: 'calc(20px * var(--text-scale))' }}>Available Categories</div>
                     <div className="pmGridHint">{loading ? 'Loading...' : `${categories.length} categories`}</div>
                 </div>
 
@@ -225,15 +225,15 @@ const CategoryManagement = () => {
                                             {cat.description || 'No description'}
                                         </div>
                                     </div>
-                                    <div className="pmMetaRow" style={{ marginTop: '10px' }}>
+                                    <div className="pmMetaRow" style={{ marginTop: 'calc(10px * var(--display-zoom))' }}>
                                         <div className="pmStatusRow">
-                                            <div className={`pmStatusDot ${cat.active ? 'pmStatusActive' : 'pmStatusInactive'}`} style={{ width: 8, height: 8, borderRadius: '50%' }} />
+                                            <div className={`pmStatusDot ${cat.active ? 'pmStatusActive' : 'pmStatusInactive'}`} style={{ width: 'calc(8px * var(--display-zoom))', height: 'calc(8px * var(--display-zoom))', borderRadius: '50%' }} />
                                             <span className="pmStatusLabel">
                                                 {cat.product_count} linked products
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="pmActions" style={{ marginTop: '15px' }}>
+                                    <div className="pmActions" style={{ marginTop: 'calc(15px * var(--display-zoom))' }}>
                                         <div className="pmButtonGrid">
                                             <button className="pmActionBtn" onClick={() => handleEdit(cat)}>
                                                 <IconEdit /> Edit

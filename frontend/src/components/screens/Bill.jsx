@@ -314,7 +314,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
   };
 
   const leftSidebarStyle = {
-    width: '240px', // Slightly wider for better text fit
+    width: 'calc(180px * var(--display-zoom))', // Reduced from 240px
     backgroundColor: 'var(--glass-sidebar)',
     borderRight: '1px solid var(--glass-border)',
     display: 'flex',
@@ -388,11 +388,11 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                   style={{
                     position: 'relative',
                     width: '100%',
-                    height: '56px',
+                    height: 'calc(48px * var(--display-zoom))', // Reduced from 56px
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 'var(--spacing-3)',
-                    padding: '0 var(--spacing-3)',
+                    gap: 'var(--spacing-2)', // Reduced from 3
+                    padding: '0 var(--spacing-2)', // Reduced from 3
                     backgroundColor: isActive ? 'var(--primary-500)' : 'transparent',
                     border: isActive ? '1px solid var(--primary-500)' : '1px solid var(--glass-border)',
                     cursor: 'pointer',
@@ -409,8 +409,8 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                       style={{
                         position: 'absolute',
                         left: 0,
-                        top: '12px',
-                        bottom: '12px',
+                        top: '10px', // Adjusted for smaller height
+                        bottom: '10px', // Adjusted for smaller height
                         width: '4px',
                         backgroundColor: 'var(--text-inverse)',
                         borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
@@ -419,15 +419,15 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                   )}
 
                   <div style={{
-                    width: '32px',
-                    height: '32px',
+                    width: 'calc(28px * var(--display-zoom))', // Reduced from 32px
+                    height: 'calc(28px * var(--display-zoom))', // Reduced from 32px
                     borderRadius: 'var(--radius-md)',
                     backgroundColor: isActive ? 'var(--text-inverse)' : 'var(--glass-card)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     color: isActive ? 'var(--primary-500)' : 'var(--text-secondary)',
-                    fontSize: 'var(--text-sm)',
+                    fontSize: 'calc(11px * var(--text-scale))', // Slightly smaller
                     fontWeight: 'var(--font-semibold)',
                     transition: 'all var(--transition-normal) var(--ease-out)',
                     border: isActive ? '2px solid var(--text-inverse)' : '1px solid var(--glass-border)',
@@ -437,9 +437,12 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                   </div>
 
                   <span style={{
-                    fontSize: 'var(--text-base)',
+                    fontSize: 'var(--font-sm)', // Use token which supports text-scale
                     fontWeight: isActive ? 'var(--font-semibold)' : 'var(--font-medium)',
                     color: isActive ? 'var(--text-inverse)' : 'var(--text-secondary)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
                   }}>
                     {category.name}
                   </span>
@@ -511,8 +514,8 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
               transition={{ duration: 0.35, staggerChildren: 0.05 }}
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                gap: currentTheme.spacing[4],
+                gridTemplateColumns: 'repeat(auto-fill, minmax(calc(160px * var(--display-zoom)), 1fr))', // Reduced from 200px
+                gap: currentTheme.spacing[3], // Slightly tighter gap
                 paddingBottom: currentTheme.spacing[8],
               }}
             >
@@ -530,17 +533,17 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                     opacity: product.stock_status === 'Out of Stock' ? 0.6 : 1,
                   }}
                 >
-                  <div style={{ padding: '14px', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ padding: 'calc(10px * var(--display-zoom))', height: '100%', display: 'flex', flexDirection: 'column' }}>
 
                     {/* Image Container - Human Quality */}
                     <div style={{
                       aspectRatio: '1/1', // Square
                       width: '100%',
-                      marginBottom: '14px',
-                      borderRadius: '12px',
+                      marginBottom: 'calc(10px * var(--display-zoom))', // Reduced
+                      borderRadius: '10px', // Slightly smaller radius
                       overflow: 'hidden',
                       backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : '#F6F7F9',
-                      padding: '18px', // Breathing space
+                      padding: 'calc(12px * var(--display-zoom))', // Reduced from 18px
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -569,17 +572,22 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
 
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                       <h4 style={{
-                        fontSize: '15px',
+                        fontSize: 'calc(13px * var(--text-scale))', // Reduced from 15px
                         fontWeight: 600,
                         color: currentTheme.colors.text.primary,
-                        margin: '0 0 4px 0',
-                        lineHeight: 1.3,
+                        margin: '0 0 2px 0',
+                        lineHeight: 1.2,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
                       }}>
                         {product.name}
                       </h4>
                       <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <span style={{
-                          fontSize: '16px',
+                          fontSize: 'calc(14px * var(--text-scale))', // Reduced from 16px
                           fontWeight: 700,
                           color: '#FF6A00', // Signature Orange
                         }}>
@@ -591,7 +599,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                           style={{
-                            width: '32px', height: '32px',
+                            width: 'calc(28px * var(--display-zoom))', height: 'calc(28px * var(--display-zoom))', // Reduced from 32px
                             backgroundColor: '#FF6A00',
                             borderRadius: '50%',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -599,7 +607,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                             color: 'white'
                           }}
                         >
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <svg width="calc(16px * var(--display-zoom))" height="calc(16px * var(--display-zoom))" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                             <path d="M12 5V19M5 12H19" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         </motion.div>
@@ -793,20 +801,20 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
             justifyContent: 'space-between',
             alignItems: 'center',
             marginBottom: currentTheme.spacing[3],
-            padding: '16px',
+            padding: 'calc(16px * var(--display-zoom))',
             backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F6F7F9', // Glass-like strip
             borderRadius: '12px',
             border: isDark ? '1px solid rgba(255,255,255,0.03)' : 'none'
           }}>
             <span style={{
-              fontSize: '14px',
+              fontSize: 'calc(14px * var(--text-scale))',
               color: currentTheme.colors.text.secondary,
               fontWeight: 600,
               textTransform: 'uppercase',
               letterSpacing: '0.05em'
             }}>Total Amount</span>
             <span style={{
-              fontSize: '24px',
+              fontSize: 'calc(24px * var(--text-scale))',
               fontFamily: 'monospace', // Tabular nums
               fontWeight: 700,
               color: currentTheme.colors.text.primary
@@ -818,7 +826,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
           <div style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
-            gap: '12px',
+            gap: 'calc(12px * var(--display-zoom))',
           }}>
             <Button variant="secondary" onClick={handleSaveOrder} size="lg" fullWidth>
               {editingBill ? 'Update' : 'Save Bill'}

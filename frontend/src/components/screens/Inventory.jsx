@@ -271,7 +271,7 @@ const Inventory = () => {
                         </div>
 
                         <div className="invControlsRow">
-                            <div style={{ width: '300px' }}>
+                            <div style={{ width: 'calc(300px * var(--display-zoom))' }}>
                                 <SearchBar
                                     value={searchTerm}
                                     onChange={setSearchTerm}
@@ -328,9 +328,9 @@ const Inventory = () => {
                                                 </div>
                                             </td>
                                             <td>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <span style={{ fontSize: '15px', fontWeight: 600 }}>{item.stock}</span>
-                                                    <span style={{ fontSize: '12px', color: '#9ca3af' }}>{item.unit}s</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'calc(8px * var(--display-zoom))' }}>
+                                                    <span style={{ fontSize: 'calc(15px * var(--text-scale))', fontWeight: 600 }}>{item.stock}</span>
+                                                    <span style={{ fontSize: 'calc(12px * var(--text-scale))', color: '#9ca3af' }}>{item.unit}s</span>
                                                 </div>
                                             </td>
                                             <td>
@@ -344,7 +344,7 @@ const Inventory = () => {
                                                     />
                                                 </div>
                                                 {item.stock <= item.alert_threshold && (
-                                                    <div style={{ fontSize: '11px', color: '#f59e0b', marginTop: '4px', fontWeight: 500 }}>
+                                                    <div style={{ fontSize: 'calc(11px * var(--text-scale))', color: '#f59e0b', marginTop: 'calc(4px * var(--display-zoom))', fontWeight: 500 }}>
                                                         Low Stock Alert
                                                     </div>
                                                 )}
@@ -355,7 +355,7 @@ const Inventory = () => {
                                                 </span>
                                             </td>
                                             <td>
-                                                <div className="invActionGroup" style={{ justifyContent: 'flex-end', display: 'flex', gap: '4px' }}>
+                                                <div className="invActionGroup" style={{ justifyContent: 'flex-end', display: 'flex', gap: 'calc(4px * var(--display-zoom))' }}>
                                                     <button
                                                         className="invActionBtn"
                                                         onClick={(e) => handleQuickStock(e, item, -1)}
@@ -444,7 +444,7 @@ const Inventory = () => {
                                     </div>
                                 )}
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'calc(12px * var(--display-zoom))' }}>
                                     <div className="invFormGroup">
                                         <label className="invLabel">Current Stock</label>
                                         <input
@@ -479,8 +479,8 @@ const Inventory = () => {
                                             background: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fef3c7',
                                             color: isDark ? '#fbbf24' : '#d97706',
                                             padding: '2px 8px',
-                                            borderRadius: '12px',
-                                            fontSize: '12px',
+                                            borderRadius: 'calc(12px * var(--display-zoom))',
+                                            fontSize: 'calc(12px * var(--text-scale))',
                                             fontWeight: 600
                                         }}>
                                             {formData.alert_threshold} units
@@ -494,23 +494,23 @@ const Inventory = () => {
                                         onChange={e => setFormData({ ...formData, alert_threshold: parseInt(e.target.value) })}
                                         style={{
                                             width: '100%',
-                                            height: '6px',
+                                            height: 'calc(6px * var(--display-zoom))',
                                             background: isDark ? '#334155' : '#e2e8f0',
-                                            borderRadius: '3px',
+                                            borderRadius: 'calc(3px * var(--display-zoom))',
                                             accentColor: '#f59e0b',
                                             cursor: 'pointer',
-                                            marginTop: '8px',
+                                            marginTop: 'calc(8px * var(--display-zoom))',
                                             appearance: 'auto'
                                         }}
                                     />
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '10px', color: isDark ? '#64748b' : '#94a3b8' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'calc(4px * var(--display-zoom))', fontSize: 'calc(10px * var(--text-scale))', color: isDark ? '#64748b' : '#94a3b8' }}>
                                         <span>1</span>
                                         <span>50</span>
                                         <span>100</span>
                                     </div>
                                 </div>
 
-                                <div className="invModalFooter" style={{ marginTop: '24px' }}>
+                                <div className="invModalFooter" style={{ marginTop: 'calc(24px * var(--display-zoom))' }}>
                                     <button type="button" className="invBtn" onClick={() => setShowAddModal(false)}>Cancel</button>
                                     <button type="submit" className="invPrimaryBtn">Save Changes</button>
                                 </div>

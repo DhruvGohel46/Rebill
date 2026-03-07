@@ -20,14 +20,14 @@ const ActionMenu = ({ worker, onView, onEdit, onDelete }) => {
                 whileHover={{ backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)' }}
                 whileTap={{ scale: 0.92 }}
                 style={{
-                    width: 32, height: 32,
+                    width: 'calc(32px * var(--display-zoom))', height: 'calc(32px * var(--display-zoom))',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     background: 'transparent', border: 'none', cursor: 'pointer',
-                    borderRadius: 8,
+                    borderRadius: 'calc(8px * var(--display-zoom))',
                     color: isDark ? '#71717A' : '#9CA3AF',
                 }}
             >
-                <IoEllipsisVertical size={16} />
+                <IoEllipsisVertical size={16 * 1} />
             </motion.button>
 
             <AnimatePresence>
@@ -112,9 +112,9 @@ const WorkerRow = ({ worker, onView, onEdit, onDelete, index }) => {
             style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 16,
-                padding: '14px 16px',
-                borderRadius: 12,
+                gap: 'calc(16px * var(--display-zoom))',
+                padding: 'calc(14px * var(--display-zoom)) calc(16px * var(--display-zoom))',
+                borderRadius: 'calc(12px * var(--display-zoom))',
                 cursor: 'pointer',
                 borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)'}`,
                 transition: 'background-color 0.15s',
@@ -122,13 +122,13 @@ const WorkerRow = ({ worker, onView, onEdit, onDelete, index }) => {
         >
             {/* Avatar */}
             <div style={{
-                width: 42, height: 42, borderRadius: 12,
+                width: 'calc(42px * var(--display-zoom))', height: 'calc(42px * var(--display-zoom))', borderRadius: 'calc(12px * var(--display-zoom))',
                 overflow: 'hidden', flexShrink: 0,
                 background: isDark
                     ? 'linear-gradient(145deg, #27272A, #1C1C1F)'
                     : 'linear-gradient(145deg, #F9FAFB, #F0F1F3)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#F97316', fontWeight: 600, fontSize: 15,
+                color: '#F97316', fontWeight: 600, fontSize: 'calc(15px * var(--text-scale))',
                 border: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
             }}>
                 {worker.photo ? (
@@ -140,12 +140,12 @@ const WorkerRow = ({ worker, onView, onEdit, onDelete, index }) => {
             </div>
 
             {/* Name + Phone */}
-            <div style={{ flex: '1 1 180px', minWidth: 0 }}>
+            <div style={{ flex: `1 1 calc(180px * var(--display-zoom))`, minWidth: 0 }}>
                 <div style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
+                    display: 'flex', alignItems: 'center', gap: 'calc(8px * var(--display-zoom))',
                 }}>
                     <span style={{
-                        fontSize: 14, fontWeight: 600,
+                        fontSize: 'calc(14px * var(--text-scale))', fontWeight: 600,
                         color: isDark ? '#FAFAFA' : '#111827',
                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}>
@@ -153,7 +153,7 @@ const WorkerRow = ({ worker, onView, onEdit, onDelete, index }) => {
                     </span>
                     {/* Status dot */}
                     <span style={{
-                        width: 6, height: 6, borderRadius: '50%',
+                        width: 'calc(6px * var(--display-zoom))', height: 'calc(6px * var(--display-zoom))', borderRadius: '50%',
                         background: statusColor, flexShrink: 0,
                         boxShadow: worker.status === 'active' ? '0 0 6px rgba(16,185,129,0.4)' : 'none',
                     }} />
@@ -172,17 +172,17 @@ const WorkerRow = ({ worker, onView, onEdit, onDelete, index }) => {
 
             {/* Role */}
             <div style={{
-                flex: '0 1 120px', minWidth: 0,
-                display: 'flex', alignItems: 'center', gap: 6,
+                flex: `0 1 calc(120px * var(--display-zoom))`, minWidth: 0,
+                display: 'flex', alignItems: 'center', gap: 'calc(6px * var(--display-zoom))',
             }}>
                 <div style={{
-                    padding: '4px 10px',
-                    borderRadius: 6,
+                    padding: 'calc(4px * var(--display-zoom)) calc(10px * var(--display-zoom))',
+                    borderRadius: 'calc(6px * var(--display-zoom))',
                     background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
-                    fontSize: 12, fontWeight: 500,
+                    fontSize: 'calc(12px * var(--text-scale))', fontWeight: 500,
                     color: isDark ? '#A1A1AA' : '#6B7280',
                     whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                    display: 'flex', alignItems: 'center', gap: 4,
+                    display: 'flex', alignItems: 'center', gap: 'calc(4px * var(--display-zoom))',
                 }}>
                     <IoBriefcase size={11} style={{ flexShrink: 0, opacity: 0.6 }} />
                     {worker.role}
@@ -191,34 +191,34 @@ const WorkerRow = ({ worker, onView, onEdit, onDelete, index }) => {
 
             {/* Salary */}
             <div style={{
-                flex: '0 1 130px', minWidth: 0,
+                flex: `0 1 calc(130px * var(--display-zoom))`, minWidth: 0,
                 textAlign: 'right',
             }}>
                 <span style={{
-                    fontSize: 14, fontWeight: 600,
+                    fontSize: 'calc(14px * var(--text-scale))', fontWeight: 600,
                     color: isDark ? '#FAFAFA' : '#111827',
                     fontVariantNumeric: 'tabular-nums',
                 }}>
                     {formatCurrency(worker.salary)}
                 </span>
                 <span style={{
-                    fontSize: 11, color: isDark ? '#52525B' : '#9CA3AF',
-                    marginLeft: 2,
+                    fontSize: 'calc(11px * var(--text-scale))', color: isDark ? '#52525B' : '#9CA3AF',
+                    marginLeft: 'calc(2px * var(--display-zoom))',
                 }}>/mo</span>
             </div>
 
             {/* Advance */}
             <div style={{
-                flex: '0 1 100px', minWidth: 0,
+                flex: `0 1 calc(100px * var(--display-zoom))`, minWidth: 0,
                 textAlign: 'right',
             }}>
                 {hasAdvance ? (
                     <span style={{
-                        fontSize: 13, fontWeight: 600,
+                        fontSize: 'calc(13px * var(--text-scale))', fontWeight: 600,
                         color: '#EF4444',
                         fontVariantNumeric: 'tabular-nums',
-                        padding: '3px 8px',
-                        borderRadius: 6,
+                        padding: 'calc(3px * var(--display-zoom)) calc(8px * var(--display-zoom))',
+                        borderRadius: 'calc(6px * var(--display-zoom))',
                         background: 'rgba(239,68,68,0.08)',
                     }}>
                         {formatCurrency(worker.current_advance)}
@@ -254,34 +254,34 @@ const WorkerTable = ({ workers, onView, onEdit, onDelete }) => {
         <div>
             {/* Column labels */}
             <div style={{
-                display: 'flex', alignItems: 'center', gap: 16,
-                padding: '0 16px 10px 16px',
+                display: 'flex', alignItems: 'center', gap: 'calc(16px * var(--display-zoom))',
+                padding: `0 calc(16px * var(--display-zoom)) calc(10px * var(--display-zoom)) calc(16px * var(--display-zoom))`,
                 borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
             }}>
                 {/* Avatar spacer */}
-                <div style={{ width: 42, flexShrink: 0 }} />
+                <div style={{ width: 'calc(42px * var(--display-zoom))', flexShrink: 0 }} />
                 <div style={{
-                    flex: '1 1 180px', fontSize: 11, fontWeight: 600,
+                    flex: `1 1 calc(180px * var(--display-zoom))`, fontSize: 'calc(11px * var(--text-scale))', fontWeight: 600,
                     textTransform: 'uppercase', letterSpacing: '0.06em',
                     color: isDark ? '#52525B' : '#9CA3AF',
                 }}>Name</div>
                 <div style={{
-                    flex: '0 1 120px', fontSize: 11, fontWeight: 600,
+                    flex: `0 1 calc(120px * var(--display-zoom))`, fontSize: 'calc(11px * var(--text-scale))', fontWeight: 600,
                     textTransform: 'uppercase', letterSpacing: '0.06em',
                     color: isDark ? '#52525B' : '#9CA3AF',
                 }}>Role</div>
                 <div style={{
-                    flex: '0 1 130px', fontSize: 11, fontWeight: 600,
+                    flex: `0 1 calc(130px * var(--display-zoom))`, fontSize: 'calc(11px * var(--text-scale))', fontWeight: 600,
                     textTransform: 'uppercase', letterSpacing: '0.06em',
                     color: isDark ? '#52525B' : '#9CA3AF', textAlign: 'right',
                 }}>Salary</div>
                 <div style={{
-                    flex: '0 1 100px', fontSize: 11, fontWeight: 600,
+                    flex: `0 1 calc(100px * var(--display-zoom))`, fontSize: 'calc(11px * var(--text-scale))', fontWeight: 600,
                     textTransform: 'uppercase', letterSpacing: '0.06em',
                     color: isDark ? '#52525B' : '#9CA3AF', textAlign: 'right',
                 }}>Advance</div>
                 {/* Action spacer */}
-                <div style={{ width: 36, flexShrink: 0 }} />
+                <div style={{ width: 'calc(36px * var(--display-zoom))', flexShrink: 0 }} />
             </div>
 
             {/* Rows */}

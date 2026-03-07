@@ -6,11 +6,11 @@
     /* Light Theme Default */
     background: #f6f8fb;
 
-    padding: 32px;
+    padding: calc(32px * var(--display-zoom));
     height: 100vh;
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: calc(32px * var(--display-zoom));
     box-sizing: border-box;
     overflow: hidden;
     position: relative;
@@ -22,11 +22,11 @@
 /* Constrain content width */
 .invPageInner {
     width: 100%;
-    max-width: 1400px;
+    max-width: calc(1400px * var(--display-zoom));
     height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: calc(32px * var(--display-zoom));
 }
 
 /* --- Dark Theme Overrides --- */
@@ -43,8 +43,8 @@
     display: flex;
     align-items: center;
     gap: 0;
-    padding: 0 4px;
-    height: 48px;
+    padding: 0 calc(4px * var(--display-zoom));
+    height: calc(48px * var(--display-zoom));
     transition: all 0.3s ease;
     width: 100%;
     /* Remove external borders and background to blend into main card */
@@ -69,14 +69,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    padding: 0 16px;
+    gap: calc(12px * var(--display-zoom));
+    padding: 0 calc(16px * var(--display-zoom));
     min-width: 0;
 }
 
 .invStatDivider {
     width: 1px;
-    height: 24px;
+    height: calc(24px * var(--display-zoom));
     flex-shrink: 0;
 }
 
@@ -114,8 +114,8 @@
 }
 
 .invStatDot {
-    width: 7px;
-    height: 7px;
+    width: calc(7px * var(--display-zoom));
+    height: calc(7px * var(--display-zoom));
     border-radius: 50%;
     flex-shrink: 0;
 }
@@ -130,10 +130,10 @@
 
     background: #ffffff;
     border: 1px solid #e4e7ec;
-    border-radius: 20px;
+    border-radius: calc(20px * var(--display-zoom));
     padding: 0;
     /* Internal padding handled by children for full-width headers */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 calc(4px * var(--display-zoom)) calc(20px * var(--display-zoom)) rgba(0, 0, 0, 0.03);
     /* Soft grey shadow */
 }
 
@@ -145,7 +145,7 @@
 
 /* --- Header Section (Title + Filters) --- */
 .invHeaderSection {
-    padding: 28px 32px 24px 32px;
+    padding: calc(28px * var(--display-zoom)) calc(32px * var(--display-zoom)) calc(24px * var(--display-zoom)) calc(32px * var(--display-zoom));
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -156,7 +156,7 @@
 .invTitleBlock {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: calc(6px * var(--display-zoom));
 }
 
 .invPageTitle {
@@ -182,22 +182,22 @@
 /* Controls */
 .invControlsRow {
     display: flex;
-    gap: 12px;
+    gap: calc(12px * var(--display-zoom));
     align-items: center;
 }
 
 /* Search & Filters Mockup */
 .invFilterInput {
-    height: 42px;
+    height: calc(42px * var(--display-zoom));
     background: #ffffff;
     border: 1px solid #e4e7ec;
-    border-radius: 10px;
-    padding: 0 14px;
+    border-radius: calc(10px * var(--display-zoom));
+    padding: 0 calc(14px * var(--display-zoom));
     font-size: var(--font-md);
     color: #111827;
     outline: none;
     transition: all 0.2s ease;
-    min-width: 240px;
+    min-width: calc(240px * var(--display-zoom));
 }
 
 .invFilterInput:focus {
@@ -217,19 +217,19 @@
 
 /* Add Button */
 .invAddButton {
-    height: 42px;
-    padding: 0 20px;
+    height: calc(42px * var(--display-zoom));
+    padding: 0 calc(20px * var(--display-zoom));
     background: linear-gradient(135deg, #ff7a18, #ff4d00);
     border: none;
-    border-radius: 10px;
+    border-radius: calc(10px * var(--display-zoom));
     color: white;
     font-weight: var(--weight-semibold);
     font-size: var(--font-md);
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 8px;
-    box-shadow: 0 2px 8px rgba(255, 122, 24, 0.25);
+    gap: calc(8px * var(--display-zoom));
+    box-shadow: 0 calc(2px * var(--display-zoom)) calc(8px * var(--display-zoom)) rgba(255, 122, 24, 0.25);
     transition: all 0.2s ease;
 }
 
@@ -246,7 +246,7 @@
 .invTableWrapper {
     flex: 1;
     overflow-y: auto;
-    padding: 0 32px;
+    padding: 0 calc(32px * var(--display-zoom));
     /* Inner padding matches header */
 }
 
@@ -258,7 +258,7 @@
 
 /* Header */
 .invTable th {
-    height: 48px;
+    height: calc(48px * var(--display-zoom));
     text-align: left;
     font-size: var(--font-md);
     font-weight: var(--weight-medium);
@@ -269,7 +269,7 @@
     background: #ffffff;
     /* Sticky header needs bg */
     z-index: 10;
-    padding: 0 16px;
+    padding: 0 calc(16px * var(--display-zoom));
     white-space: nowrap;
 }
 
@@ -281,7 +281,7 @@
 
 /* Rows */
 .invTableRow {
-    height: 64px;
+    height: calc(64px * var(--display-zoom));
     transition: all 0.2s ease;
     cursor: pointer;
     /* Enable row click */
@@ -290,7 +290,7 @@
 .invTableRow td {
     border-bottom: 1px solid #f3f4f6;
     /* Very subtle separation */
-    padding: 0 16px;
+    padding: 0 calc(16px * var(--display-zoom));
     vertical-align: middle;
 }
 
@@ -319,7 +319,7 @@
     font-size: var(--font-lg);
     font-weight: var(--weight-medium);
     color: #111827;
-    margin-bottom: 4px;
+    margin-bottom: calc(4px * var(--display-zoom));
 }
 
 [data-theme="dark"] .invProductName {
@@ -330,8 +330,8 @@
     display: inline-block;
     font-size: var(--font-sm);
     font-weight: var(--weight-semibold);
-    padding: 2px 8px;
-    border-radius: 6px;
+    padding: calc(2px * var(--display-zoom)) calc(8px * var(--display-zoom));
+    border-radius: calc(6px * var(--display-zoom));
     background: #eff6ff;
     color: #3b82f6;
 }
@@ -343,13 +343,13 @@
 
 /* Stock Bar */
 .invStockBarBG {
-    height: 6px;
+    height: calc(6px * var(--display-zoom));
     border-radius: 999px;
     background: #f3f4f6;
     overflow: hidden;
     width: 100%;
-    max-width: 120px;
-    margin-top: 6px;
+    max-width: calc(120px * var(--display-zoom));
+    margin-top: calc(6px * var(--display-zoom));
 }
 
 [data-theme="dark"] .invStockBarBG {
@@ -366,7 +366,7 @@
 .invBadge {
     display: inline-flex;
     align-items: center;
-    padding: 4px 10px;
+    padding: calc(4px * var(--display-zoom)) calc(10px * var(--display-zoom));
     border-radius: 999px;
     font-size: var(--font-md);
     font-weight: var(--weight-medium);
@@ -394,12 +394,12 @@
 
 /* Action Buttons */
 .invActionBtn {
-    width: 36px;
-    height: 36px;
+    width: calc(36px * var(--display-zoom));
+    height: calc(36px * var(--display-zoom));
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: calc(8px * var(--display-zoom));
     background: transparent;
     border: 1px solid transparent;
     /* Invisible by default for cleaner look, or subtle */
@@ -426,7 +426,7 @@ color: #ffffff;
 
 /* Footer Info */
 .invFooter {
-padding: 20px 32px;
+padding: calc(20px * var(--display-zoom)) calc(32px * var(--display-zoom));
 border-top: 1px solid #e4e7ec;
 display: flex;
 justify-content: space-between;
@@ -445,14 +445,14 @@ color: #8b949e;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 60px 0;
+    padding: calc(60px * var(--display-zoom)) 0;
     text-align: center;
     color: #9ca3af;
 }
 
 .invEmptyIcon {
     font-size: var(--font-4xl);
-    margin-bottom: 16px;
+    margin-bottom: calc(16px * var(--display-zoom));
     opacity: 0.5;
 }
 
@@ -473,9 +473,9 @@ color: #8b949e;
 .invModal {
     background: #ffffff;
     width: 100%;
-    max-width: 500px;
-    border-radius: 16px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    max-width: calc(500px * var(--display-zoom));
+    border-radius: calc(16px * var(--display-zoom));
+    box-shadow: 0 calc(20px * var(--display-zoom)) calc(40px * var(--display-zoom)) rgba(0, 0, 0, 0.2);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -487,7 +487,7 @@ color: #8b949e;
 }
 
 .invModalHeader {
-    padding: 20px 24px;
+    padding: calc(20px * var(--display-zoom)) calc(24px * var(--display-zoom));
     border-bottom: 1px solid #e4e7ec;
     display: flex;
     justify-content: space-between;
@@ -511,16 +511,16 @@ color: #8b949e;
 }
 
 .invModalBody {
-    padding: 24px;
+    padding: calc(24px * var(--display-zoom));
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: calc(16px * var(--display-zoom));
 }
 
 .invFormGroup {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: calc(8px * var(--display-zoom));
 }
 
 .invLabel {
@@ -534,8 +534,8 @@ color: #8b949e;
 }
 
 .invInput {
-    padding: 10px 12px;
-    border-radius: 8px;
+    padding: calc(10px * var(--display-zoom)) calc(12px * var(--display-zoom));
+    border-radius: calc(8px * var(--display-zoom));
     border: 1px solid #e4e7ec;
     background: #ffffff;
     font-size: var(--font-md);
@@ -557,12 +557,12 @@ color: #8b949e;
 .invModalFooter {
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
+    gap: calc(12px * var(--display-zoom));
 }
 
 .invBtn {
-    padding: 10px 16px;
-    border-radius: 8px;
+    padding: calc(10px * var(--display-zoom)) calc(16px * var(--display-zoom));
+    border-radius: calc(8px * var(--display-zoom));
     background: transparent;
     border: 1px solid #e4e7ec;
     color: #374151;
@@ -584,14 +584,14 @@ color: #8b949e;
 }
 
 .invPrimaryBtn {
-    padding: 10px 20px;
-    border-radius: 8px;
+    padding: calc(10px * var(--display-zoom)) calc(20px * var(--display-zoom));
+    border-radius: calc(8px * var(--display-zoom));
     background: linear-gradient(135deg, #ff7a18, #ff4d00);
     color: white;
     font-weight: 600;
     border: none;
     cursor: pointer;
-    box-shadow: 0 2px 4px rgba(255, 122, 24, 0.2);
+    box-shadow: 0 calc(2px * var(--display-zoom)) calc(4px * var(--display-zoom)) rgba(255, 122, 24, 0.2);
 }
 
 .invPrimaryBtn:hover {
