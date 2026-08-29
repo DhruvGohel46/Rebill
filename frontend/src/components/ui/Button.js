@@ -69,10 +69,10 @@ const Button = React.forwardRef(({
       // Hover handled by motion
     },
     secondary: {
-      backgroundColor: isDark ? '#23262D' : '#E9EDF2',
-      color: currentTheme.colors.text.primary,
-      border: 'none', // No border for secondary
-      boxShadow: 'none',
+      backgroundColor: isDark ? '#23262D' : '#F8FAFC',
+      color: isDark ? currentTheme.colors.text.primary : '#1E293B',
+      border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #CBD5E1',
+      boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.05)',
     },
     success: {
       backgroundColor: currentTheme.colors.success[600],

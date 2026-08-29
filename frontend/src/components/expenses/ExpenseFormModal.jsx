@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import Button from '../ui/Button';
 import { GlobalSelect, GlobalDatePicker } from '../ui';
 import { formatCurrency } from '../../utils/api';
 import { workerAPI } from '../../api/workers';
 import { expensesAPI } from '../../api/expenses';
+import { useTheme } from '../../context/ThemeContext';
 import { FiX, FiInfo, FiDollarSign, FiTag, FiUser, FiCreditCard, FiCalendar, FiMessageSquare } from 'react-icons/fi';
 
 export default function ExpenseFormModal({ onClose, onSubmit, initialData = null }) {
+  const { isDark } = useTheme();
   const [formData, setFormData] = useState({
     title: '',
     category: 'Other',
@@ -116,48 +117,53 @@ export default function ExpenseFormModal({ onClose, onSubmit, initialData = null
     <div style={{
       position: 'fixed', inset: 0, zIndex: 1000,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)', padding: 'var(--spacing-4)'
+      backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(10px)',
+      WebkitBackdropFilter: 'blur(10px)', padding: '16px'
     }}>
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="liquid-glass-card"
+        exit={{ opacity: 0, scale: 0.95, y: 15 }}
         style={{
-          width: '100%', maxWidth: '520px', maxHeight: '95vh',
+          width: '100%', maxWidth: '540px', maxHeight: '92vh',
           display: 'flex', flexDirection: 'column',
-          borderRadius: 'var(--radius-2xl)',
-          backgroundColor: 'rgba(24, 24, 27, 0.95)',
-          border: '1px solid var(--glass-border)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          borderRadius: '24px',
+          background: isDark ? 'linear-gradient(165deg, #18191D 0%, #111215 100%)' : '#FFFFFF',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #E2E8F0',
+          boxShadow: isDark ? '0 25px 50px -12px rgba(0, 0, 0, 0.7)' : '0 20px 40px -10px rgba(15, 23, 42, 0.12)',
           overflow: 'hidden',
           zIndex: 1001,
-          fontFamily: 'Inter, system-ui, sans-serif'
         }}
       >
         {/* Modal Header */}
         <div style={{
-          padding: 'var(--spacing-4) var(--spacing-6)',
+          padding: '20px 24px',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          background: 'linear-gradient(to right, rgba(249, 115, 22, 0.1), transparent)',
-          borderBottom: '1px solid var(--glass-border)'
+          background: isDark ? 'linear-gradient(to right, rgba(255, 107, 26, 0.08), transparent)' : 'linear-gradient(to right, #FFF7ED, #FFFFFF)',
+          borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #F1F5F9'
         }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: 'var(--text-xl)', fontWeight: '700', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-              {initialData ? 'Update' : 'Record'} Expense
+            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '850', color: isDark ? '#FFFFFF' : '#0F172A', letterSpacing: '-0.02em' }}>
+              {initialData ? 'Edit Expense' : 'Record New Expense'}
             </h2>
-            <p style={{ margin: 'var(--spacing-1) 0 0 0', color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)' }}>
-              Fill in the details to track your business spending
+            <p style={{ margin: '3px 0 0 0', color: isDark ? '#94A3B8' : '#64748B', fontSize: '0.82rem', fontWeight: 500 }}>
+              Track operational costs, vendor utility charges, and payouts
             </p>
           </div>
           <button 
             onClick={onClose} 
-            className="icon-button"
             style={{ 
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              background: isDark ? 'rgba(255, 255, 255, 0.06)' : '#F1F5F9',
+              border: 'none',
               borderRadius: '50%',
-              padding: '6px'
+              width: '34px',
+              height: '34px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: isDark ? '#94A3B8' : '#64748B',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
             }}
           >
             <FiX size={18} />
@@ -165,36 +171,35 @@ export default function ExpenseFormModal({ onClose, onSubmit, initialData = null
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-          <div style={{ padding: 'var(--spacing-6)', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 'var(--spacing-4)' }}>
+          <div style={{ padding: '22px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
             
             {/* Title Section */}
-            <div className="form-group">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-xs)', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-2)' }}>
-                <FiInfo size={13} style={{ color: 'var(--primary-400)' }} />
-                Expense Title
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.80rem', fontWeight: '750', textTransform: 'uppercase', letterSpacing: '0.04em', color: isDark ? '#94A3B8' : '#64748B', marginBottom: '6px' }}>
+                <FiInfo size={13} style={{ color: '#FF6B1A' }} />
+                Expense Title *
               </label>
               <input
                 name="title"
                 value={formData.title}
                 onChange={handleInputChange}
                 required
-                placeholder="e.g. March Electricity Bill, Shop Maintenance"
+                placeholder="e.g. March Electricity Bill, Shop Maintenance, Cleaning Supplies"
                 style={{
-                  width: '100%', padding: '12px',
-                  background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--glass-border)',
-                  borderRadius: 'var(--radius-lg)', color: 'var(--text-primary)',
-                  fontSize: 'var(--text-sm)', outline: 'none', transition: 'all 0.2s'
+                  width: '100%', padding: '10px 14px',
+                  background: isDark ? '#16171B' : '#F8FAFC',
+                  border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #CBD5E1',
+                  borderRadius: '12px', color: isDark ? '#FFFFFF' : '#0F172A',
+                  fontSize: '0.90rem', fontWeight: 600, outline: 'none', transition: 'all 0.2s'
                 }}
-                onFocus={(e) => e.target.style.borderColor = 'var(--primary-500)'}
-                onBlur={(e) => e.target.style.borderColor = 'var(--glass-border)'}
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-4)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               {/* Category */}
-              <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-xs)', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-2)' }}>
-                  <FiTag size={13} style={{ color: 'var(--primary-400)' }} />
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.80rem', fontWeight: '750', textTransform: 'uppercase', letterSpacing: '0.04em', color: isDark ? '#94A3B8' : '#64748B', marginBottom: '6px' }}>
+                  <FiTag size={13} style={{ color: '#FF6B1A' }} />
                   Category
                 </label>
                 <GlobalSelect
@@ -205,13 +210,13 @@ export default function ExpenseFormModal({ onClose, onSubmit, initialData = null
               </div>
 
               {/* Amount */}
-              <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-xs)', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-2)' }}>
-                  <FiDollarSign size={13} style={{ color: 'var(--primary-400)' }} />
-                  Amount (₹)
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.80rem', fontWeight: '750', textTransform: 'uppercase', letterSpacing: '0.04em', color: isDark ? '#94A3B8' : '#64748B', marginBottom: '6px' }}>
+                  <FiDollarSign size={13} style={{ color: '#FF6B1A' }} />
+                  Amount (₹) *
                 </label>
                 <div style={{ position: 'relative' }}>
-                  <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--primary-400)', fontWeight: '700' }}>₹</span>
+                  <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#FF6B1A', fontWeight: '800' }}>₹</span>
                   <input
                     type="number"
                     name="amount"
@@ -222,35 +227,34 @@ export default function ExpenseFormModal({ onClose, onSubmit, initialData = null
                     placeholder="0.00"
                     required
                     style={{
-                      width: '100%', padding: '12px 12px 12px 24px',
-                      background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--glass-border)',
-                      borderRadius: 'var(--radius-lg)', color: 'var(--text-primary)',
-                      fontSize: 'var(--text-sm)', fontWeight: '700', outline: 'none'
+                      width: '100%', padding: '10px 12px 10px 26px',
+                      background: isDark ? '#16171B' : '#F8FAFC',
+                      border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #CBD5E1',
+                      borderRadius: '12px', color: isDark ? '#FFFFFF' : '#0F172A',
+                      fontSize: '0.92rem', fontWeight: '800', outline: 'none'
                     }}
-                    onFocus={(e) => e.target.style.borderColor = 'var(--primary-500)'}
-                    onBlur={(e) => e.target.style.borderColor = 'var(--glass-border)'}
                   />
                 </div>
               </div>
 
               {/* Worker Selection */}
-              <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-xs)', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-2)' }}>
-                  <FiUser size={13} style={{ color: 'var(--primary-400)' }} />
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.80rem', fontWeight: '750', textTransform: 'uppercase', letterSpacing: '0.04em', color: isDark ? '#94A3B8' : '#64748B', marginBottom: '6px' }}>
+                  <FiUser size={13} style={{ color: '#FF6B1A' }} />
                   Link to Worker (Optional)
                 </label>
                 <GlobalSelect
                   options={[{ value: '', label: 'None' }, ...workers]}
                   value={formData.worker_id}
-                  placeholder={loadingWorkers ? 'Loading workers...' : 'Select a worker'}
+                  placeholder={loadingWorkers ? 'Loading...' : 'Select worker'}
                   onChange={(val) => handleInputChange({ target: { name: 'worker_id', value: val } })}
                 />
               </div>
 
               {/* Payment Method */}
-              <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-xs)', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-2)' }}>
-                  <FiCreditCard size={13} style={{ color: 'var(--primary-400)' }} />
+              <div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.80rem', fontWeight: '750', textTransform: 'uppercase', letterSpacing: '0.04em', color: isDark ? '#94A3B8' : '#64748B', marginBottom: '6px' }}>
+                  <FiCreditCard size={13} style={{ color: '#FF6B1A' }} />
                   Payment Method
                 </label>
                 <GlobalSelect
@@ -261,10 +265,10 @@ export default function ExpenseFormModal({ onClose, onSubmit, initialData = null
               </div>
 
               {/* Date Selection */}
-              <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-xs)', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-2)' }}>
-                  <FiCalendar size={13} style={{ color: 'var(--primary-400)' }} />
-                  Date
+              <div style={{ gridColumn: 'span 2' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.80rem', fontWeight: '750', textTransform: 'uppercase', letterSpacing: '0.04em', color: isDark ? '#94A3B8' : '#64748B', marginBottom: '6px' }}>
+                  <FiCalendar size={13} style={{ color: '#FF6B1A' }} />
+                  Expense Date
                 </label>
                 <GlobalDatePicker
                   value={formData.date}
@@ -274,25 +278,24 @@ export default function ExpenseFormModal({ onClose, onSubmit, initialData = null
             </div>
 
             {/* Notes Section */}
-            <div className="form-group">
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-xs)', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: 'var(--spacing-2)' }}>
-                <FiMessageSquare size={13} style={{ color: 'var(--primary-400)' }} />
-                Notes
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.80rem', fontWeight: '750', textTransform: 'uppercase', letterSpacing: '0.04em', color: isDark ? '#94A3B8' : '#64748B', marginBottom: '6px' }}>
+                <FiMessageSquare size={13} style={{ color: '#FF6B1A' }} />
+                Notes / Remarks
               </label>
               <textarea
                 name="notes"
                 value={formData.notes}
                 onChange={handleInputChange}
-                placeholder="Add any additional details or context..."
+                placeholder="Add receipt reference, vendor remarks, or additional context..."
                 rows={2}
                 style={{
-                  width: '100%', padding: '12px',
-                  background: 'rgba(255, 255, 255, 0.03)', border: '1px solid var(--glass-border)',
-                  borderRadius: 'var(--radius-lg)', color: 'var(--text-primary)',
-                  fontSize: 'var(--text-xs)', outline: 'none', transition: 'all 0.2s', resize: 'none'
+                  width: '100%', padding: '10px 14px',
+                  background: isDark ? '#16171B' : '#F8FAFC',
+                  border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #CBD5E1',
+                  borderRadius: '12px', color: isDark ? '#FFFFFF' : '#0F172A',
+                  fontSize: '0.86rem', outline: 'none', transition: 'all 0.2s', resize: 'none'
                 }}
-                onFocus={(e) => e.target.style.borderColor = 'var(--primary-500)'}
-                onBlur={(e) => e.target.style.borderColor = 'var(--glass-border)'}
               />
             </div>
 
@@ -300,35 +303,55 @@ export default function ExpenseFormModal({ onClose, onSubmit, initialData = null
 
           {/* Modal Footer */}
           <div style={{
-            padding: 'var(--spacing-4) var(--spacing-6)',
-            borderTop: '1px solid var(--glass-border)',
-            background: 'rgba(255, 255, 255, 0.02)',
+            padding: '16px 24px',
+            borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #F1F5F9',
+            background: isDark ? 'rgba(0, 0, 0, 0.2)' : '#F8FAFC',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center'
           }}>
             <div>
-              <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-sm)', marginRight: 'var(--spacing-3)' }}>Amount Due</span>
-              <strong style={{ color: 'var(--primary-500)', fontSize: 'var(--text-2xl)', fontWeight: '800' }}>
+              <span style={{ color: isDark ? '#94A3B8' : '#64748B', fontSize: '0.80rem', fontWeight: 650, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block' }}>
+                Total Amount
+              </span>
+              <strong style={{ color: '#FF6B1A', fontSize: '1.45rem', fontWeight: '850', letterSpacing: '-0.02em' }}>
                 {formatCurrency(Number(formData.amount) || 0)}
               </strong>
             </div>
             
-            <div style={{ display: 'flex', gap: 'var(--spacing-3)' }}>
-              <Button 
-                variant="ghost" 
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button 
                 type="button" 
                 onClick={onClose}
-                style={{ padding: '12px 24px', borderRadius: 'var(--radius-xl)' }}
+                style={{
+                  padding: '9px 20px',
+                  borderRadius: '12px',
+                  border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1.5px solid #CBD5E1',
+                  background: 'transparent',
+                  color: isDark ? '#94A3B8' : '#64748B',
+                  fontWeight: 700,
+                  fontSize: '0.86rem',
+                  cursor: 'pointer'
+                }}
               >
                 Cancel
-              </Button>
-              <Button 
-                variant="primary" 
+              </button>
+              <button 
                 type="submit" 
                 disabled={isSubmitting || !formData.title || Number(formData.amount) <= 0}
-                style={{ padding: '12px 32px', borderRadius: 'var(--radius-xl)', fontWeight: '700' }}
+                style={{
+                  padding: '9px 24px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%)',
+                  color: '#FFFFFF',
+                  fontWeight: 800,
+                  fontSize: '0.86rem',
+                  boxShadow: '0 4px 14px rgba(255, 107, 26, 0.3)',
+                  cursor: isSubmitting || !formData.title || Number(formData.amount) <= 0 ? 'not-allowed' : 'pointer',
+                  opacity: isSubmitting || !formData.title || Number(formData.amount) <= 0 ? 0.6 : 1
+                }}
               >
-                {isSubmitting ? 'Saving...' : initialData ? 'Update Expense' : 'Confirm Expense'}
-              </Button>
+                {isSubmitting ? 'Saving...' : initialData ? 'Update Expense' : 'Save Expense'}
+              </button>
             </div>
           </div>
         </form>

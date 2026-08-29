@@ -164,7 +164,7 @@ export const agentsAPI = {
 
     /**
      * Get audit action logs
-     * @param {Object} params - { limit, agent, status }
+     * @param {Object} params - { limit, offset, agent, status, start_date, end_date, search }
      */
     getAuditLogs: async (params = {}) => {
         const response = await api.get('/api/agents/logs', { params });
@@ -172,10 +172,32 @@ export const agentsAPI = {
     },
 
     /**
-     * Get daily request and token usage metrics
+     * Export audit logs to CSV or JSON
+     * @param {Object} params - { format, agent, status, start_date, end_date }
+     */
+    exportAuditLogs: async (params = {}) => {
+        const response = await api.get('/api/agents/logs/export', {
+            params,
+            responseType: params.format === 'json' ? 'json' : 'blob'
+        });
+        return response.data;
+    },
+
+    /**
+     * Get chronological conversation interactions
+     * @param {Object} params - { limit, offset }
+     */
+    getInteractions: async (params = {}) => {
+        const response = await api.get('/api/agents/interactions', { params });
+        return response.data;
+    },
+
+    /**
+     * Get daily request metrics
      */
     getUsageSummary: async () => {
         const response = await api.get('/api/agents/usage-summary');
         return response.data;
     }
 };
+

@@ -312,6 +312,12 @@ export const billingAPI = {
     api.delete('/api/bill/clear', {
       data: { password }
     }),
+
+  // Live Order View & Drag-to-Merge
+  getLiveOrders: (version = '') => api.get(`/api/bill/live${version ? `?version=${version}` : ''}`),
+  mergeOrders: (billIds) => api.post('/api/bill/merge', { bill_ids: billIds }),
+  settleMergeGroup: (groupId, payments) => api.post(`/api/bill/merge/${groupId}/settle`, { payments }),
+  splitMergeGroup: (groupId) => api.post(`/api/bill/merge/${groupId}/split`),
 };
 
 // Summary APIs
@@ -342,42 +348,51 @@ export const summaryAPI = {
 
 // Reports APIs
 export const reportsAPI = {
-  // Export today's sales (or specific date) as Excel/CSV
-  exportTodayExcel: (reportType = 'detailed', date = null) => {
-    let url = `/api/reports/excel/today?type=${reportType}`;
-    if (date) {
-      url += `&date=${date}`;
-    }
+  // 1. Daily Sales Report
+  exportDailySalesExcel: (date = null) => {
+    const url = date ? `/api/reports/excel/daily?date=${date}` : '/api/reports/excel/daily';
     return api.get(url, { responseType: 'blob' });
   },
 
-  // Export today's CSV report
-  exportTodayCSV: () =>
-    api.get('/api/reports/csv/today', { responseType: 'blob' }),
+  // 2. Weekly Sales Summary
+  exportWeeklySalesExcel: (date = null) => {
+    const url = date ? `/api/reports/excel/weekly?date=${date}` : '/api/reports/excel/weekly';
+    return api.get(url, { responseType: 'blob' });
+  },
 
-  // Export monthly sales as Excel
-  exportMonthlyExcel: (month, year) =>
+  // 3. Monthly Sales Summary
+  exportMonthlySalesExcel: (month, year) =>
     api.get(`/api/reports/excel/monthly?month=${month}&year=${year}`, { responseType: 'blob' }),
 
-  // Export weekly sales as Excel (by reference date)
-  exportWeeklyExcel: (date) =>
-    api.get(`/api/reports/excel/weekly?date=${date}`, { responseType: 'blob' }),
+  // 4. Weekly Expense Report
+  exportWeeklyExpensesExcel: (date = null) => {
+    const url = date ? `/api/reports/excel/expenses/weekly?date=${date}` : '/api/reports/excel/expenses/weekly';
+    return api.get(url, { responseType: 'blob' });
+  },
 
-  // Export expenses as Excel
-  exportExpensesExcel: (range = 'today') =>
-    api.get(`/api/reports/excel/expenses?range=${range}`, { responseType: 'blob' }),
+  // 5. Monthly Expense Report
+  exportMonthlyExpensesExcel: (month, year) =>
+    api.get(`/api/reports/excel/expenses/monthly?month=${month}&year=${year}`, { responseType: 'blob' }),
 
-  // Export today's bills as XML
-  exportTodayXML: () =>
-    api.get('/api/reports/xml/today', { responseType: 'blob' }),
+  // 6. Yearly Expense Audit
+  exportYearlyExpensesExcel: (year) =>
+    api.get(`/api/reports/excel/expenses/yearly?year=${year}`, { responseType: 'blob' }),
 
-  // Preview Excel data without downloading
+  // 7. Master Financial Sheet
+  exportMasterFinancialExcel: (year) =>
+    api.get(`/api/reports/excel/master-financial?year=${year}`, { responseType: 'blob' }),
+
+  // Legacy & helper aliases
+  exportTodayExcel: (reportType = 'detailed', date = null) => {
+    const url = date ? `/api/reports/excel/daily?date=${date}` : '/api/reports/excel/daily';
+    return api.get(url, { responseType: 'blob' });
+  },
+  exportTodayCSV: () => api.get('/api/reports/csv/today', { responseType: 'blob' }),
+  exportExpensesExcel: (range = 'today') => api.get(`/api/reports/excel/expenses?range=${range}`, { responseType: 'blob' }),
+  exportWeeklyExcel: (date) => api.get(`/api/reports/excel/weekly?date=${date}`, { responseType: 'blob' }),
+  exportMonthlyExcel: (month, year) => api.get(`/api/reports/excel/monthly?month=${month}&year=${year}`, { responseType: 'blob' }),
   previewExcel: () => api.get('/api/reports/preview/excel'),
-
-  // Preview XML data without downloading
   previewXML: () => api.get('/api/reports/preview/xml'),
-
-  // Get list of available reports
   getAvailableReports: () => api.get('/api/reports/available-reports'),
 };
 

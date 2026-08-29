@@ -171,11 +171,17 @@ def update_worker(worker_id):
 @require_admin
 @safe_route
 def delete_worker(worker_id):
-    """Soft-delete a worker."""
-    success = WorkerService.soft_delete_worker(worker_id)
+    """Deactivate or permanently delete a worker."""
+    permanent = request.args.get("permanent", "false").lower() in ("true", "1", "yes")
+    if request.is_json and request.json:
+        if request.json.get("permanent"):
+            permanent = True
+
+    success = WorkerService.delete_worker(worker_id, permanent=permanent)
     if not success:
         raise NotFoundError("Worker not found", code="WORKER_NOT_FOUND")
-    return jsonify({"success": True})
+    cache.invalidate("workers")
+    return jsonify({"success": True, "permanent": permanent})
 
 
 # ADVANCES

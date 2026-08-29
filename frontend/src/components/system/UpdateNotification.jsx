@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from '../../context/ThemeContext';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    WaveCanvas — animated sine-wave progress bar (compact, scaled-down)
-   Orange = completed (left), dark gray = remaining (right)
+   Orange = completed (left), gray = remaining (right)
    Glowing orange dot tracks the live wave position at the progress boundary
 ───────────────────────────────────────────────────────────────────────────── */
-const WaveCanvas = ({ progress = 0 }) => {
+const WaveCanvas = ({ progress = 0, isDark = true }) => {
   const canvasRef = useRef(null);
   const rafRef    = useRef(null);
   const phaseRef  = useRef(0);
@@ -44,7 +45,7 @@ const WaveCanvas = ({ progress = 0 }) => {
 
     // 1 — Full gray wave (background)
     buildPath();
-    ctx.strokeStyle = '#2E2E2E';
+    ctx.strokeStyle = isDark ? '#2E2E2E' : '#E2E8F0';
     ctx.lineWidth   = LINE_W;
     ctx.lineCap     = 'round';
     ctx.lineJoin    = 'round';
@@ -122,7 +123,7 @@ const WaveCanvas = ({ progress = 0 }) => {
 
     phaseRef.current -= 1.3;
     rafRef.current = requestAnimationFrame(draw);
-  }, [progress]);
+  }, [progress, isDark]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -187,7 +188,7 @@ const fmtTime = (totalBytes, transferred, bps) => {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Icon components (compact minimal)
+   Icon components
 ───────────────────────────────────────────────────────────────────────────── */
 const DownloadIcon = () => (
   <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
@@ -211,40 +212,40 @@ const ErrorIcon = () => (
   </svg>
 );
 
-const SpinnerIcon = () => (
+const SpinnerIcon = ({ isDark }) => (
   <svg width="26" height="26" viewBox="0 0 40 40" fill="none"
     style={{ animation: 'infoUpdateSpin 1.2s linear infinite' }}>
-    <circle cx="20" cy="20" r="14" stroke="rgba(255,255,255,0.08)" strokeWidth="3"/>
+    <circle cx="20" cy="20" r="14" stroke={isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"} strokeWidth="3"/>
     <path d="M20 6 A14 14 0 0 1 34 20" stroke="#FF7A00" strokeWidth="3" strokeLinecap="round"/>
   </svg>
 );
 
-const PauseIcon = () => (
+const PauseIcon = ({ isDark }) => (
   <svg width="10" height="11" viewBox="0 0 12 14" fill="none">
-    <rect x="0.5" y="0.5" width="3.5" height="13" rx="1.5" fill="white"/>
-    <rect x="8" y="0.5" width="3.5" height="13" rx="1.5" fill="white"/>
+    <rect x="0.5" y="0.5" width="3.5" height="13" rx="1.5" fill={isDark ? "white" : "#0F172A"}/>
+    <rect x="8" y="0.5" width="3.5" height="13" rx="1.5" fill={isDark ? "white" : "#0F172A"}/>
   </svg>
 );
 
-const ResumeIcon = () => (
+const ResumeIcon = ({ isDark }) => (
   <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-    <polygon points="2,1 13,7 2,13" fill="white"/>
+    <polygon points="2,1 13,7 2,13" fill={isDark ? "white" : "#0F172A"}/>
   </svg>
 );
 
-const SpeedIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+const SpeedIcon = ({ isDark }) => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isDark ? "rgba(255,255,255,0.4)" : "#64748B"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 2a10 10 0 0 1 10 10"/>
     <path d="M12 2a10 10 0 0 0-10 10"/>
     <path d="M2 12a10 10 0 0 0 10 10"/>
     <path d="M22 12a10 10 0 0 1-10 10"/>
     <path d="M12 12L8.5 8.5"/>
-    <circle cx="12" cy="12" r="1.2" fill="rgba(255,255,255,0.4)" stroke="none"/>
+    <circle cx="12" cy="12" r="1.2" fill={isDark ? "rgba(255,255,255,0.4)" : "#64748B"} stroke="none"/>
   </svg>
 );
 
-const ClockIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+const ClockIcon = ({ isDark }) => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isDark ? "rgba(255,255,255,0.4)" : "#64748B"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10"/>
     <polyline points="12 6 12 12 15.5 14.5"/>
   </svg>
@@ -254,6 +255,7 @@ const ClockIcon = () => (
    Main Component
 ───────────────────────────────────────────────────────────────────────────── */
 const UpdateNotification = () => {
+  const { isDark } = useTheme();
   const [status, setStatus]               = useState('idle');
   const [progress, setProgress]           = useState(0);
   const [bytesPerSecond, setBps]          = useState(0);
@@ -371,14 +373,14 @@ const UpdateNotification = () => {
   const getIcon = () => {
     if (status === 'completed')  return <CheckIcon />;
     if (status === 'failed')     return <ErrorIcon />;
-    if (status === 'checking' || status === 'installing') return <SpinnerIcon />;
+    if (status === 'checking' || status === 'installing') return <SpinnerIcon isDark={isDark} />;
     return <DownloadIcon />;
   };
 
   const iconBorderColor =
-    status === 'completed' ? 'rgba(34, 197, 94, 0.3)' :
-    status === 'failed'    ? 'rgba(239, 68, 68, 0.3)' :
-    'rgba(255, 255, 255, 0.10)';
+    status === 'completed' ? 'rgba(34, 197, 94, 0.4)' :
+    status === 'failed'    ? 'rgba(239, 68, 68, 0.4)' :
+    isDark ? 'rgba(255, 255, 255, 0.12)' : '#CBD5E1';
 
   return (
     <>
@@ -390,15 +392,15 @@ const UpdateNotification = () => {
           to   { transform: rotate(360deg); }
         }
         .info-update-btn:hover {
-          background: #111111 !important;
-          border-color: rgba(255,255,255,0.36) !important;
-          box-shadow: 0 0 16px rgba(255,255,255,0.04) !important;
+          filter: brightness(1.06);
+          transform: translateY(-1px);
         }
         .info-update-btn:active {
           transform: scale(0.97);
         }
         .info-update-action-btn:hover {
-          opacity: 0.88;
+          filter: brightness(1.08);
+          transform: translateY(-1px);
         }
       `}</style>
 
@@ -423,15 +425,13 @@ const UpdateNotification = () => {
               style={{
                 pointerEvents: 'auto',
                 width: '460px',
-                background: '#0D0D0D',
-                border: '1.5px solid rgba(255,255,255,0.13)',
+                background: isDark ? '#14161C' : '#FFFFFF',
+                border: isDark ? '1.5px solid #2C2F36' : '1.5px solid #CBD5E1',
                 borderRadius: '20px',
                 padding: '20px 22px 16px',
-                boxShadow: `
-                  0 0 0 0.5px rgba(255,255,255,0.04) inset,
-                  0 24px 56px rgba(0,0,0,0.88),
-                  0 0 60px rgba(255,122,0,0.03)
-                `,
+                boxShadow: isDark
+                  ? '0 24px 56px rgba(0,0,0,0.85), 0 0 1px 1px rgba(255,255,255,0.08)'
+                  : '0 20px 50px -10px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(203, 213, 225, 0.6)',
                 boxSizing: 'border-box',
                 WebkitFontSmoothing: 'antialiased',
               }}
@@ -441,11 +441,11 @@ const UpdateNotification = () => {
                 {/* Icon */}
                 <div style={{
                   width: '48px', height: '48px', flexShrink: 0,
-                  background: '#111111',
+                  background: isDark ? '#1C1F26' : '#F8FAFC',
                   border: `1.5px solid ${iconBorderColor}`,
-                  borderRadius: '13px',
+                  borderRadius: '14px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+                  boxShadow: isDark ? '0 4px 16px rgba(0,0,0,0.5)' : '0 2px 6px rgba(15,23,42,0.06)',
                 }}>
                   {getIcon()}
                 </div>
@@ -453,13 +453,15 @@ const UpdateNotification = () => {
                 {/* Title + Subtitle */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
-                    fontSize: '18px', fontWeight: 700, color: '#FFFFFF',
-                    letterSpacing: '-0.3px', lineHeight: 1.15, marginBottom: '4px',
+                    fontSize: '17px', fontWeight: 700,
+                    color: isDark ? '#FFFFFF' : '#0F172A',
+                    letterSpacing: '-0.3px', lineHeight: 1.2, marginBottom: '3px',
                   }}>
                     {getTitle()}
                   </div>
                   <div style={{
-                    fontSize: '13px', fontWeight: 400, color: '#767676',
+                    fontSize: '13px', fontWeight: 500,
+                    color: isDark ? '#94A3B8' : '#64748B',
                     letterSpacing: '-0.1px', lineHeight: 1.35,
                   }}>
                     {getSubtitle()}
@@ -470,13 +472,13 @@ const UpdateNotification = () => {
               {/* ── Wave Progress ── */}
               {showWave && (
                 <div style={{ margin: '0 -2px', paddingBottom: '2px' }}>
-                  <WaveCanvas progress={isPausedState ? progress : progress} />
+                  <WaveCanvas progress={isPausedState ? progress : progress} isDark={isDark} />
                 </div>
               )}
 
               {/* ── Divider ── */}
               {showWave && (
-                <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', margin: '14px 0 14px' }} />
+                <div style={{ height: '1px', background: isDark ? 'rgba(255,255,255,0.06)' : '#E2E8F0', margin: '14px 0 14px' }} />
               )}
 
               {/* Non-wave status: spacer */}
@@ -489,45 +491,45 @@ const UpdateNotification = () => {
                 {isDownloading && (
                   <>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                      <SpeedIcon />
+                      <SpeedIcon isDark={isDark} />
                       <div>
-                        <div style={{ fontSize: '8.5px', fontWeight: 500, color: '#3C3C3C', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '1px' }}>Speed</div>
-                        <div style={{ fontSize: '12px', fontWeight: 500, color: '#A0A0A0', letterSpacing: '-0.2px' }}>{fmtSpeed(bytesPerSecond)}</div>
+                        <div style={{ fontSize: '9px', fontWeight: 600, color: isDark ? '#64748B' : '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '1px' }}>Speed</div>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: isDark ? '#CBD5E1' : '#334155', letterSpacing: '-0.2px' }}>{fmtSpeed(bytesPerSecond)}</div>
                       </div>
                     </div>
 
-                    <div style={{ width: '1px', height: '22px', background: 'rgba(255,255,255,0.07)', margin: '0 14px' }} />
+                    <div style={{ width: '1px', height: '22px', background: isDark ? 'rgba(255,255,255,0.08)' : '#E2E8F0', margin: '0 14px' }} />
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                      <ClockIcon />
+                      <ClockIcon isDark={isDark} />
                       <div>
-                        <div style={{ fontSize: '8.5px', fontWeight: 500, color: '#3C3C3C', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '1px' }}>Time</div>
-                        <div style={{ fontSize: '12px', fontWeight: 500, color: '#A0A0A0', letterSpacing: '-0.2px' }}>{fmtTime(totalBytes, computed, bytesPerSecond)}</div>
+                        <div style={{ fontSize: '9px', fontWeight: 600, color: isDark ? '#64748B' : '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '1px' }}>Time</div>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: isDark ? '#CBD5E1' : '#334155', letterSpacing: '-0.2px' }}>{fmtTime(totalBytes, computed, bytesPerSecond)}</div>
                       </div>
                     </div>
                   </>
                 )}
 
                 {isPausedState && (
-                  <div style={{ fontSize: '12px', fontWeight: 400, color: '#555555', letterSpacing: '-0.1px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 500, color: isDark ? '#94A3B8' : '#64748B', letterSpacing: '-0.1px' }}>
                     Download paused
                   </div>
                 )}
 
                 {status === 'checking' && (
-                  <div style={{ fontSize: '12px', fontWeight: 400, color: '#555555' }}>
+                  <div style={{ fontSize: '12.5px', fontWeight: 500, color: isDark ? '#94A3B8' : '#64748B' }}>
                     Connecting to update server...
                   </div>
                 )}
 
                 {status === 'failed' && (
-                  <div style={{ fontSize: '12px', fontWeight: 400, color: '#EF4444', opacity: 0.8 }}>
+                  <div style={{ fontSize: '12.5px', fontWeight: 500, color: '#EF4444' }}>
                     {errorMessage || 'Unable to reach server'}
                   </div>
                 )}
 
                 {status === 'completed' && (
-                  <div style={{ fontSize: '12px', fontWeight: 400, color: '#22C55E', opacity: 0.85 }}>
+                  <div style={{ fontSize: '12.5px', fontWeight: 600, color: '#10B981' }}>
                     Download complete
                   </div>
                 )}
@@ -542,20 +544,21 @@ const UpdateNotification = () => {
                     onClick={handlePauseToggle}
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: '7px',
-                      background: '#000000',
-                      border: '1.5px solid rgba(255,255,255,0.17)',
-                      borderRadius: '10px',
+                      background: isDark ? '#22252C' : '#F8FAFC',
+                      border: isDark ? '1.5px solid #363A45' : '1.5px solid #CBD5E1',
+                      borderRadius: '12px',
                       height: '36px', padding: '0 16px',
-                      color: '#FFFFFF',
+                      color: isDark ? '#FFFFFF' : '#0F172A',
                       fontSize: '12.5px', fontWeight: 600,
                       fontFamily: 'inherit',
                       letterSpacing: '-0.2px',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
                       outline: 'none',
+                      boxShadow: isDark ? 'none' : '0 1px 3px rgba(15,23,42,0.05)',
                     }}
                   >
-                    {isPausedState ? <ResumeIcon /> : <PauseIcon />}
+                    {isPausedState ? <ResumeIcon isDark={isDark} /> : <PauseIcon isDark={isDark} />}
                     {isPausedState ? 'Resume' : 'Pause'}
                   </button>
                 )}
@@ -565,16 +568,16 @@ const UpdateNotification = () => {
                     className="info-update-action-btn"
                     onClick={handleRetry}
                     style={{
-                      background: '#FF7A00',
+                      background: 'linear-gradient(135deg, #FF8A00, #FF6500)',
                       border: 'none', outline: 'none',
-                      borderRadius: '10px',
+                      borderRadius: '12px',
                       height: '36px', padding: '0 16px',
                       color: '#FFFFFF',
-                      fontSize: '12.5px', fontWeight: 600,
+                      fontSize: '12.5px', fontWeight: 700,
                       fontFamily: 'inherit', letterSpacing: '-0.2px',
                       cursor: 'pointer',
-                      transition: 'opacity 0.15s',
-                      boxShadow: '0 4px 14px rgba(255,122,0,0.3)',
+                      transition: 'all 0.15s ease',
+                      boxShadow: '0 4px 14px rgba(255,122,0,0.35)',
                     }}
                   >
                     Retry
@@ -586,16 +589,16 @@ const UpdateNotification = () => {
                     className="info-update-action-btn"
                     onClick={handleInstall}
                     style={{
-                      background: '#FF7A00',
+                      background: 'linear-gradient(135deg, #FF8A00, #FF6500)',
                       border: 'none', outline: 'none',
-                      borderRadius: '10px',
+                      borderRadius: '12px',
                       height: '36px', padding: '0 16px',
                       color: '#FFFFFF',
-                      fontSize: '12.5px', fontWeight: 600,
+                      fontSize: '12.5px', fontWeight: 700,
                       fontFamily: 'inherit', letterSpacing: '-0.2px',
                       cursor: 'pointer',
-                      transition: 'opacity 0.15s',
-                      boxShadow: '0 4px 14px rgba(255,122,0,0.3)',
+                      transition: 'all 0.15s ease',
+                      boxShadow: '0 4px 14px rgba(255,122,0,0.35)',
                     }}
                   >
                     Restart &amp; Install
@@ -611,3 +614,4 @@ const UpdateNotification = () => {
 };
 
 export default UpdateNotification;
+

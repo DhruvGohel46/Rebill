@@ -12,10 +12,12 @@ from typing import Dict, Any, Optional, Tuple
 from agents.tools import execute_read_tool
 
 # Regex patterns for deterministic domain classification
+# Note: Specific action domains (like expense, worker, inventory) are checked before generic billing
 DOMAIN_PATTERNS = {
-    "analytics": [
-        r"\b(sales?|revenue|profit|income|turnover|earnings?|orders? count|summary for|kpi|business performance)\b",
-        r"\b(how much (did we (make|sell|earn)|we made|sold|earned)|sell today|sold today|top selling|best selling)\b",
+    "expense": [
+        r"\b(log\s+expense|record\s+expense|add\s+expense|spent\s+on|paid\s+out|cost\s+spent|petty\s+cash)\b",
+        r"\b(give|gave|giving|paid|pay|payment|spent|bought|purchased|kharch|kharcha)\b.*\b(to|for|bhai|ben|vendor|supplier|bill|cash|rs|rupees?|\d+k?)\b",
+        r"\b(expenses?|spends?|utility\s+bill|rent\s+payment|maintenance\s+cost|dairy\s+bill|milk\s+bill|coldrink\s+bill)\b",
     ],
     "worker": [
         r"\b(workers?|staffs?|employees?|attendance|present|absent|salary|payroll|advance|wage|shift)\b",
@@ -29,16 +31,33 @@ DOMAIN_PATTERNS = {
         r"\b(products?|items?|menus?|catalogs?|price of|category|categories|groups?|recipes?|variations?|addons?)\b",
         r"\b(add (new )?(item|product|dish)|update price|toggle group)\b",
     ],
-    "expense": [
-        r"\b(expenses?|spends?|bill payment|utility|rent|maintenance|paid out|cost spent)\b",
-        r"\b(log expense|record expense|spent on)\b",
+    "analytics": [
+        r"\b(sales?|revenue|profit|income|turnover|earnings?|orders? count|summary for|kpi|business performance)\b",
+        r"\b(how much (did we (make|sell|earn)|we made|sold|earned)|sell today|sold today|top selling|best selling)\b",
     ],
     "reminder": [
         r"\b(reminders?|tasks?|alerts?|alarms?|schedules?|notify me|remind me|todo)\b",
     ],
     "billing": [
-        r"\b(bills?|receipts?|invoices?|kots?|void bill|cancel order|refund|table no)\b",
+        r"\b(customer\s+bills?|pos\s+bills?|recent\s+bills?|bill\s+history|sales?\s+bills?|table\s+no|void\s+bill|cancel\s+order|refund|kots?|pos\s+receipt)\b",
+        r"\b(show|get|list|fetch|view)\s+(recent\s+)?(bills?|invoices?|receipts?)\b",
     ],
+}
+
+
+ADVANCE_SALARY_KEYWORDS = {
+    "advance",
+    "salary",
+    "attendance",
+    "present",
+    "absent",
+    "shift",
+    "payroll",
+    "workers",
+    "worker",
+    "staff",
+    "employee",
+    "employees",
 }
 
 
@@ -48,6 +67,15 @@ def classify_intent_deterministic(query: str) -> Optional[str]:
     Returns the domain name or None if ambiguous.
     """
     text = query.lower().strip()
+
+    # Disambiguation: Check worker-specific keywords BEFORE generic expense "give money" pattern
+    if any(kw in text for kw in ADVANCE_SALARY_KEYWORDS):
+        return "worker"
+
+    # Handle direct bill creation requests
+    if re.search(r"\b(create|make|new|generate)\s+(a\s+)?bill\b", text):
+        return "billing"
+
     for domain, patterns in DOMAIN_PATTERNS.items():
         for pat in patterns:
             if re.search(pat, text, re.IGNORECASE):

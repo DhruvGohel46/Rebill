@@ -70,6 +70,10 @@ class BillCreateSchema(Schema):
     customer_mobile = fields.String(load_default="")
     customer_phone = fields.String(load_default="")
     payment_method = fields.String(load_default="CASH")
+    payment_status = fields.String(
+        load_default="paid",
+        validate=validate.OneOf(["paid", "pending"]),
+    )
     print = fields.Boolean(load_default=False)
     order_type = fields.String(load_default="dine-in")
     table_no = fields.String(load_default="")
@@ -92,6 +96,40 @@ class BillUpdateSchema(Schema):
     table_no = fields.String(load_default="")
     kot_no = fields.String(load_default="")
     custom_kot_no = fields.String(load_default="")
+
+    class Meta:
+        unknown = EXCLUDE
+
+
+class MergeRequestSchema(Schema):
+    """Schema for POST /api/bill/merge."""
+
+    bill_ids = fields.List(
+        fields.Integer(), required=True, validate=validate.Length(min=2)
+    )
+
+    class Meta:
+        unknown = EXCLUDE
+
+
+class SettlePaymentSchema(Schema):
+    """A single payment entry within a settle request."""
+
+    method = fields.String(required=True)
+    amount = fields.Float(required=True, validate=validate.Range(min=0.01))
+
+    class Meta:
+        unknown = EXCLUDE
+
+
+class SettleRequestSchema(Schema):
+    """Schema for POST /api/bill/merge/<id>/settle."""
+
+    payments = fields.List(
+        fields.Nested(SettlePaymentSchema),
+        required=True,
+        validate=validate.Length(min=1),
+    )
 
     class Meta:
         unknown = EXCLUDE

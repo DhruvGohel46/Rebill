@@ -72,3 +72,6 @@ data\products.db
 **/__pycache__/
 *.pyc
 *.pyo
+
+#Grahify
+graphify-out/

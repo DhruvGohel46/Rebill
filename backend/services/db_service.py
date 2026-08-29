@@ -322,6 +322,17 @@ class DatabaseService:
                 status="CONFIRMED",
                 order_type=bill_data.get("order_type", "dine-in"),
                 table_no=bill_data.get("table_no", ""),
+                payment_status=bill_data.get("payment_status", "paid"),
+                amount_paid=(
+                    float(bill_data["total_amount"])
+                    if bill_data.get("payment_status", "paid") == "paid"
+                    else 0.0
+                ),
+                amount_pending=(
+                    0.0
+                    if bill_data.get("payment_status", "paid") == "paid"
+                    else float(bill_data["total_amount"])
+                ),
                 created_at=datetime.now(),
             )
 
@@ -604,6 +615,10 @@ class DatabaseService:
             "status": bill.status,
             "order_type": bill.order_type,
             "table_no": bill.table_no,
+            "payment_status": getattr(bill, "payment_status", "paid"),
+            "amount_paid": getattr(bill, "amount_paid", bill.total_amount),
+            "amount_pending": getattr(bill, "amount_pending", 0.0),
+            "merge_group_id": getattr(bill, "merge_group_id", None),
             "created_at": str(bill.created_at),
             "updated_at": str(bill.updated_at),
         }

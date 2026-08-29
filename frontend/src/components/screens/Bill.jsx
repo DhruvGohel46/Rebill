@@ -99,7 +99,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
   const [customerName, setCustomerName] = useState('');
 
   const [customerMobile, setCustomerMobile] = useState('');
-
+  const [paymentStatus, setPaymentStatus] = useState('paid'); // 'paid' | 'pending'
   const [activeField, setActiveField] = useState(null); // 'table' | 'kot' | 'customer' | 'mobile' | null
 
   const [selectedCategory, setSelectedCategory] = useState('favorites');
@@ -586,7 +586,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
       setCustomerName(bill.customer_name || '');
 
       setCustomerMobile(bill.customer_mobile || bill.customer_phone || '');
-
+      setPaymentStatus(bill.payment_status || 'paid');
       setKotNumber('');
 
       // Clear location state so that it doesn't reload on subsequent clicks/refreshes
@@ -924,7 +924,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
         order_type: orderType,
 
         table_no: tableNumber || (editingBill ? editingBill.table_no : ''),
-
+        payment_status: paymentStatus,
         kot_no: kotNumber,
 
         custom_kot_no: kotNumber
@@ -1168,7 +1168,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
         order_type: orderType,
 
         table_no: tableNumber || (editingBill ? editingBill.table_no : ''),
-
+        payment_status: paymentStatus,
         kot_no: kotNumber,
 
         custom_kot_no: kotNumber
@@ -1278,6 +1278,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
     setKotNumber('');
     setCustomerName('');
     setCustomerMobile('');
+    setPaymentStatus('paid');
     setActiveField(null);
   };
 
@@ -1339,36 +1340,23 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
   const leftSidebarStyle = {
 
     width: 'calc(216px * var(--display-zoom))', // Decreased to 0.9x (from 240px) for better screen space balance
-
-    background: isDark ? 'linear-gradient(180deg, #1E1E22 0%, #17171A 100%)' : 'linear-gradient(180deg, #FFFFFF 0%, #F1F5F9 100%)',
-
-    borderRight: '1px solid var(--glass-border)',
-
+    background: isDark ? 'linear-gradient(180deg, #1E1E22 0%, #17171A 100%)' : '#FFFFFF',
+    borderRight: isDark ? '1px solid var(--glass-border)' : '1px solid #E2E8F0',
+    boxShadow: isDark ? 'none' : '2px 0 10px rgba(15, 23, 42, 0.04)',
     display: 'flex',
-
     flexDirection: 'column',
-
     height: '100%',
-
     zIndex: 2,
-
   };
-
-
 
   const middleSectionStyle = {
-
     flex: 1,
-
     padding: currentTheme.spacing[6],
-
     overflowY: 'auto',
-
     height: '100%',
-
-    backgroundColor: isDark ? '#0f0f11' : '#F4F6F8', // Recreate exactly: Background #0f0f11
-
+    backgroundColor: isDark ? '#0f0f11' : '#F1F5F9', // High contrast background so white product cards stand out
   };
+
 
 
 
@@ -1405,26 +1393,18 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
           }}>
 
             <SearchBar
-
               value={searchTerm}
-
               onChange={setSearchTerm}
-
               placeholder="Search categories..."
-
               style={{
-
                 height: '48px',
-
                 borderRadius: '14px',
-
-                background: 'rgba(255,255,255,0.05)',
-
-                border: '1px solid rgba(255,255,255,0.08)'
-
+                background: isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC',
+                border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #CBD5E1',
+                boxShadow: isDark ? 'none' : 'inset 0 1px 2px rgba(15, 23, 42, 0.04)'
               }}
-
             />
+
 
           </div>
 
@@ -1556,28 +1536,34 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                       gap: '12px',
                       padding: '0 16px',
                       background: isActive ? 'linear-gradient(180deg, #FF8A00 0%, #FF6500 100%)' : (isDark ? '#2B2B2B' : '#FFFFFF'),
-                      border: isActive ? '1px solid #FF8A00' : (isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #E2E8F0'),
+                      border: isActive ? '1px solid #FF8A00' : (isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #CBD5E1'),
                       borderRadius: '16px',
                       cursor: 'pointer',
-                      color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                      color: isActive ? '#ffffff' : (isDark ? 'var(--text-secondary)' : '#334155'),
+                      fontWeight: isActive ? 700 : 600,
                       transition: 'all 180ms cubic-bezier(0.16, 1, 0.3, 1)',
                       textAlign: 'left',
                       overflow: 'hidden',
-                      boxShadow: isActive ? '0 8px 24px rgba(255,120,0,0.25)' : 'none'
+                      boxShadow: isActive ? '0 6px 18px rgba(255,107,0,0.30)' : (isDark ? 'none' : '0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04)')
                     }}
                     onMouseEnter={(e) => {
                       if (!isActive) {
-                        e.currentTarget.style.backgroundColor = isDark ? '#333333' : '#F1F5F9';
+                        e.currentTarget.style.backgroundColor = isDark ? '#333333' : '#F8FAFC';
+                        e.currentTarget.style.borderColor = isDark ? '#5a5a5a' : '#FF8A00';
+                        e.currentTarget.style.boxShadow = isDark ? 'none' : '0 3px 8px rgba(15, 23, 42, 0.08)';
                         e.currentTarget.style.transform = 'translateX(3px)';
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!isActive) {
                         e.currentTarget.style.backgroundColor = isDark ? '#2B2B2B' : '#FFFFFF';
+                        e.currentTarget.style.borderColor = isDark ? 'rgba(255,255,255,0.08)' : '#CBD5E1';
+                        e.currentTarget.style.boxShadow = isDark ? 'none' : '0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04)';
                         e.currentTarget.style.transform = 'translateX(0)';
                       }
                     }}
                   >
+
                     {isActive && (
                       <div
                         style={{
@@ -1621,8 +1607,8 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
         {/* Item Groups Dropdown Selector - Relocated to Bottom of Sidebar */}
         <div style={{
           padding: '16px 20px 20px 20px',
-          borderTop: '1px solid var(--glass-border)',
-          background: isDark ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.4)',
+          borderTop: isDark ? '1px solid var(--glass-border)' : '1px solid #E2E8F0',
+          background: isDark ? 'rgba(0,0,0,0.15)' : '#F8FAFC',
           display: 'flex',
           flexDirection: 'column',
           gap: '8px',
@@ -1925,18 +1911,27 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                         boxSizing: 'border-box',
                         borderRadius: '20px',
                         background: isDark ? '#212121b3' : '#FFFFFF',
-                        border: isEditMode ? '1.5px dashed #FF8A00' : (isDark ? '1px solid #4a4a4a' : '1px solid #E2E8F0'),
-                        boxShadow: isEditMode ? '0 8px 24px rgba(255,138,0,0.15)' : 'inset 0 1px 0 rgba(255,255,255,0.05)',
-                        transition: 'border-color 150ms ease, transform 150ms ease',
+                        border: isEditMode ? '1.5px dashed #FF8A00' : (isDark ? '1px solid #4a4a4a' : '1px solid #CBD5E1'),
+                        boxShadow: isEditMode ? '0 8px 24px rgba(255,138,0,0.15)' : (isDark ? '0 2px 8px rgba(0,0,0,0.25)' : '0 2px 8px -2px rgba(15, 23, 42, 0.08), 0 1px 3px -1px rgba(15, 23, 42, 0.05)'),
+                        transition: 'border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease',
                         transform: isEditMode ? 'scale(1.03)' : 'none'
                       }}
                       onMouseEnter={(e) => {
-                        if (!isEditMode) e.currentTarget.style.borderColor = isDark ? '#5a5a5a' : '#CBD5E1';
+                        if (!isEditMode) {
+                          e.currentTarget.style.borderColor = isDark ? '#5a5a5a' : '#FF8A00';
+                          e.currentTarget.style.boxShadow = isDark ? '0 6px 16px rgba(0,0,0,0.30)' : '0 8px 20px -4px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(255, 107, 0, 0.25)';
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                        }
                       }}
                       onMouseLeave={(e) => {
-                        if (!isEditMode) e.currentTarget.style.borderColor = isDark ? '#4a4a4a' : '#E2E8F0';
+                        if (!isEditMode) {
+                          e.currentTarget.style.borderColor = isDark ? '#4a4a4a' : '#CBD5E1';
+                          e.currentTarget.style.boxShadow = isDark ? '0 2px 8px rgba(0,0,0,0.25)' : '0 2px 8px -2px rgba(15, 23, 42, 0.08), 0 1px 3px -1px rgba(15, 23, 42, 0.05)';
+                          e.currentTarget.style.transform = 'none';
+                        }
                       }}
                     >
+
                       {/* Drag handle overlay in edit mode */}
                       {isEditMode && (
                         <div style={{
@@ -2061,20 +2056,28 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                                   alignItems: 'center',
                                   padding: '0 8px',
                                   borderRadius: '12px',
-                                  border: isDark ? '1px solid #555' : '1px solid #e2e8f0',
-                                  background: isDark ? '#2d2d2d' : '#f8fafc',
+                                  border: isDark ? '1px solid #555' : '1px solid #CBD5E1',
+                                  background: isDark ? '#2d2d2d' : '#F8FAFC',
+                                  boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
                                   boxSizing: 'border-box',
                                   cursor: isEditMode ? 'default' : 'pointer',
                                   fontFamily: 'Inter, system-ui',
-                                  transition: 'border-color 150ms ease'
+                                  transition: 'all 150ms ease'
                                 }}
                                 onMouseEnter={(e) => {
-                                  if (!isEditMode) e.currentTarget.style.borderColor = isDark ? '#777' : '#cbd5e1';
+                                  if (!isEditMode) {
+                                    e.currentTarget.style.borderColor = isDark ? '#777' : '#FF8A00';
+                                    e.currentTarget.style.boxShadow = isDark ? 'none' : '0 2px 6px rgba(255, 107, 0, 0.2)';
+                                  }
                                 }}
                                 onMouseLeave={(e) => {
-                                  if (!isEditMode) e.currentTarget.style.borderColor = isDark ? '#555' : '#e2e8f0';
+                                  if (!isEditMode) {
+                                    e.currentTarget.style.borderColor = isDark ? '#555' : '#CBD5E1';
+                                    e.currentTarget.style.boxShadow = isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)';
+                                  }
                                 }}
                               >
+
                                 <div style={{
                                   display: 'flex',
                                   flexDirection: 'column',
@@ -2157,30 +2160,20 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
 
 
       <div className="glass-panel" style={{
-
         width: 'calc(400px * var(--display-zoom))',
-
-        borderLeft: '1px solid var(--glass-border)',
-
+        borderLeft: isDark ? '1px solid var(--glass-border)' : '1px solid #E2E8F0',
         display: 'flex',
-
         flexDirection: 'column',
-
         height: '100%',
-
         overflow: 'hidden',
-
-        boxShadow: 'var(--shadow-modal)',
-
+        boxShadow: isDark ? 'var(--shadow-modal)' : '-4px 0 20px rgba(15, 23, 42, 0.05)',
         zIndex: 10,
-
-        backgroundImage: 'var(--glass-modal)',
-
+        backgroundColor: isDark ? 'transparent' : '#FFFFFF',
+        backgroundImage: isDark ? 'var(--glass-modal)' : 'none',
         backdropFilter: 'var(--glass-blur-strong)',
-
         WebkitBackdropFilter: 'var(--glass-blur-strong)',
-
       }}>
+
 
         <div style={{
 
@@ -2206,167 +2199,102 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
 
             paddingBottom: currentTheme.spacing[3],
 
-            borderBottom: `1px solid ${currentTheme.colors.border}`,
-
+                 borderBottom: isDark ? `1px solid ${currentTheme.colors.border}` : '1.5px solid #E2E8F0',
           }}>
-
             <h3 style={{
-
               margin: 0,
-
               fontSize: '18px',
-
-              fontWeight: 700,
-
-              color: currentTheme.colors.text.primary,
-
+              fontWeight: 800,
+              color: isDark ? '#F8FAFC' : '#0F172A',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              letterSpacing: '-0.3px',
             }}>
-
               {editingBill ? `Editing ${editingBill.bill_no}` : 'Current Bill'}
-
-              <span style={{ fontSize: '13px', color: currentTheme.colors.text.tertiary, fontWeight: 500, marginLeft: '8px' }}>
-
+              <span style={{
+                fontSize: '11.5px',
+                background: isDark ? 'rgba(255, 107, 26, 0.15)' : '#FFF7ED',
+                border: isDark ? '1px solid rgba(255, 107, 26, 0.3)' : '1px solid #FDBA74',
+                color: '#EA580C',
+                fontWeight: 750,
+                padding: '2px 8px',
+                borderRadius: '12px',
+              }}>
                 {orderItems.length} items
-
               </span>
-
             </h3>
 
             <Button
-
               variant="ghost"
-
               size="sm"
-
               onClick={handleClearClick}
-
               disabled={orderItems.length === 0}
-
               style={{
-
                 color: orderItems.length === 0 ? currentTheme.colors.text.disabled : (isDark ? '#ef4444' : '#dc2626'),
-
                 opacity: orderItems.length === 0 ? 0.5 : 1,
-
                 padding: '4px 8px',
-
                 display: 'flex',
-
                 alignItems: 'center',
-
                 gap: '4px',
-
+                fontWeight: 700,
               }}
-
             >
-
               <TrashIcon color="currentColor" />
-
-              <span style={{ fontSize: '0.8rem' }}>Clear All</span>
-
+              <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>Clear All</span>
             </Button>
-
           </div>
-
-
 
           {/* Order Type Toggle Selector */}
-
           <div style={{
-
             display: 'grid',
-
             gridTemplateColumns: '1fr 1fr',
-
             gap: 'calc(8px * var(--display-zoom, 1))',
-
             marginBottom: 'calc(12px * var(--display-zoom, 1))'
-
           }}>
-
             <button
-
               onClick={() => setOrderType('dine-in')}
-
               style={{
-
-                padding: 'calc(5px * var(--display-zoom, 1))',
-
-                borderRadius: '8px',
-
-                border: orderType === 'dine-in' ? '2px solid var(--primary-500)' : '1px solid var(--glass-border)',
-
-                backgroundColor: orderType === 'dine-in' ? 'rgba(249, 115, 22, 0.1)' : 'transparent',
-
-                color: orderType === 'dine-in' ? 'var(--primary-500)' : 'var(--text-secondary)',
-
-                fontWeight: 600,
-
-                fontSize: '12.5px',
-
+                padding: 'calc(7px * var(--display-zoom, 1))',
+                borderRadius: '10px',
+                border: orderType === 'dine-in' ? '2px solid #EA580C' : (isDark ? '1px solid var(--glass-border)' : '1.5px solid #CBD5E1'),
+                backgroundColor: orderType === 'dine-in' ? (isDark ? 'rgba(249, 115, 22, 0.16)' : '#FFF7ED') : (isDark ? 'transparent' : '#FFFFFF'),
+                color: orderType === 'dine-in' ? '#EA580C' : (isDark ? 'var(--text-secondary)' : '#475569'),
+                fontWeight: 750,
+                fontSize: '13px',
                 cursor: 'pointer',
-
                 transition: 'all 0.2s',
-
                 display: 'flex',
-
                 alignItems: 'center',
-
                 justifyContent: 'center',
-
-                gap: '6px'
-
+                gap: '6px',
+                boxShadow: isDark ? 'none' : (orderType === 'dine-in' ? '0 2px 6px rgba(234, 88, 12, 0.15)' : '0 1px 2px rgba(15, 23, 42, 0.04)'),
               }}
-
             >
-
               Dine In
-
             </button>
-
             <button
-
               onClick={() => setOrderType('takeaway')}
-
               style={{
-
-                padding: 'calc(5px * var(--display-zoom, 1))',
-
-                borderRadius: '8px',
-
-                border: orderType === 'takeaway' ? '2px solid var(--primary-500)' : '1px solid var(--glass-border)',
-
-                backgroundColor: orderType === 'takeaway' ? 'rgba(249, 115, 22, 0.1)' : 'transparent',
-
-                color: orderType === 'takeaway' ? 'var(--primary-500)' : 'var(--text-secondary)',
-
-                fontWeight: 600,
-
-                fontSize: '12.5px',
-
+                padding: 'calc(7px * var(--display-zoom, 1))',
+                borderRadius: '10px',
+                border: orderType === 'takeaway' ? '2px solid #EA580C' : (isDark ? '1px solid var(--glass-border)' : '1.5px solid #CBD5E1'),
+                backgroundColor: orderType === 'takeaway' ? (isDark ? 'rgba(249, 115, 22, 0.16)' : '#FFF7ED') : (isDark ? 'transparent' : '#FFFFFF'),
+                color: orderType === 'takeaway' ? '#EA580C' : (isDark ? 'var(--text-secondary)' : '#475569'),
+                fontWeight: 750,
+                fontSize: '13px',
                 cursor: 'pointer',
-
                 transition: 'all 0.2s',
-
                 display: 'flex',
-
                 alignItems: 'center',
-
                 justifyContent: 'center',
-
-                gap: '6px'
-
+                gap: '6px',
+                boxShadow: isDark ? 'none' : (orderType === 'takeaway' ? '0 2px 6px rgba(234, 88, 12, 0.15)' : '0 1px 2px rgba(15, 23, 42, 0.04)'),
               }}
-
             >
-
               Takeaway
-
             </button>
-
           </div>
-
-
 
           {/* 4 Option Buttons: Table Number | KOT Number | Customer Name | Mobile Number */}
           <div style={{
@@ -2379,21 +2307,22 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
             <button
               onClick={() => setActiveField(activeField === 'table' ? null : 'table')}
               style={{
-                padding: 'calc(5px * var(--display-zoom, 1)) 2px',
+                padding: 'calc(6px * var(--display-zoom, 1)) 2px',
                 borderRadius: '8px',
                 border: activeField === 'table'
-                  ? '2px solid var(--primary-500)'
+                  ? '2px solid #EA580C'
                   : tableNumber
-                    ? '1px solid rgba(249, 115, 22, 0.4)'
-                    : '1px solid var(--glass-border)',
+                    ? '1.5px solid #EA580C'
+                    : isDark ? '1px solid var(--glass-border)' : '1.5px solid #CBD5E1',
                 backgroundColor: activeField === 'table'
-                  ? 'rgba(249, 115, 22, 0.12)'
+                  ? (isDark ? 'rgba(249, 115, 22, 0.16)' : '#FFF7ED')
                   : tableNumber
-                    ? 'rgba(249, 115, 22, 0.06)'
-                    : isDark ? 'rgba(255,255,255,0.03)' : '#f8fafc',
-                color: (activeField === 'table' || tableNumber) ? 'var(--primary-500)' : 'var(--text-secondary)',
-                fontWeight: 600,
-                fontSize: '11px',
+                    ? (isDark ? 'rgba(249, 115, 22, 0.1)' : '#FFF7ED')
+                    : isDark ? 'rgba(255,255,255,0.03)' : '#FFFFFF',
+                boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
+                color: (activeField === 'table' || tableNumber) ? '#EA580C' : (isDark ? 'var(--text-secondary)' : '#334155'),
+                fontWeight: 750,
+                fontSize: '11.5px',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
                 whiteSpace: 'nowrap',
@@ -2413,21 +2342,22 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
             <button
               onClick={() => setActiveField(activeField === 'kot' ? null : 'kot')}
               style={{
-                padding: 'calc(5px * var(--display-zoom, 1)) 2px',
+                padding: 'calc(6px * var(--display-zoom, 1)) 2px',
                 borderRadius: '8px',
                 border: activeField === 'kot'
-                  ? '2px solid var(--primary-500)'
+                  ? '2px solid #EA580C'
                   : kotNumber
-                    ? '1px solid rgba(249, 115, 22, 0.4)'
-                    : '1px solid var(--glass-border)',
+                    ? '1.5px solid #EA580C'
+                    : isDark ? '1px solid var(--glass-border)' : '1.5px solid #CBD5E1',
                 backgroundColor: activeField === 'kot'
-                  ? 'rgba(249, 115, 22, 0.12)'
+                  ? (isDark ? 'rgba(249, 115, 22, 0.16)' : '#FFF7ED')
                   : kotNumber
-                    ? 'rgba(249, 115, 22, 0.06)'
-                    : isDark ? 'rgba(255,255,255,0.03)' : '#f8fafc',
-                color: (activeField === 'kot' || kotNumber) ? 'var(--primary-500)' : 'var(--text-secondary)',
-                fontWeight: 600,
-                fontSize: '11px',
+                    ? (isDark ? 'rgba(249, 115, 22, 0.1)' : '#FFF7ED')
+                    : isDark ? 'rgba(255,255,255,0.03)' : '#FFFFFF',
+                boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
+                color: (activeField === 'kot' || kotNumber) ? '#EA580C' : (isDark ? 'var(--text-secondary)' : '#334155'),
+                fontWeight: 750,
+                fontSize: '11.5px',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
                 whiteSpace: 'nowrap',
@@ -2447,21 +2377,22 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
             <button
               onClick={() => setActiveField(activeField === 'customer' ? null : 'customer')}
               style={{
-                padding: 'calc(5px * var(--display-zoom, 1)) 2px',
+                padding: 'calc(6px * var(--display-zoom, 1)) 2px',
                 borderRadius: '8px',
                 border: activeField === 'customer'
-                  ? '2px solid var(--primary-500)'
+                  ? '2px solid #EA580C'
                   : customerName
-                    ? '1px solid rgba(249, 115, 22, 0.4)'
-                    : '1px solid var(--glass-border)',
+                    ? '1.5px solid #EA580C'
+                    : isDark ? '1px solid var(--glass-border)' : '1.5px solid #CBD5E1',
                 backgroundColor: activeField === 'customer'
-                  ? 'rgba(249, 115, 22, 0.12)'
+                  ? (isDark ? 'rgba(249, 115, 22, 0.16)' : '#FFF7ED')
                   : customerName
-                    ? 'rgba(249, 115, 22, 0.06)'
-                    : isDark ? 'rgba(255,255,255,0.03)' : '#f8fafc',
-                color: (activeField === 'customer' || customerName) ? 'var(--primary-500)' : 'var(--text-secondary)',
-                fontWeight: 600,
-                fontSize: '11px',
+                    ? (isDark ? 'rgba(249, 115, 22, 0.1)' : '#FFF7ED')
+                    : isDark ? 'rgba(255,255,255,0.03)' : '#FFFFFF',
+                boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
+                color: (activeField === 'customer' || customerName) ? '#EA580C' : (isDark ? 'var(--text-secondary)' : '#334155'),
+                fontWeight: 750,
+                fontSize: '11.5px',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
                 whiteSpace: 'nowrap',
@@ -2481,21 +2412,22 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
             <button
               onClick={() => setActiveField(activeField === 'mobile' ? null : 'mobile')}
               style={{
-                padding: 'calc(5px * var(--display-zoom, 1)) 2px',
+                padding: 'calc(6px * var(--display-zoom, 1)) 2px',
                 borderRadius: '8px',
                 border: activeField === 'mobile'
-                  ? '2px solid var(--primary-500)'
+                  ? '2px solid #EA580C'
                   : customerMobile
-                    ? '1px solid rgba(249, 115, 22, 0.4)'
-                    : '1px solid var(--glass-border)',
+                    ? '1.5px solid #EA580C'
+                    : isDark ? '1px solid var(--glass-border)' : '1.5px solid #CBD5E1',
                 backgroundColor: activeField === 'mobile'
-                  ? 'rgba(249, 115, 22, 0.12)'
+                  ? (isDark ? 'rgba(249, 115, 22, 0.16)' : '#FFF7ED')
                   : customerMobile
-                    ? 'rgba(249, 115, 22, 0.06)'
-                    : isDark ? 'rgba(255,255,255,0.03)' : '#f8fafc',
-                color: (activeField === 'mobile' || customerMobile) ? 'var(--primary-500)' : 'var(--text-secondary)',
-                fontWeight: 600,
-                fontSize: '11px',
+                    ? (isDark ? 'rgba(249, 115, 22, 0.1)' : '#FFF7ED')
+                    : isDark ? 'rgba(255,255,255,0.03)' : '#FFFFFF',
+                boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
+                color: (activeField === 'mobile' || customerMobile) ? '#EA580C' : (isDark ? 'var(--text-secondary)' : '#334155'),
+                fontWeight: 750,
+                fontSize: '11.5px',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
                 whiteSpace: 'nowrap',
@@ -2519,12 +2451,12 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
               alignItems: 'center',
               gap: '6px',
               marginBottom: 'calc(8px * var(--display-zoom, 1))',
-              padding: 'calc(5px * var(--display-zoom, 1)) 8px',
+              padding: 'calc(6px * var(--display-zoom, 1)) 10px',
               borderRadius: '8px',
-              backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#f3f4f6',
-              border: '1px solid var(--glass-border)'
+              backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F1F5F9',
+              border: isDark ? '1px solid var(--glass-border)' : '1.5px solid #CBD5E1'
             }}>
-              <span style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text-secondary)', minWidth: '70px' }}>
+              <span style={{ fontSize: '11.5px', fontWeight: 700, color: isDark ? 'var(--text-secondary)' : '#334155', minWidth: '70px' }}>
                 {activeField === 'table' && 'Table No:'}
                 {activeField === 'kot' && 'KOT No:'}
                 {activeField === 'customer' && 'Customer Name:'}
@@ -2542,11 +2474,11 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                     flex: 1,
                     padding: '4px 8px',
                     borderRadius: '6px',
-                    border: '1px solid var(--glass-border)',
-                    backgroundColor: isDark ? 'rgba(0,0,0,0.25)' : 'white',
-                    color: 'var(--text-primary)',
-                    fontSize: '12px',
-                    fontWeight: 600,
+                    border: isDark ? '1px solid var(--glass-border)' : '1px solid #CBD5E1',
+                    backgroundColor: isDark ? 'rgba(0,0,0,0.25)' : '#FFFFFF',
+                    color: isDark ? '#FFFFFF' : '#0F172A',
+                    fontSize: '12.5px',
+                    fontWeight: 700,
                     outline: 'none',
                   }}
                 />
@@ -2563,11 +2495,11 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                     flex: 1,
                     padding: '4px 8px',
                     borderRadius: '6px',
-                    border: '1px solid var(--glass-border)',
-                    backgroundColor: isDark ? 'rgba(0,0,0,0.25)' : 'white',
-                    color: 'var(--text-primary)',
-                    fontSize: '12px',
-                    fontWeight: 600,
+                    border: isDark ? '1px solid var(--glass-border)' : '1px solid #CBD5E1',
+                    backgroundColor: isDark ? 'rgba(0,0,0,0.25)' : '#FFFFFF',
+                    color: isDark ? '#FFFFFF' : '#0F172A',
+                    fontSize: '12.5px',
+                    fontWeight: 700,
                     outline: 'none',
                   }}
                 />
@@ -2584,11 +2516,11 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                     flex: 1,
                     padding: '4px 8px',
                     borderRadius: '6px',
-                    border: '1px solid var(--glass-border)',
-                    backgroundColor: isDark ? 'rgba(0,0,0,0.25)' : 'white',
-                    color: 'var(--text-primary)',
-                    fontSize: '12px',
-                    fontWeight: 600,
+                    border: isDark ? '1px solid var(--glass-border)' : '1px solid #CBD5E1',
+                    backgroundColor: isDark ? 'rgba(0,0,0,0.25)' : '#FFFFFF',
+                    color: isDark ? '#FFFFFF' : '#0F172A',
+                    fontSize: '12.5px',
+                    fontWeight: 700,
                     outline: 'none',
                   }}
                 />
@@ -2605,11 +2537,11 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                     flex: 1,
                     padding: '4px 8px',
                     borderRadius: '6px',
-                    border: '1px solid var(--glass-border)',
-                    backgroundColor: isDark ? 'rgba(0,0,0,0.25)' : 'white',
-                    color: 'var(--text-primary)',
-                    fontSize: '12px',
-                    fontWeight: 600,
+                    border: isDark ? '1px solid var(--glass-border)' : '1px solid #CBD5E1',
+                    backgroundColor: isDark ? 'rgba(0,0,0,0.25)' : '#FFFFFF',
+                    color: isDark ? '#FFFFFF' : '#0F172A',
+                    fontSize: '12.5px',
+                    fontWeight: 700,
                     outline: 'none',
                   }}
                 />
@@ -2630,7 +2562,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: 'var(--text-secondary)',
+                    color: isDark ? 'var(--text-secondary)' : '#64748B',
                     cursor: 'pointer',
                     fontSize: '14px',
                     padding: '0 4px',
@@ -2644,507 +2576,376 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
             </div>
           )}
 
-
-
           {orderItems.length === 0 ? (
-
             <div style={{
-
               display: 'flex',
-
               flexDirection: 'column',
-
               alignItems: 'center',
-
               justifyContent: 'center',
-
               padding: currentTheme.spacing[8],
-
               color: currentTheme.colors.text.secondary,
-
               height: '60%'
-
             }}>
-
               {/* Bobbing Animation */}
-
               <div
-
                 style={{
-
                   width: '64px', height: '64px',
-
                   borderRadius: '16px',
-
                   backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F6F7F9',
-
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-
                   marginBottom: '16px'
-
                 }}
-
               >
-
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-
                   <path d="M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm8 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" />
-
                   <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
-
                 </svg>
-
               </div>
-
-              <div style={{ fontSize: '16px', fontWeight: 600, color: currentTheme.colors.text.primary }}>
-
+              <div style={{ fontSize: '16px', fontWeight: 750, color: isDark ? '#FFFFFF' : '#0F172A' }}>
                 Your cart is empty
-
               </div>
-
-              <div style={{ fontSize: '13px', opacity: 0.6, marginTop: '4px' }}>
-
+              <div style={{ fontSize: '13px', color: isDark ? 'rgba(255,255,255,0.5)' : '#64748B', marginTop: '4px', fontWeight: 500 }}>
                 Add items to create a bill
-
               </div>
-
             </div>
-
           ) : (
-
             <div>
-
               <div style={{
-
                 display: 'grid',
-
                 gridTemplateColumns: '2fr 1fr 1fr',
-
                 fontSize: '11px',
-
-                fontWeight: currentTheme.typography.fontWeight.semibold,
-
-                color: currentTheme.colors.text.secondary,
-
-                marginBottom: '6px',
-
-                paddingBottom: '4px',
-
-                borderBottom: `1px solid ${currentTheme.colors.border}`,
-
-                letterSpacing: currentTheme.typography.letterSpacing.wide,
-
+                fontWeight: 800,
+                color: isDark ? '#94A3B8' : '#475569',
+                marginBottom: '8px',
+                paddingBottom: '6px',
+                borderBottom: isDark ? '1px solid rgba(255,255,255,0.08)' : '1.5px solid #E2E8F0',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
               }}>
-
                 <div>ITEMS</div>
-
                 <div style={{ textAlign: 'center' }}>QTY.</div>
-
                 <div style={{ textAlign: 'right' }}>PRICE</div>
-
               </div>
-
-
 
               {orderItems.map((item) => {
-
                 const lineKey = item.line_key || getCartLineKey(item.product_id, item.variation_id);
-
                 return (
-
                   <div key={lineKey} style={{
-
                     display: 'grid',
-
                     gridTemplateColumns: '2fr 1fr 1fr',
-
                     alignItems: 'center',
-
-                    padding: '3px 0',
-
-                    borderBottom: `1px solid ${currentTheme.colors.border}`,
-
+                    padding: '6px 0',
+                    borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #F1F5F9',
                   }}>
-
                     <div>
-
                       <div style={{
-
-                        fontSize: '12.5px',
-
-                        fontWeight: currentTheme.typography.fontWeight.medium,
-
-                        color: currentTheme.colors.text.primary,
-
+                        fontSize: '13.5px',
+                        fontWeight: 750,
+                        color: isDark ? '#F8FAFC' : '#0F172A',
+                        letterSpacing: '-0.2px',
+                        lineHeight: 1.3,
                       }}>
-
                         {item.name}
-
                       </div>
-
                       <div style={{
-
-                        fontSize: '10.5px',
-
-                        color: currentTheme.colors.text.secondary,
-
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: isDark ? '#94A3B8' : '#64748B',
+                        marginTop: '1px',
                       }}>
-
                         {formatCurrency(item.price)} each
-
                       </div>
-
                     </div>
-
-
 
                     <div style={{ textAlign: 'center' }}>
-
                       <div style={{
-
                         display: 'flex',
-
                         alignItems: 'center',
-
                         justifyContent: 'center',
-
-                        gap: '2px',
-
+                        gap: '4px',
                       }}>
-
                         <Button
-
                           variant="ghost"
-
                           size="sm"
-
                           onClick={() => updateQuantity(lineKey, item.quantity - 1)}
-
-                          style={{ minWidth: '22px', padding: '0', height: '22px', fontSize: '11px' }}
-
+                          style={{
+                            minWidth: '24px',
+                            width: '24px',
+                            height: '24px',
+                            padding: 0,
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            fontWeight: 800,
+                            background: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                            border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #CBD5E1',
+                            color: isDark ? '#FFFFFF' : '#0F172A'
+                          }}
                         >
-
                           −
-
                         </Button>
-
-                        <span style={{ minWidth: '24px', textAlign: 'center', fontSize: '12px' }}>
-
+                        <span style={{
+                          minWidth: '24px',
+                          textAlign: 'center',
+                          fontSize: '13px',
+                          fontWeight: 800,
+                          color: isDark ? '#FFFFFF' : '#0F172A',
+                          fontVariantNumeric: 'tabular-nums'
+                        }}>
                           {item.quantity}
-
                         </span>
-
                         <Button
-
                           variant="ghost"
-
                           size="sm"
-
                           onClick={() => updateQuantity(lineKey, item.quantity + 1)}
-
-                          style={{ minWidth: '22px', padding: '0', height: '22px', fontSize: '11px' }}
-
+                          style={{
+                            minWidth: '24px',
+                            width: '24px',
+                            height: '24px',
+                            padding: 0,
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            fontWeight: 800,
+                            background: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                            border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #CBD5E1',
+                            color: isDark ? '#FFFFFF' : '#0F172A'
+                          }}
                         >
-
                           +
-
                         </Button>
-
                       </div>
-
                     </div>
 
-
-
-                    <div style={{ textAlign: 'right', fontSize: '12.5px', fontFamily: 'monospace' }}>
-
+                    <div style={{
+                      textAlign: 'right',
+                      fontSize: '13.5px',
+                      fontWeight: 800,
+                      color: isDark ? '#F8FAFC' : '#0F172A',
+                      fontVariantNumeric: 'tabular-nums'
+                    }}>
                       {formatCurrency(item.price * item.quantity)}
-
                     </div>
-
                   </div>
-
                 );
               })}
-
             </div>
-
           )}
-
         </div>
 
-
-
         <div style={{
-
-          borderTop: `1px solid ${currentTheme.colors.border}`,
-
+          borderTop: isDark ? `1px solid ${currentTheme.colors.border}` : '1.5px solid #E2E8F0',
           padding: '12px 16px',
-
-          backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#F8F9FA'
-
+          backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : '#F8FAFC'
         }}>
-
-
-
-          {/* Total Amount Card */}
-
+          {/* Payment Status Selector (Paid / Pending) */}
           <div style={{
-
             display: 'flex',
-
-            justifyContent: 'space-between',
-
             alignItems: 'center',
-
-            marginBottom: '12px',
-
-            padding: '12px 16px',
-
-            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF',
-
-            borderRadius: '12px',
-
-            border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #E5E7EB',
-
-            boxShadow: isDark ? '0 2px 10px rgba(0,0,0,0.2)' : '0 2px 10px rgba(0,0,0,0.04)'
-
+            justifyContent: 'space-between',
+            gap: '8px',
+            marginBottom: '10px',
+            padding: '4px',
+            borderRadius: '10px',
+            background: isDark ? 'rgba(255, 255, 255, 0.04)' : '#EDF2F7',
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #CBD5E1'
           }}>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-
-              <div style={{
-
-                width: '30px',
-
-                height: '30px',
-
+            <button
+              type="button"
+              onClick={() => setPaymentStatus('paid')}
+              style={{
+                flex: 1,
+                padding: '6px 10px',
+                fontSize: '12px',
+                fontWeight: 750,
                 borderRadius: '8px',
-
-                background: 'rgba(249, 115, 22, 0.1)',
-
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
                 display: 'flex',
-
                 alignItems: 'center',
-
                 justifyContent: 'center',
-
-                flexShrink: 0
-
-              }}>
-
-                <IoReceiptOutline size={16} color="#F97316" />
-
-              </div>
-
-              <span style={{
-
-                fontSize: '11px',
-
-                color: currentTheme.colors.text.secondary,
-
-                fontWeight: 600,
-
-                textTransform: 'uppercase',
-
-                letterSpacing: '0.08em'
-
-              }}>Total Amount</span>
-
-            </div>
-
-            <span style={{
-
-              fontSize: '24px',
-
-              fontFamily: 'monospace',
-
-              fontWeight: 800,
-
-              color: currentTheme.colors.text.primary,
-
-              letterSpacing: '-0.5px'
-
-            }}>
-
-              {formatCurrency(calculateTotal())}
-
-            </span>
-
+                gap: '5px',
+                background: paymentStatus === 'paid'
+                  ? 'linear-gradient(135deg, #10B981, #059669)'
+                  : 'transparent',
+                color: paymentStatus === 'paid' ? '#FFFFFF' : (isDark ? '#94A3B8' : '#64748B'),
+                boxShadow: paymentStatus === 'paid' ? '0 2px 8px rgba(16, 185, 129, 0.3)' : 'none'
+              }}
+            >
+              <span>✓</span> Paid
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentStatus('pending')}
+              style={{
+                flex: 1,
+                padding: '6px 10px',
+                fontSize: '12px',
+                fontWeight: 750,
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '5px',
+                background: paymentStatus === 'pending'
+                  ? 'linear-gradient(135deg, #F59E0B, #D97706)'
+                  : 'transparent',
+                color: paymentStatus === 'pending' ? '#FFFFFF' : (isDark ? '#94A3B8' : '#64748B'),
+                boxShadow: paymentStatus === 'pending' ? '0 2px 8px rgba(245, 158, 11, 0.3)' : 'none'
+              }}
+            >
+              <span>⏳</span> Mark Pending
+            </button>
           </div>
 
-
+          {/* Total Amount Card */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '12px',
+            padding: '12px 16px',
+            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF',
+            borderRadius: '12px',
+            border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1.5px solid #CBD5E1',
+            boxShadow: isDark ? '0 2px 10px rgba(0,0,0,0.2)' : '0 2px 8px rgba(15, 23, 42, 0.05)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                background: 'rgba(249, 115, 22, 0.12)',
+                border: '1px solid rgba(249, 115, 22, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <IoReceiptOutline size={18} color="#EA580C" />
+              </div>
+              <span style={{
+                fontSize: '11.5px',
+                color: isDark ? '#94A3B8' : '#475569',
+                fontWeight: 800,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em'
+              }}>Total Amount</span>
+            </div>
+            <span style={{
+              fontSize: '25px',
+              fontFamily: 'monospace',
+              fontWeight: 900,
+              color: isDark ? '#FFFFFF' : '#0F172A',
+              letterSpacing: '-0.5px',
+              fontVariantNumeric: 'tabular-nums'
+            }}>
+              {formatCurrency(calculateTotal())}
+            </span>
+          </div>
 
           {/* Action Buttons Grid */}
-
           <div style={{
-
             display: 'grid',
-
             gridTemplateColumns: '1fr 1fr',
-
             gap: '8px'
-
           }}>
-
             {/* Row 1 */}
-
             <Button
-
               variant="secondary"
-
               onClick={handleSaveOrder}
-
               fullWidth
-
               disabled={isPrinting}
-
               icon={<IoSaveOutline size={16} />}
-
               style={{
-
                 height: '42px',
-
                 borderRadius: '10px',
-
                 fontSize: '13px',
-
-                fontWeight: 600,
-
+                fontWeight: 750,
                 display: 'flex',
-
                 alignItems: 'center',
-
                 justifyContent: 'center',
-
                 gap: '6px',
-
-                transition: 'all 0.2s ease'
-
+                transition: 'all 0.2s ease',
+                background: isDark ? undefined : '#FFFFFF',
+                border: isDark ? undefined : '1.5px solid #CBD5E1',
+                color: isDark ? undefined : '#1E293B',
+                boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
               }}
-
             >
-
               {editingBill ? 'Update Only' : 'Save Only'}
-
             </Button>
 
             <Button
-
               variant="secondary"
-
               onClick={() => handleSaveAndPrintOrder('kot')}
-
               fullWidth
-
               disabled={isPrinting}
-
               icon={<IoPrintOutline size={16} />}
-
               style={{
-
                 height: '42px',
-
                 borderRadius: '10px',
-
                 fontSize: '13px',
-
-                fontWeight: 600,
-
+                fontWeight: 750,
                 display: 'flex',
-
                 alignItems: 'center',
-
                 justifyContent: 'center',
-
                 gap: '6px',
-
-                transition: 'all 0.2s ease'
-
+                transition: 'all 0.2s ease',
+                background: isDark ? undefined : '#FFFFFF',
+                border: isDark ? undefined : '1.5px solid #CBD5E1',
+                color: isDark ? undefined : '#1E293B',
+                boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
               }}
-
             >
-
               {isPrinting && printStatus.toLowerCase().includes('kot') ? 'KOT...' : 'Print KOT'}
-
             </Button>
-
-
 
             {/* Row 2 */}
-
             <Button
-
               variant="secondary"
-
               onClick={() => handleSaveAndPrintOrder('bill')}
-
               fullWidth
-
               disabled={isPrinting}
-
               icon={<IoDocumentTextOutline size={16} />}
-
               style={{
-
                 height: '42px',
-
                 borderRadius: '10px',
-
                 fontSize: '13px',
-
-                fontWeight: 600,
-
+                fontWeight: 750,
                 display: 'flex',
-
                 alignItems: 'center',
-
                 justifyContent: 'center',
-
                 gap: '6px',
-
-                transition: 'all 0.2s ease'
-
+                transition: 'all 0.2s ease',
+                background: isDark ? undefined : '#FFFFFF',
+                border: isDark ? undefined : '1.5px solid #CBD5E1',
+                color: isDark ? undefined : '#1E293B',
+                boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
               }}
-
             >
-
               {isPrinting && printStatus.toLowerCase().includes('bill') && !printStatus.toLowerCase().includes('kot') ? 'Bill...' : 'Print Bill'}
-
             </Button>
 
             <Button
-
               variant="primary"
-
               onClick={() => handleSaveAndPrintOrder('both')}
-
               fullWidth
-
               disabled={isPrinting}
-
               style={{
-
                 height: '42px',
-
                 borderRadius: '10px',
-
-                fontSize: '13px',
-
-                fontWeight: 700,
-
+                fontSize: '13.5px',
+                fontWeight: 800,
+                letterSpacing: '0.02em',
                 display: 'flex',
-
                 alignItems: 'center',
-
                 justifyContent: 'center',
-
                 gap: '6px',
-
                 background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
-
-                boxShadow: '0 2px 10px rgba(249, 115, 22, 0.3)',
-
+                boxShadow: '0 3px 12px rgba(249, 115, 22, 0.35)',
                 transition: 'all 0.2s ease'
 
               }}

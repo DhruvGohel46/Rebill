@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useAlert } from '../../context/AlertContext';
+import { useTheme } from '../../context/ThemeContext';
 import { agentsAPI } from '../../api/agents';
+import DynamicAiMascot from '../common/DynamicAiMascot';
 
 /**
  * InfoOS AI — Production-Grade Multi-Agent Interface with Structured Card System
@@ -18,20 +20,20 @@ import { agentsAPI } from '../../api/agents';
 const STORAGE_KEY = 'infoos_ai_chat_sessions_v1';
 
 const AGENT_META = {
-  analytics: { label: 'Analytics Agent', icon: <TrendingUpIcon size={14} color="#38BDF8" />, color: '#38bdf8' },
-  inventory: { label: 'Inventory Agent', icon: <PackageIcon size={14} color="#FBBF24" />, color: '#fbbf24' },
-  worker: { label: 'Worker Agent', icon: <UsersIcon size={14} color="#A78BFA" />, color: '#a78bfa' },
-  reminder: { label: 'Reminder Agent', icon: <ClockIcon size={14} color="#F472B6" />, color: '#f472b6' },
-  billing: { label: 'Billing Agent', icon: <ReceiptIcon size={14} color="#34D399" />, color: '#34d399' },
-  product: { label: 'Product Agent', icon: <BoxIcon size={14} color="#FB923C" />, color: '#fb923c' },
-  expense: { label: 'Expense Agent', icon: <DollarSignIcon size={14} color="#F87171" />, color: '#f87171' },
-  system: { label: 'System Agent', icon: <CpuIcon size={14} color="#94A3B8" />, color: '#94a3b8' },
-  orchestrator: { label: 'Orchestrator', icon: <AiCoreIcon size={14} color="#FF6B1A" />, color: '#ff6b1a' },
+  analytics: { label: 'Analytics Agent', icon: <TrendingUpIcon size={14} color="#FF8A3D" />, color: '#FF8A3D' },
+  inventory: { label: 'Inventory Agent', icon: <PackageIcon size={14} color="#FF8A3D" />, color: '#FF8A3D' },
+  worker: { label: 'Worker Agent', icon: <UsersIcon size={14} color="#FF8A3D" />, color: '#FF8A3D' },
+  reminder: { label: 'Reminder Agent', icon: <ClockIcon size={14} color="#FF8A3D" />, color: '#FF8A3D' },
+  billing: { label: 'Billing Agent', icon: <ReceiptIcon size={14} color="#FF8A3D" />, color: '#FF8A3D' },
+  product: { label: 'Product Agent', icon: <BoxIcon size={14} color="#FF8A3D" />, color: '#FF8A3D' },
+  expense: { label: 'Expense Agent', icon: <DollarSignIcon size={14} color="#FF8A3D" />, color: '#FF8A3D' },
+  system: { label: 'System Agent', icon: <CpuIcon size={14} color="#CBD5E1" />, color: '#CBD5E1' },
+  orchestrator: { label: 'Orchestrator', icon: <DynamicAiMascot size={15} />, color: '#FF6B1A' },
 };
 
 const SUGGESTIONS = [
   {
-    icon: <TrendingUpIcon size={18} color="#FF6B1A" />,
+    icon: <TrendingUpIcon size={18} color="#FF8A3D" />,
     title: "Today's Financials",
     desc: 'Sales, net profit & margin breakdown',
     prompt: "What is today's total sales, gross revenue, and net profit summary?"
@@ -43,25 +45,25 @@ const SUGGESTIONS = [
     prompt: 'Show all low stock inventory items currently below alert threshold'
   },
   {
-    icon: <UsersIcon size={18} color="#A78BFA" />,
+    icon: <UsersIcon size={18} color="#FF8A3D" />,
     title: 'Staff On Duty',
     desc: 'Attendance status & active shifts today',
     prompt: 'Who is present, absent, or marked on duty today?'
   },
   {
-    icon: <DollarSignIcon size={18} color="#34D399" />,
+    icon: <DollarSignIcon size={18} color="#FF8A3D" />,
     title: 'Recent Expenses',
     desc: 'Log of operational costs this week',
     prompt: 'Summarize recent operational expenses recorded this week'
   },
   {
-    icon: <ReceiptIcon size={18} color="#38BDF8" />,
+    icon: <ReceiptIcon size={18} color="#FF8A3D" />,
     title: 'Recent Bills',
     desc: 'Latest customer orders & payment modes',
     prompt: 'Show the 5 most recent customer bills created today'
   },
   {
-    icon: <StarIcon size={18} color="#FBBF24" />,
+    icon: <StarIcon size={18} color="#FF8A3D" />,
     title: 'Top Sellers',
     desc: 'Best performing products & categories',
     prompt: 'What are the top 5 best selling menu products today?'
@@ -73,7 +75,7 @@ const DEFAULT_WELCOME_MSG = {
   role: 'assistant',
   agent: 'orchestrator',
   text: JSON.stringify({
-    title: { icon: 'ai_review', text: 'InfoOS AI Assistant' },
+    title: { icon: 'ai_review', text: 'Your Business AI' },
     sections: [
       {
         type: 'insight_block',
@@ -92,6 +94,7 @@ const DEFAULT_WELCOME_MSG = {
 
 export default function AgentChatPanel() {
   const { isAdmin } = useAuth();
+  const { isDark } = useTheme();
   const { showSuccess, showError } = useAlert();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -106,34 +109,26 @@ export default function AgentChatPanel() {
   const [currentStatus, setCurrentStatus] = useState(null);
   const [actionStatuses, setActionStatuses] = useState({});
   const [isRecording, setIsRecording] = useState(false);
-  const [todayTokens, setTodayTokens] = useState(0);
-  const [todayCost, setTodayCost] = useState(0.0);
 
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const baseDraftRef = useRef('');
 
   const isOnlyWelcome = useMemo(() => {
     return messages.length === 1 && messages[0].id === 'welcome';
   }, [messages]);
 
-  // Load token/cost usage summary
-  const loadTodayUsage = useCallback(async () => {
-    try {
-      const res = await agentsAPI.getUsageSummary();
-      if (res.success && res.usage) {
-        setTodayTokens((res.usage.total_input_tokens || 0) + (res.usage.total_output_tokens || 0));
-        setTodayCost(res.usage.estimated_cost_usd || 0.0);
-      }
-    } catch (e) {
-      // ignore
-    }
-  }, []);
-
+  // Clean up speech recognition on unmount
   useEffect(() => {
-    if (isOpen && isAdmin) {
-      loadTodayUsage();
-    }
-  }, [isOpen, isAdmin, loadTodayUsage]);
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (isOpen && isAdmin) {
@@ -208,8 +203,6 @@ export default function AgentChatPanel() {
     };
   }, [isAdmin]);
 
-  if (!isAdmin) return null;
-
   // ── Session History Operations ───────────────────────────────────────────
   const startNewChat = () => {
     const newId = `session_${Date.now()}`;
@@ -229,13 +222,11 @@ export default function AgentChatPanel() {
   const deleteSession = (sessionId, e) => {
     e.stopPropagation();
     setSessions((prev) => {
-      const updated = prev.filter((s) => s.id !== sessionId);
+      const filtered = prev.filter((s) => s.id !== sessionId);
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-      } catch (err) {
-        // ignore
-      }
-      return updated;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+      } catch (err) {}
+      return filtered;
     });
 
     if (currentSessionId === sessionId) {
@@ -244,19 +235,79 @@ export default function AgentChatPanel() {
   };
 
   const clearAllHistory = () => {
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch (e) {
-      // ignore
+    if (window.confirm('Clear all conversation history?')) {
+      setSessions([]);
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (e) {}
+      startNewChat();
     }
-    setSessions([]);
-    startNewChat();
-    showSuccess('Chat history cleared.');
+  };
+
+  // ── Speech Recognition & Voice Input Routine ────────────────────────────
+  const handleToggleMic = () => {
+    if (isRecording) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
+      }
+      setIsRecording(false);
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      showError('Voice recognition is not supported in this environment. Please type your query.');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-IN';
+
+      baseDraftRef.current = draft ? draft.trim() + ' ' : '';
+
+      recognition.onstart = () => {
+        setIsRecording(true);
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (transcript) {
+          setDraft(baseDraftRef.current + transcript);
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.warn('Speech recognition error:', event.error);
+        if (event.error === 'not-allowed') {
+          showError('Microphone permission was denied. Please allow microphone access in system settings.');
+        }
+        setIsRecording(false);
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.error('Failed to start voice recognition:', err);
+      showError('Could not start microphone: ' + (err.message || 'Unknown error'));
+      setIsRecording(false);
+    }
   };
 
   // ── Send Message Routine ──────────────────────────────────────────────────
   const sendMessage = async (customText = null) => {
-    const text = (customText ?? draft).trim();
+    const text = (customText || draft).trim();
     if (!text || loading) return;
 
     // Determine initial active agent cue from prompt keywords
@@ -317,7 +368,6 @@ export default function AgentChatPanel() {
           setMessages((prev) => [...prev, assistantMsg]);
           setCurrentStatus(null);
           setLoading(false);
-          loadTodayUsage();
         },
         (error) => {
           console.error('Agent chat stream error:', error);
@@ -361,7 +411,13 @@ export default function AgentChatPanel() {
     try {
       const res = await agentsAPI.approveAction(actionId);
       setActionStatuses((prev) => ({ ...prev, [actionId]: 'approved' }));
-      showSuccess(res.message || 'Action executed successfully.');
+      showSuccess(res.message || 'Action executed and verified in database.');
+
+      const entityBadge = res.affected_entity_id ? ` (Record ID: #${res.affected_entity_id})` : '';
+      const execTime = res.execution_timestamp
+        ? new Date(res.execution_timestamp).toLocaleTimeString()
+        : new Date().toLocaleTimeString();
+
       setMessages((prev) => [
         ...prev,
         {
@@ -369,13 +425,13 @@ export default function AgentChatPanel() {
           role: 'assistant',
           agent: 'system',
           text: JSON.stringify({
-            title: { icon: 'alert_success', text: 'Action Confirmed & Executed' },
+            title: { icon: 'alert_success', text: `Action Confirmed & Executed${entityBadge}` },
             sections: [
               {
                 type: 'insight_block',
                 icon: 'alert_success',
-                heading: 'Database Updated',
-                body: res.message || 'Database changes applied with full audit verification.'
+                heading: 'Verified Database Commit',
+                body: `${res.message || 'Action executed successfully.'} Changes committed at ${execTime} with full immutable audit record.`
               }
             ],
             meta: { status: 'normal', statusIcon: 'status_normal' }
@@ -383,7 +439,6 @@ export default function AgentChatPanel() {
           timestamp: new Date().toISOString()
         }
       ]);
-      loadTodayUsage();
     } catch (err) {
       console.error('Action approval failed:', err);
       const errText = err.response?.data?.error || 'Failed to approve action.';
@@ -391,6 +446,7 @@ export default function AgentChatPanel() {
       setActionStatuses((prev) => ({ ...prev, [actionId]: 'failed' }));
     }
   };
+
 
   const handleRejectAction = async (actionId) => {
     setActionStatuses((prev) => ({ ...prev, [actionId]: 'rejecting' }));
@@ -454,7 +510,6 @@ export default function AgentChatPanel() {
           timestamp: new Date().toISOString()
         }
       ]);
-      loadTodayUsage();
     } catch (err) {
       console.error('Action undo failed:', err);
       const errText = err.response?.data?.error || 'Failed to restore action.';
@@ -463,34 +518,21 @@ export default function AgentChatPanel() {
     }
   };
 
-  const handleToggleMic = () => {
-    if (!isRecording) {
-      setIsRecording(true);
-      showSuccess('Listening...');
-      setTimeout(() => {
-        setIsRecording(false);
-        setDraft("What is today's total revenue and net profit?");
-      }, 2000);
-    } else {
-      setIsRecording(false);
-    }
-  };
-
   return (
     <AnimatePresence>
-      {isOpen && (
+      {isOpen && isAdmin && (
         <div
           id="infoos-assistant-overlay"
           style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(8, 9, 13, 0.72)',
+            background: isDark ? 'rgba(8, 9, 13, 0.72)' : 'rgba(15, 23, 42, 0.45)',
             backdropFilter: 'blur(10px)',
             WebkitBackdropFilter: 'blur(10px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '20px',
+            padding: '4px',
             zIndex: 99999,
             fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           }}
@@ -500,136 +542,160 @@ export default function AgentChatPanel() {
         >
           <motion.div
             id="infoos-assistant-modal"
-            initial={{ opacity: 0, scale: 0.98, y: 10 }}
+            initial={{ opacity: 0, scale: 0.97, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.98, y: 10 }}
-            transition={{ duration: 0.18 }}
+            exit={{ opacity: 0, scale: 0.97, y: 12 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
             style={{
-              width: '100%',
-              maxWidth: 940,
-              height: '86vh',
-              maxHeight: 780,
-              background: '#0F1117',
-              border: '1px solid rgba(255, 255, 255, 0.09)',
-              borderRadius: 18,
-              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.65)',
+              width: '82vw',
+              maxWidth: 960,
+              height: '98.5vh',
+              maxHeight: '98.5vh',
+              background: isDark ? 'linear-gradient(165deg, #11141F 0%, #0B0D14 100%)' : '#FFFFFF',
+              border: isDark ? '1px solid rgba(255, 255, 255, 0.11)' : '1px solid #CBD5E1',
+              borderRadius: 24,
+              boxShadow: isDark
+                ? '0 36px 95px -10px rgba(0, 0, 0, 0.85), 0 0 1px 1px rgba(255, 255, 255, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.16)'
+                : '0 32px 80px -10px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(203, 213, 225, 0.6)',
               display: 'flex',
               flexDirection: 'column',
               overflow: 'hidden',
               position: 'relative',
-              color: '#F1F2F6'
+              color: isDark ? '#F8FAFC' : '#0F172A',
             }}
           >
+            {/* Soft Ambient Velvet Glow Underlays */}
+            {isDark && (
+              <>
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: -100,
+                    left: '25%',
+                    width: 600,
+                    height: 300,
+                    background: 'radial-gradient(circle, rgba(255, 107, 26, 0.09) 0%, transparent 70%)',
+                    pointerEvents: 'none',
+                    zIndex: 0,
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: -100,
+                    right: '10%',
+                    width: 500,
+                    height: 300,
+                    background: 'radial-gradient(circle, rgba(56, 189, 248, 0.05) 0%, transparent 70%)',
+                    pointerEvents: 'none',
+                    zIndex: 0,
+                  }}
+                />
+              </>
+            )}
+
             {/* ── HEADER ─────────────────────────────────────────────────── */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '14px 20px',
-                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-                background: '#131620',
+                padding: '16px 26px',
+                borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #E2E8F0',
+                background: isDark ? 'rgba(16, 20, 30, 0.85)' : '#F8FAFC',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
                 position: 'relative',
                 zIndex: 10,
               }}
             >
               {/* Left Identity */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div
                   style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 8,
-                    background: '#FF6B1A',
+                    width: 42,
+                    height: 42,
+                    borderRadius: 12,
+                    background: isDark ? 'rgba(255, 107, 26, 0.12)' : '#FFF7ED',
+                    border: isDark ? '1px solid rgba(255, 107, 26, 0.28)' : '1px solid #FDBA74',
+                    boxShadow: '0 4px 14px rgba(255, 107, 26, 0.18)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
                   }}
                 >
-                  <AiCoreIcon size={18} color="#FFFFFF" />
+                  <DynamicAiMascot
+                    size={34}
+                    state={loading ? 'thinking' : isRecording ? 'listening' : 'idle'}
+                    glow={loading || isRecording}
+                  />
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF' }}>
-                      InfoOS AI
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                    <span style={{ fontSize: 16, fontWeight: 750, color: isDark ? '#FFFFFF' : '#0F172A', letterSpacing: '-0.01em' }}>
+                      Your Business AI
                     </span>
                     <span
                       style={{
-                        fontSize: 10,
+                        fontSize: 10.5,
                         fontWeight: 700,
-                        letterSpacing: '0.05em',
+                        letterSpacing: '0.06em',
                         textTransform: 'uppercase',
                         color: '#FF8A3D',
-                        background: 'rgba(255, 107, 26, 0.12)',
-                        padding: '2px 6px',
-                        borderRadius: 4,
-                        border: '1px solid rgba(255, 107, 26, 0.25)',
+                        background: isDark ? 'rgba(255, 107, 26, 0.14)' : '#FFF7ED',
+                        padding: '2px 8px',
+                        borderRadius: 6,
+                        border: isDark ? '1px solid rgba(255, 107, 26, 0.3)' : '1px solid #FDBA74',
                       }}
                     >
-                      COPILOT
+                      ENTERPRISE COPILOT
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
                     <span
                       style={{
                         width: 6,
                         height: 6,
                         borderRadius: '50%',
                         background: '#22C55E',
+                        boxShadow: '0 0 8px rgba(34, 197, 94, 0.6)',
                         display: 'inline-block',
                       }}
                     />
-                    <span style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.45)' }}>
-                      Connected to store database
+                    <span style={{ fontSize: 11.5, fontWeight: 500, color: isDark ? 'rgba(255, 255, 255, 0.65)' : '#64748B' }}>
+                      Connected to Live Store Database (10,000+ Orders/Day Engine)
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Right Controls: Token/Price Badge, History Toggle, New Chat, Close */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                {/* Token & Price Badge */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    background: 'rgba(255, 255, 255, 0.04)',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    borderRadius: 6,
-                    padding: '4px 8px',
-                    fontFamily: "'SF Mono', 'Roboto Mono', monospace",
-                    fontSize: 11,
-                    color: 'rgba(255, 255, 255, 0.65)',
-                    marginRight: 4,
-                  }}
-                  title="Today's Token and Cost Usage"
-                >
-                  <span>{todayTokens.toLocaleString()} tok</span>
-                  <span style={{ color: 'rgba(255, 255, 255, 0.25)' }}>•</span>
-                  <span>${(todayCost || 0).toFixed(4)}</span>
-                </div>
-
+              {/* Right Controls: History Toggle, New Chat, Close */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {/* Chat History Drawer Toggle Button */}
                 <button
                   onClick={() => setShowHistory((s) => !s)}
                   title="Chat History"
                   style={{
-                    ...ghostBtnStyle(),
-                    background: showHistory ? 'rgba(255, 107, 26, 0.15)' : 'rgba(255, 255, 255, 0.04)',
-                    color: showHistory ? '#FF8A3D' : 'rgba(255, 255, 255, 0.7)',
-                    borderColor: showHistory ? 'rgba(255, 107, 26, 0.3)' : 'transparent',
-                    border: '1px solid',
-                    width: 'auto',
-                    padding: '0 10px',
-                    gap: 6,
+                    background: showHistory
+                      ? (isDark ? 'rgba(255, 107, 26, 0.15)' : '#FFF7ED')
+                      : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#FFFFFF'),
+                    color: showHistory ? '#FF8A3D' : (isDark ? 'rgba(255, 255, 255, 0.85)' : '#334155'),
+                    border: `1px solid ${showHistory ? (isDark ? 'rgba(255, 107, 26, 0.35)' : '#FF8A00') : (isDark ? 'rgba(255, 255, 255, 0.09)' : '#CBD5E1')}`,
+                    borderRadius: 10,
+                    padding: '0 12px',
+                    height: 36,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    gap: 7,
+                    transition: 'all 0.15s ease',
                   }}
                 >
-                  <HistoryIcon size={14} />
-                  <span style={{ fontSize: 12, fontWeight: 500 }}>History</span>
+                  <HistoryIcon size={14} color={showHistory ? '#FF8A3D' : (isDark ? 'currentColor' : '#64748B')} />
+                  <span style={{ fontSize: 12.5, fontWeight: 600 }}>History</span>
                 </button>
 
                 {/* New Chat Button */}
@@ -637,21 +703,53 @@ export default function AgentChatPanel() {
                   onClick={startNewChat}
                   title="New Conversation"
                   style={{
-                    ...ghostBtnStyle(),
-                    width: 'auto',
-                    padding: '0 10px',
-                    gap: 5,
+                    background: isDark ? 'rgba(255, 255, 255, 0.04)' : '#FFFFFF',
+                    border: isDark ? '1px solid rgba(255, 255, 255, 0.09)' : '1px solid #CBD5E1',
+                    color: isDark ? 'rgba(255, 255, 255, 0.85)' : '#334155',
+                    borderRadius: 10,
+                    padding: '0 12px',
+                    height: 36,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    gap: 6,
+                    transition: 'all 0.15s ease',
                   }}
                 >
-                  <PlusIcon size={13} />
-                  <span style={{ fontSize: 12, fontWeight: 500 }}>New Chat</span>
+                  <PlusIcon size={14} color={isDark ? 'currentColor' : '#64748B'} />
+                  <span style={{ fontSize: 12.5, fontWeight: 600 }}>New Chat</span>
                 </button>
 
                 {/* Close Button */}
                 <button
                   onClick={() => setIsOpen(false)}
-                  title="Close"
-                  style={ghostBtnStyle()}
+                  title="Close (Esc)"
+                  style={{
+                    width: 36,
+                    height: 36,
+                    minWidth: 36,
+                    borderRadius: 10,
+                    background: isDark ? 'rgba(255, 255, 255, 0.04)' : '#FFFFFF',
+                    border: isDark ? '1px solid rgba(255, 255, 255, 0.09)' : '1px solid #CBD5E1',
+                    color: isDark ? 'rgba(255, 255, 255, 0.75)' : '#64748B',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    padding: 0,
+                    boxShadow: isDark ? 'none' : '0 1px 3px rgba(15, 23, 42, 0.04)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.14)' : '#FEE2E2';
+                    e.currentTarget.style.borderColor = isDark ? 'rgba(239, 68, 68, 0.3)' : '#FCA5A5';
+                    e.currentTarget.style.color = '#EF4444';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.04)' : '#FFFFFF';
+                    e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.09)' : '#CBD5E1';
+                    e.currentTarget.style.color = isDark ? 'rgba(255, 255, 255, 0.75)' : '#64748B';
+                  }}
                 >
                   <CloseIcon size={16} />
                 </button>
@@ -670,8 +768,8 @@ export default function AgentChatPanel() {
                     transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                     style={{
                       width: 270,
-                      background: '#13151F',
-                      borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+                      background: isDark ? '#13151F' : '#F8FAFC',
+                      borderRight: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #E2E8F0',
                       display: 'flex',
                       flexDirection: 'column',
                       zIndex: 20,
@@ -680,13 +778,13 @@ export default function AgentChatPanel() {
                     <div
                       style={{
                         padding: '12px 14px',
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                        borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #E2E8F0',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
                       }}
                     >
-                      <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255, 255, 255, 0.7)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: isDark ? 'rgba(255, 255, 255, 0.7)' : '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         Past Conversations ({sessions.length})
                       </span>
                       {sessions.length > 0 && (
@@ -696,7 +794,7 @@ export default function AgentChatPanel() {
                           style={{
                             background: 'transparent',
                             border: 'none',
-                            color: 'rgba(255, 255, 255, 0.4)',
+                            color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#94A3B8',
                             fontSize: 11,
                             cursor: 'pointer',
                             padding: '2px 4px',
@@ -709,7 +807,7 @@ export default function AgentChatPanel() {
 
                     <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
                       {sessions.length === 0 ? (
-                        <div style={{ padding: '24px 12px', textAlign: 'center', color: 'rgba(255, 255, 255, 0.4)', fontSize: 12 }}>
+                        <div style={{ padding: '24px 12px', textAlign: 'center', color: isDark ? 'rgba(255, 255, 255, 0.4)' : '#94A3B8', fontSize: 12 }}>
                           No past conversations yet.
                         </div>
                       ) : (
@@ -725,27 +823,34 @@ export default function AgentChatPanel() {
                                 justifyContent: 'space-between',
                                 padding: '9px 10px',
                                 borderRadius: 8,
-                                background: isActive ? 'rgba(255, 107, 26, 0.12)' : 'transparent',
-                                border: `1px solid ${isActive ? 'rgba(255, 107, 26, 0.35)' : 'transparent'}`,
+                                background: isActive
+                                  ? (isDark ? 'rgba(255, 107, 26, 0.12)' : '#FFF7ED')
+                                  : (isDark ? 'transparent' : '#FFFFFF'),
+                                border: `1px solid ${
+                                  isActive
+                                    ? (isDark ? 'rgba(255, 107, 26, 0.35)' : '#FDBA74')
+                                    : (isDark ? 'transparent' : '#E2E8F0')
+                                }`,
                                 cursor: 'pointer',
                                 marginBottom: 4,
                                 transition: 'all 0.15s ease',
+                                boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.03)',
                               }}
                               onMouseEnter={(e) => {
-                                if (!isActive) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                                if (!isActive) e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.04)' : '#F1F5F9';
                               }}
                               onMouseLeave={(e) => {
-                                if (!isActive) e.currentTarget.style.background = 'transparent';
+                                if (!isActive) e.currentTarget.style.background = isDark ? 'transparent' : '#FFFFFF';
                               }}
                             >
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flex: 1 }}>
-                                <MessageSquareIcon size={13} color={isActive ? '#FF8A3D' : 'rgba(255, 255, 255, 0.4)'} />
+                                <MessageSquareIcon size={13} color={isActive ? '#FF8A3D' : (isDark ? 'rgba(255, 255, 255, 0.4)' : '#94A3B8')} />
                                 <div style={{ minWidth: 0, flex: 1 }}>
                                   <div
                                     style={{
                                       fontSize: 12.5,
                                       fontWeight: isActive ? 600 : 400,
-                                      color: isActive ? '#FFFFFF' : 'rgba(255, 255, 255, 0.75)',
+                                      color: isActive ? (isDark ? '#FFFFFF' : '#C2410C') : (isDark ? 'rgba(255, 255, 255, 0.75)' : '#0F172A'),
                                       whiteSpace: 'nowrap',
                                       overflow: 'hidden',
                                       textOverflow: 'ellipsis',
@@ -753,7 +858,7 @@ export default function AgentChatPanel() {
                                   >
                                     {s.title}
                                   </div>
-                                  <div style={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.35)', marginTop: 1 }}>
+                                  <div style={{ fontSize: 10, color: isDark ? 'rgba(255, 255, 255, 0.35)' : '#94A3B8', marginTop: 1 }}>
                                     {formatRelativeTime(s.updatedAt)}
                                   </div>
                                 </div>
@@ -765,7 +870,7 @@ export default function AgentChatPanel() {
                                 style={{
                                   background: 'transparent',
                                   border: 'none',
-                                  color: 'rgba(255, 255, 255, 0.3)',
+                                  color: isDark ? 'rgba(255, 255, 255, 0.3)' : '#94A3B8',
                                   cursor: 'pointer',
                                   padding: '4px',
                                   display: 'flex',
@@ -777,7 +882,7 @@ export default function AgentChatPanel() {
                                   e.currentTarget.style.color = '#EF4444';
                                 }}
                                 onMouseLeave={(e) => {
-                                  e.currentTarget.style.color = 'rgba(255, 255, 255, 0.3)';
+                                  e.currentTarget.style.color = isDark ? 'rgba(255, 255, 255, 0.3)' : '#94A3B8';
                                 }}
                               >
                                 <TrashIcon size={12} />
@@ -798,7 +903,7 @@ export default function AgentChatPanel() {
                   display: 'flex',
                   flexDirection: 'column',
                   minWidth: 0,
-                  background: '#0F1117',
+                  background: isDark ? '#0F1117' : '#F1F5F9',
                 }}
               >
                 <div
@@ -821,56 +926,68 @@ export default function AgentChatPanel() {
                         flexDirection: 'column',
                         alignItems: 'center',
                         textAlign: 'center',
-                        padding: '16px 8px',
+                        padding: '24px 16px',
+                        position: 'relative',
+                        zIndex: 1,
                       }}
                     >
+                      {/* Hero Mascot with Soft Velvet Aura */}
                       <div
                         style={{
-                          width: 46,
-                          height: 46,
-                          borderRadius: 12,
-                          background: 'rgba(255, 107, 26, 0.12)',
-                          border: '1px solid rgba(255, 107, 26, 0.3)',
+                          marginBottom: 16,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          marginBottom: 14,
+                          position: 'relative',
                         }}
                       >
-                        <AiCoreIcon size={24} color="#FF6B1A" />
+                        <div
+                          style={{
+                            position: 'absolute',
+                            width: 140,
+                            height: 140,
+                            borderRadius: '50%',
+                            background: isDark
+                              ? 'radial-gradient(circle, rgba(255, 107, 26, 0.18) 0%, rgba(255, 107, 26, 0.03) 65%, transparent 100%)'
+                              : 'radial-gradient(circle, rgba(255, 107, 26, 0.12) 0%, transparent 70%)',
+                            filter: 'blur(8px)',
+                            pointerEvents: 'none',
+                          }}
+                        />
+                        <DynamicAiMascot size={88} state="idle" glow={true} />
                       </div>
 
                       <h2
                         style={{
-                          fontSize: 20,
-                          fontWeight: 700,
-                          color: '#FFFFFF',
-                          letterSpacing: '-0.01em',
-                          marginBottom: 6,
+                          fontSize: 24,
+                          fontWeight: 800,
+                          color: isDark ? '#FFFFFF' : '#0F172A',
+                          letterSpacing: '-0.02em',
+                          marginBottom: 8,
                         }}
                       >
-                        How can I assist your store today?
+                        Enterprise Store Intelligence
                       </h2>
                       <p
                         style={{
-                          fontSize: 13.5,
-                          color: 'rgba(255, 255, 255, 0.5)',
-                          maxWidth: 460,
-                          lineHeight: 1.5,
-                          marginBottom: 22,
+                          fontSize: 14,
+                          color: isDark ? 'rgba(255, 255, 255, 0.65)' : '#64748B',
+                          maxWidth: 580,
+                          lineHeight: 1.55,
+                          marginBottom: 26,
                         }}
                       >
-                        Ask questions about sales, inventory stock, staff attendance, or expenses.
+                        Real-time automated analytics, inventory audits, workforce shifts & financial billing intelligence across 10,000+ daily orders.
                       </p>
 
-                      {/* 2x3 Suggestion Grid */}
+                      {/* 3x2 Luxury Suggestion Grid */}
                       <div
                         style={{
                           display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
-                          gap: 10,
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                          gap: 14,
                           width: '100%',
-                          maxWidth: 740,
+                          maxWidth: 960,
                         }}
                       >
                         {SUGGESTIONS.map((s, idx) => (
@@ -880,28 +997,50 @@ export default function AgentChatPanel() {
                             style={{
                               display: 'flex',
                               alignItems: 'flex-start',
-                              gap: 12,
-                              padding: '12px 14px',
-                              borderRadius: 10,
-                              background: 'rgba(255, 255, 255, 0.025)',
-                              border: '1px solid rgba(255, 255, 255, 0.08)',
+                              gap: 14,
+                              padding: '16px 18px',
+                              borderRadius: 16,
+                              background: isDark ? 'rgba(255, 255, 255, 0.035)' : '#FFFFFF',
+                              border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #CBD5E1',
+                              backdropFilter: 'blur(10px)',
+                              WebkitBackdropFilter: 'blur(10px)',
                               textAlign: 'left',
                               cursor: 'pointer',
-                              transition: 'all 0.15s ease',
+                              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                              boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.15)' : '0 2px 8px rgba(15, 23, 42, 0.05)',
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                              e.currentTarget.style.borderColor = 'rgba(255, 107, 26, 0.4)';
+                              e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.065)' : '#F8FAFC';
+                              e.currentTarget.style.borderColor = 'rgba(255, 107, 26, 0.45)';
+                              e.currentTarget.style.transform = 'translateY(-2px)';
+                              e.currentTarget.style.boxShadow = '0 8px 24px rgba(255, 107, 26, 0.15)';
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.025)';
-                              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                              e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.035)' : '#FFFFFF';
+                              e.currentTarget.style.borderColor = isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '#CBD5E1';
+                              e.currentTarget.style.transform = 'translateY(0)';
+                              e.currentTarget.style.boxShadow = isDark ? '0 4px 16px rgba(0, 0, 0, 0.15)' : '0 2px 8px rgba(15, 23, 42, 0.05)';
                             }}
                           >
-                            <div style={{ marginTop: 2 }}>{s.icon}</div>
+                            <div
+                              style={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: 10,
+                                background: isDark ? 'rgba(255, 255, 255, 0.05)' : '#FFF7ED',
+                                border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #FDBA74',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                                marginTop: 1,
+                              }}
+                            >
+                              {s.icon}
+                            </div>
                             <div>
-                              <div style={{ fontSize: 13, fontWeight: 600, color: '#FFFFFF' }}>{s.title}</div>
-                              <div style={{ fontSize: 11.5, color: 'rgba(255, 255, 255, 0.45)', marginTop: 2 }}>{s.desc}</div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: isDark ? '#FFFFFF' : '#0F172A' }}>{s.title}</div>
+                              <div style={{ fontSize: 12.5, color: isDark ? 'rgba(255, 255, 255, 0.65)' : '#64748B', marginTop: 3, lineHeight: 1.4 }}>{s.desc}</div>
                             </div>
                           </button>
                         ))}
@@ -910,26 +1049,7 @@ export default function AgentChatPanel() {
                   ) : (
                     messages.map((m, i) =>
                       m.role === 'user' ? (
-                        <div
-                          key={m.id || i}
-                          style={{ display: 'flex', justifyContent: 'flex-end' }}
-                        >
-                          <div
-                            style={{
-                              background: '#1A1D28',
-                              color: '#FFFFFF',
-                              border: '1px solid rgba(255, 255, 255, 0.1)',
-                              borderRadius: '14px 14px 2px 14px',
-                              padding: '10px 16px',
-                              fontSize: 14,
-                              maxWidth: '80%',
-                              lineHeight: 1.5,
-                              wordBreak: 'break-word',
-                            }}
-                          >
-                            {m.text}
-                          </div>
-                        </div>
+                        <UserMessageBubble key={m.id || i} text={m.text} isDark={isDark} />
                       ) : (
                         <ConversationMessage
                           key={m.id || i}
@@ -938,6 +1058,7 @@ export default function AgentChatPanel() {
                           onApprove={handleApproveAction}
                           onReject={handleRejectAction}
                           onUndo={handleUndoAction}
+                          isDark={isDark}
                         />
                       )
                     )
@@ -945,30 +1066,30 @@ export default function AgentChatPanel() {
 
                   {/* ── Redesigned "AI Working" Intermediate Loading State with Skeleton Morph ── */}
                   {loading && (
-                    <AiWorkingCard activeAgent={activeAgent} statusText={currentStatus} />
+                    <AiWorkingCard activeAgent={activeAgent} statusText={currentStatus} isDark={isDark} />
                   )}
                 </div>
 
                 {/* ── CLEAN PROMPT SHORTCUT ROW ──────────────────────────── */}
                 <div
                   style={{
-                    padding: '8px 18px',
-                    borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-                    background: '#0C0D13',
+                    padding: '10px 24px',
+                    borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #E2E8F0',
+                    background: isDark ? 'rgba(12, 14, 22, 0.9)' : '#F8FAFC',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 8,
+                    gap: 10,
                     overflowX: 'auto',
                     scrollbarWidth: 'none',
                   }}
                 >
                   {[
-                    { icon: <TrendingUpIcon size={12} color="#FF6B1A" />, label: 'Sales Today', prompt: "What is today's total sales and net profit summary?" },
-                    { icon: <PackageIcon size={12} color="#FB923C" />, label: 'Low Stock', prompt: 'List all inventory items currently below alert threshold' },
-                    { icon: <UsersIcon size={12} color="#A78BFA" />, label: 'Attendance', prompt: 'Who is present and on duty today?' },
-                    { icon: <DollarSignIcon size={12} color="#34D399" />, label: 'Expenses', prompt: 'Summarize recent operational expenses this week' },
-                    { icon: <ReceiptIcon size={12} color="#38BDF8" />, label: 'Recent Bills', prompt: 'Show the 5 most recent bills created today' },
-                    { icon: <StarIcon size={12} color="#FBBF24" />, label: 'Top Items', prompt: 'What are the top 5 best selling products today?' },
+                    { icon: <TrendingUpIcon size={13} color="#FF6B1A" />, label: 'Sales Today', prompt: "What is today's total sales and net profit summary?" },
+                    { icon: <PackageIcon size={13} color="#FB923C" />, label: 'Low Stock', prompt: 'List all inventory items currently below alert threshold' },
+                    { icon: <UsersIcon size={13} color="#A78BFA" />, label: 'Attendance', prompt: 'Who is present and on duty today?' },
+                    { icon: <DollarSignIcon size={13} color="#34D399" />, label: 'Expenses', prompt: 'Summarize recent operational expenses this week' },
+                    { icon: <ReceiptIcon size={13} color="#38BDF8" />, label: 'Recent Bills', prompt: 'Show the 5 most recent bills created today' },
+                    { icon: <StarIcon size={13} color="#FBBF24" />, label: 'Top Items', prompt: 'What are the top 5 best selling products today?' },
                   ].map((c, idx) => (
                     <button
                       key={idx}
@@ -977,31 +1098,32 @@ export default function AgentChatPanel() {
                       style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 6,
-                        padding: '5px 11px',
-                        borderRadius: 6,
-                        fontSize: 12,
-                        fontWeight: 500,
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        gap: 7,
+                        padding: '6px 14px',
+                        borderRadius: 20,
+                        fontSize: 12.5,
+                        fontWeight: 550,
+                        background: isDark ? 'rgba(255, 255, 255, 0.04)' : '#FFFFFF',
+                        color: isDark ? 'rgba(255, 255, 255, 0.85)' : '#334155',
+                        border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #CBD5E1',
                         cursor: loading ? 'default' : 'pointer',
                         whiteSpace: 'nowrap',
                         flexShrink: 0,
-                        transition: 'all 0.15s ease',
+                        transition: 'all 0.18s ease',
+                        boxShadow: isDark ? 'none' : '0 1px 3px rgba(15, 23, 42, 0.04)',
                       }}
                       onMouseEnter={(e) => {
                         if (!loading) {
-                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.07)';
-                          e.currentTarget.style.color = '#FFFFFF';
-                          e.currentTarget.style.borderColor = 'rgba(255, 107, 26, 0.4)';
+                          e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9';
+                          e.currentTarget.style.color = isDark ? '#FFFFFF' : '#0F172A';
+                          e.currentTarget.style.borderColor = 'rgba(255, 107, 26, 0.45)';
                         }
                       }}
                       onMouseLeave={(e) => {
                         if (!loading) {
-                          e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
-                          e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
-                          e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+                          e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.04)' : '#FFFFFF';
+                          e.currentTarget.style.color = isDark ? 'rgba(255, 255, 255, 0.85)' : '#334155';
+                          e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : '#CBD5E1';
                         }
                       }}
                     >
@@ -1012,16 +1134,109 @@ export default function AgentChatPanel() {
                 </div>
 
                 {/* ── INPUT BAR ──────────────────────────────────────────── */}
-                <div style={{ padding: '8px 18px 14px', background: '#0C0D13' }}>
+                <div style={{ padding: '10px 24px 18px', background: isDark ? 'rgba(12, 14, 22, 0.9)' : '#F8FAFC' }}>
+                  {/* Live Voice Recording Status & Waveform Indicator */}
+                  <AnimatePresence>
+                    {isRecording && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 6, height: 0 }}
+                        animate={{ opacity: 1, y: 0, height: 'auto' }}
+                        exit={{ opacity: 0, y: 6, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '8px 16px',
+                          marginBottom: 10,
+                          borderRadius: 14,
+                          background: isDark
+                            ? 'linear-gradient(90deg, rgba(239, 68, 68, 0.16) 0%, rgba(255, 107, 26, 0.16) 100%)'
+                            : 'linear-gradient(90deg, #FEE2E2 0%, #FFF7ED 100%)',
+                          border: isDark ? '1px solid rgba(239, 68, 68, 0.35)' : '1.5px solid #FCA5A5',
+                          boxShadow: '0 4px 16px rgba(239, 68, 68, 0.12)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          {/* Pulsing Red Recording Indicator */}
+                          <motion.span
+                            animate={{ scale: [1, 1.35, 1], opacity: [0.7, 1, 0.7] }}
+                            transition={{ duration: 1.1, repeat: Infinity, ease: 'easeInOut' }}
+                            style={{
+                              width: 9,
+                              height: 9,
+                              borderRadius: '50%',
+                              background: '#EF4444',
+                              display: 'inline-block',
+                              boxShadow: '0 0 12px rgba(239, 68, 68, 0.9)',
+                            }}
+                          />
+                          <span style={{ fontSize: 13, fontWeight: 750, color: isDark ? '#FFFFFF' : '#0F172A' }}>
+                            Listening to microphone… Speak now
+                          </span>
+                        </div>
+
+                        {/* Live Bouncing Audio Waveform Bars */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 22 }}>
+                          {[0.4, 0.85, 0.5, 1.25, 0.7, 1.4, 0.65, 1.1, 0.5, 0.9, 0.4].map((scale, i) => (
+                            <motion.span
+                              key={i}
+                              animate={{
+                                height: [4, 18 * scale, 6, 22 * scale, 4],
+                                backgroundColor: ['#EF4444', '#FF6B1A', '#EF4444'],
+                              }}
+                              transition={{
+                                duration: 0.75 + (i % 4) * 0.15,
+                                repeat: Infinity,
+                                ease: 'easeInOut',
+                                delay: i * 0.06,
+                              }}
+                              style={{
+                                width: 3.5,
+                                borderRadius: 3,
+                                background: '#EF4444',
+                                display: 'inline-block',
+                              }}
+                            />
+                          ))}
+                        </div>
+
+                        {/* Done Button */}
+                        <button
+                          onClick={handleToggleMic}
+                          style={{
+                            padding: '4px 12px',
+                            borderRadius: 8,
+                            background: '#EF4444',
+                            border: 'none',
+                            color: '#FFFFFF',
+                            fontSize: 12,
+                            fontWeight: 750,
+                            cursor: 'pointer',
+                            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
+                          }}
+                        >
+                          Done
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
                   <div
                     style={{
-                      background: 'rgba(255, 255, 255, 0.04)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: 12,
-                      padding: '7px 10px 7px 14px',
+                      background: isDark ? 'rgba(255, 255, 255, 0.045)' : '#FFFFFF',
+                      border: isRecording
+                        ? '1.5px solid #EF4444'
+                        : (isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1.5px solid #CBD5E1'),
+                      borderRadius: 16,
+                      padding: '8px 10px 8px 18px',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 8,
+                      gap: 10,
+                      boxShadow: isRecording
+                        ? '0 0 16px rgba(239, 68, 68, 0.2)'
+                        : (isDark ? '0 6px 20px rgba(0, 0, 0, 0.25)' : '0 2px 8px rgba(15, 23, 42, 0.05)'),
+                      transition: 'all 0.2s ease',
                     }}
                   >
                     <input
@@ -1029,60 +1244,68 @@ export default function AgentChatPanel() {
                       value={draft}
                       onChange={(e) => setDraft(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                      placeholder="Ask anything about sales, stock, staff, expenses, or bills…"
+                      placeholder={isRecording ? 'Transcribing your voice in real-time…' : 'Ask anything about sales, stock, staff, expenses, or bills…'}
                       disabled={loading}
                       style={{
                         flex: 1,
                         background: 'transparent',
                         border: 'none',
                         outline: 'none',
-                        fontSize: 13.5,
-                        color: '#FFFFFF',
+                        fontSize: 14,
+                        color: isDark ? '#FFFFFF' : '#0F172A',
                         padding: '4px 0',
                       }}
                     />
 
-                    {/* Mic Button */}
-                    <button
+                    {/* Mic Button with Live Pulsing Animation */}
+                    <motion.button
                       onClick={handleToggleMic}
                       title={isRecording ? 'Stop Recording' : 'Voice Input'}
+                      animate={isRecording ? { scale: [1, 1.1, 1] } : {}}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'easeInOut' }}
                       style={{
-                        width: 30,
-                        height: 30,
-                        borderRadius: 6,
-                        border: isRecording ? '1px solid #EF4444' : 'none',
-                        background: isRecording ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
-                        color: isRecording ? '#EF4444' : 'rgba(255, 255, 255, 0.6)',
+                        width: 34,
+                        height: 34,
+                        borderRadius: 10,
+                        border: isRecording ? '1.5px solid #EF4444' : (isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #CBD5E1'),
+                        background: isRecording ? '#EF4444' : (isDark ? 'rgba(255, 255, 255, 0.04)' : '#F1F5F9'),
+                        color: isRecording ? '#FFFFFF' : (isDark ? 'rgba(255, 255, 255, 0.75)' : '#475569'),
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         cursor: 'pointer',
                         flexShrink: 0,
+                        transition: 'all 0.15s ease',
+                        boxShadow: isRecording ? '0 0 12px rgba(239, 68, 68, 0.6)' : 'none',
                       }}
                     >
-                      <MicIcon size={14} />
-                    </button>
+                      <MicIcon size={16} color={isRecording ? '#FFFFFF' : 'currentColor'} />
+                    </motion.button>
 
                     {/* Send Button */}
                     <button
                       onClick={() => sendMessage()}
                       disabled={loading || !draft.trim()}
+                      title="Send Message"
                       style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: 8,
+                        width: 34,
+                        height: 34,
+                        borderRadius: 10,
+                        background: draft.trim() && !loading
+                          ? 'linear-gradient(135deg, #FF6B1A 0%, #FF8A3D 100%)'
+                          : (isDark ? 'rgba(255, 255, 255, 0.06)' : '#E2E8F0'),
                         border: 'none',
-                        background: draft.trim() && !loading ? '#FF6B1A' : 'rgba(255, 255, 255, 0.08)',
                         color: '#FFFFFF',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         cursor: draft.trim() && !loading ? 'pointer' : 'default',
                         flexShrink: 0,
-                        transition: 'background 0.15s ease',
+                        transition: 'all 0.18s ease',
+                        boxShadow: draft.trim() && !loading ? '0 2px 10px rgba(255, 107, 26, 0.35)' : 'none',
                       }}
                     >
-                      <ArrowUpIcon size={15} />
+                      <ArrowUpIcon size={15} color={draft.trim() && !loading ? '#FFFFFF' : (isDark ? 'rgba(255,255,255,0.3)' : '#94A3B8')} />
                     </button>
                   </div>
                 </div>
@@ -1096,7 +1319,7 @@ export default function AgentChatPanel() {
 }
 
 // ── Redesigned Intermediate Loading State Component ────────────────────────
-function AiWorkingCard({ activeAgent, statusText }) {
+function AiWorkingCard({ activeAgent, statusText, isDark = true }) {
   const meta = AGENT_META[activeAgent] || AGENT_META.orchestrator;
   const [stageIndex, setStageIndex] = useState(0);
 
@@ -1125,57 +1348,118 @@ function AiWorkingCard({ activeAgent, statusText }) {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 6,
+        width: '100%',
         maxWidth: 780,
+        position: 'relative',
       }}
     >
-      {/* Agent Badge Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 2 }}>
-        {meta.icon}
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-            color: meta.color,
-          }}
-        >
-          {meta.label}
-        </span>
-      </div>
-
-      {/* Branded Loading Container with Skeleton Morph */}
+      {/* ── Mountain Hill Top Crest Tab (Seamlessly Merged with Card) ── */}
       <div
         style={{
-          background: 'rgba(255, 255, 255, 0.035)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: '2px 14px 14px 14px',
-          padding: '16px 18px',
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+          width: '100%',
+          marginBottom: -1,
+          position: 'relative',
+          zIndex: 10,
+        }}
+      >
+        {/* The Mountain Peak Tab (Agent Badge + Live Thinking Indicator) */}
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            background: isDark
+              ? 'linear-gradient(180deg, rgba(255, 107, 26, 0.22) 0%, #151926 100%)'
+              : 'linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 100%)',
+            border: isDark ? '1px solid rgba(255, 107, 26, 0.35)' : '1.5px solid #CBD5E1',
+            borderBottom: isDark ? '1px solid #151926' : '1.5px solid #FFFFFF',
+            borderRadius: '16px 16px 0 0',
+            padding: '7px 18px 8px 14px',
+            boxShadow: isDark ? '0 -4px 16px rgba(255, 107, 26, 0.14)' : '0 -2px 8px rgba(15, 23, 42, 0.04)',
+          }}
+        >
+          {meta.icon ? (
+            meta.icon
+          ) : (
+            <DynamicAiMascot size={16} state="thinking" />
+          )}
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              color: meta.color || '#FF8A3D',
+            }}
+          >
+            {meta.label || 'ORCHESTRATOR'}
+          </span>
+
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              background: isDark ? 'rgba(255, 107, 26, 0.15)' : '#FFF7ED',
+              border: isDark ? '1px solid rgba(255, 107, 26, 0.3)' : '1px solid #FDBA74',
+              borderRadius: 10,
+              padding: '2px 7px',
+              fontSize: 10,
+              fontWeight: 700,
+              color: '#FF6B1A',
+              marginLeft: 4,
+            }}
+          >
+            <motion.span
+              animate={{ opacity: [0.4, 1, 0.4] }}
+              transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+              style={{
+                width: 5,
+                height: 5,
+                borderRadius: '50%',
+                background: '#FF6B1A',
+                display: 'inline-block',
+              }}
+            />
+            PROCESSING
+          </span>
+        </div>
+      </div>
+
+      {/* Main Unified Mountain Hill Card Body */}
+      <div
+        style={{
+          background: isDark ? '#151926' : '#FFFFFF',
+          border: isDark ? '1px solid rgba(255, 107, 26, 0.35)' : '1.5px solid #CBD5E1',
+          borderRadius: '0 20px 20px 20px',
+          padding: '18px 20px',
           display: 'flex',
           flexDirection: 'column',
           gap: 14,
+          boxShadow: isDark
+            ? '0 12px 36px rgba(0, 0, 0, 0.35), 0 0 20px rgba(255, 107, 26, 0.06)'
+            : '0 4px 16px rgba(15, 23, 42, 0.06)',
+          position: 'relative',
         }}
       >
         {/* Top Processing Bar with Bouncing Dots & Pulse Core */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <motion.div
-              animate={{ scale: [1, 1.1, 1], opacity: [0.8, 1, 0.8] }}
-              transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+            <div
               style={{
-                width: 26,
-                height: 26,
-                borderRadius: 6,
-                background: 'rgba(255, 107, 26, 0.15)',
-                border: '1px solid rgba(255, 107, 26, 0.3)',
+                width: 28,
+                height: 28,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                flexShrink: 0,
               }}
             >
-              <AiCoreIcon size={14} color="#FF6B1A" />
-            </motion.div>
+              <DynamicAiMascot size={26} state="thinking" glow={true} />
+            </div>
 
             <AnimatePresence mode="wait">
               <motion.div
@@ -1184,7 +1468,7 @@ function AiWorkingCard({ activeAgent, statusText }) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -3 }}
                 transition={{ duration: 0.25 }}
-                style={{ fontSize: 13, fontWeight: 500, color: 'rgba(255, 255, 255, 0.85)' }}
+                style={{ fontSize: 13.5, fontWeight: 600, color: isDark ? '#F8FAFC' : '#0F172A' }}
               >
                 {displayStatus}
               </motion.div>
@@ -1219,7 +1503,7 @@ function AiWorkingCard({ activeAgent, statusText }) {
             style={{
               height: 14,
               width: '42%',
-              background: 'rgba(255, 255, 255, 0.08)',
+              background: isDark ? 'rgba(255, 255, 255, 0.08)' : '#E2E8F0',
               borderRadius: 4,
             }}
           />
@@ -1239,8 +1523,8 @@ function AiWorkingCard({ activeAgent, statusText }) {
                 transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', delay: idx * 0.15 }}
                 style={{
                   height: 48,
-                  background: 'rgba(255, 255, 255, 0.035)',
-                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                  background: isDark ? 'rgba(255, 255, 255, 0.035)' : '#F8FAFC',
+                  border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #E2E8F0',
                   borderRadius: 8,
                   padding: '8px 10px',
                   display: 'flex',
@@ -1248,8 +1532,8 @@ function AiWorkingCard({ activeAgent, statusText }) {
                   justifyContent: 'space-between',
                 }}
               >
-                <div style={{ width: '60%', height: 8, background: 'rgba(255, 255, 255, 0.06)', borderRadius: 3 }} />
-                <div style={{ width: '80%', height: 12, background: 'rgba(255, 107, 26, 0.15)', borderRadius: 3 }} />
+                <div style={{ width: '60%', height: 8, background: isDark ? 'rgba(255, 255, 255, 0.06)' : '#E2E8F0', borderRadius: 3 }} />
+                <div style={{ width: '80%', height: 12, background: isDark ? 'rgba(255, 107, 26, 0.15)' : 'rgba(255, 107, 26, 0.12)', borderRadius: 3 }} />
               </motion.div>
             ))}
           </div>
@@ -1260,9 +1544,9 @@ function AiWorkingCard({ activeAgent, statusText }) {
             transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut', delay: 0.3 }}
             style={{
               height: 52,
-              background: 'rgba(255, 255, 255, 0.025)',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
-              borderLeft: '3px solid rgba(255, 107, 26, 0.4)',
+              background: isDark ? 'rgba(255, 255, 255, 0.025)' : '#FFF7ED',
+              border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #FDBA74',
+              borderLeft: '3px solid #FF8A3D',
               borderRadius: 8,
               padding: '10px 12px',
               display: 'flex',
@@ -1270,8 +1554,8 @@ function AiWorkingCard({ activeAgent, statusText }) {
               gap: 8,
             }}
           >
-            <div style={{ width: '35%', height: 9, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 3 }} />
-            <div style={{ width: '92%', height: 8, background: 'rgba(255, 255, 255, 0.05)', borderRadius: 3 }} />
+            <div style={{ width: '35%', height: 9, background: isDark ? 'rgba(255, 255, 255, 0.08)' : '#FDBA74', borderRadius: 3 }} />
+            <div style={{ width: '92%', height: 8, background: isDark ? 'rgba(255, 255, 255, 0.05)' : '#E2E8F0', borderRadius: 3 }} />
           </motion.div>
         </div>
       </div>
@@ -1302,21 +1586,6 @@ function formatRelativeTime(dateStr) {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-function ghostBtnStyle() {
-  return {
-    height: 28,
-    borderRadius: 6,
-    border: 'none',
-    background: 'rgba(255, 255, 255, 0.04)',
-    color: 'rgba(255, 255, 255, 0.7)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    flexShrink: 0,
-    transition: 'all 0.15s ease',
-  };
-}
 
 // ── Themed SVG Icon Selector ───────────────────────────────────────────────
 export function getThemedIcon(iconName, size = 15) {
@@ -1324,55 +1593,168 @@ export function getThemedIcon(iconName, size = 15) {
     case 'sales_comparison':
     case 'sales':
     case 'analytics':
-      return <TrendingUpIcon size={size} color="#FF6B1A" />;
+      return <TrendingUpIcon size={size} color="#FF8A3D" />;
     case 'prediction':
-      return <SparkleWaveIcon size={size} color="#A855F7" />;
+      return <SparkleWaveIcon size={size} color="#FF8A3D" />;
     case 'tip':
-      return <LightbulbIcon size={size} color="#FBBF24" />;
+      return <LightbulbIcon size={size} color="#FF8A3D" />;
     case 'ai_review':
       return <AiCoreIcon size={size} color="#FF6B1A" />;
     case 'alert_warning':
     case 'status_warning':
     case 'warning':
     case 'not_marked':
-      return <AlertTriangleIcon size={size} color="#F59E0B" />;
+      return <AlertTriangleIcon size={size} color="#FF8A3D" />;
     case 'alert_success':
     case 'status_normal':
     case 'success':
     case 'present':
-      return <CheckCircleIcon size={size} color="#10B981" />;
+      return <CheckCircleIcon size={size} color="#FF8A3D" />;
     case 'alert_critical':
     case 'status_critical':
     case 'critical':
       return <AlertOctagonIcon size={size} color="#EF4444" />;
     case 'inventory':
     case 'low_stock':
-      return <PackageIcon size={size} color="#FB923C" />;
+      return <PackageIcon size={size} color="#FF8A3D" />;
     case 'staff':
     case 'attendance':
     case 'worker':
-      return <UsersIcon size={size} color="#A78BFA" />;
+      return <UsersIcon size={size} color="#FF8A3D" />;
     case 'insight':
-      return <CompassIcon size={size} color="#38BDF8" />;
+      return <CompassIcon size={size} color="#FF8A3D" />;
     case 'finance':
     case 'expense':
-      return <DollarSignIcon size={size} color="#34D399" />;
+      return <DollarSignIcon size={size} color="#FF8A3D" />;
     case 'bill':
     case 'order':
     case 'billing':
-      return <ReceiptIcon size={size} color="#38BDF8" />;
+      return <ReceiptIcon size={size} color="#FF8A3D" />;
     case 'task':
     case 'reminder':
-      return <CheckSquareIcon size={size} color="#EC4899" />;
+      return <CheckSquareIcon size={size} color="#FF8A3D" />;
     default:
-      return <AiCoreIcon size={size} color="#FF6B1A" />;
+      return <DynamicAiMascot size={size} />;
   }
 }
 
+// ── User Message Bubble with Copy Feature ──────────────────────────────
+function UserMessageBubble({ text, isDark = true }) {
+  const [copied, setCopied] = useState(false);
+  const [hovered, setHovered] = useState(false);
+
+  const handleCopy = (e) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div
+      style={{ display: 'flex', justifyContent: 'flex-end', position: 'relative' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div
+        style={{
+          background: isDark ? '#1A1D28' : '#FFFFFF',
+          color: isDark ? '#FFFFFF' : '#0F172A',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1.5px solid #CBD5E1',
+          borderRadius: '14px 14px 2px 14px',
+          padding: '10px 16px',
+          fontSize: 14,
+          maxWidth: '80%',
+          lineHeight: 1.5,
+          wordBreak: 'break-word',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 10,
+          boxShadow: isDark ? '0 4px 14px rgba(0, 0, 0, 0.25)' : '0 2px 6px rgba(15, 23, 42, 0.05)',
+        }}
+      >
+        <span style={{ flex: 1 }}>{text}</span>
+        <button
+          onClick={handleCopy}
+          title={copied ? 'Copied query to clipboard!' : 'Copy user query'}
+          style={{
+            background: copied
+              ? (isDark ? 'rgba(34, 197, 94, 0.18)' : '#DCFCE7')
+              : (isDark ? 'rgba(255, 255, 255, 0.06)' : '#F1F5F9'),
+            border: `1px solid ${
+              copied
+                ? (isDark ? 'rgba(34, 197, 94, 0.4)' : '#86EFAC')
+                : (isDark ? 'rgba(255, 255, 255, 0.12)' : '#CBD5E1')
+            }`,
+            borderRadius: 6,
+            padding: '3px 7px',
+            color: copied ? (isDark ? '#4ADE80' : '#16A34A') : (isDark ? 'rgba(255, 255, 255, 0.75)' : '#64748B'),
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            fontSize: 11,
+            fontWeight: 600,
+            transition: 'all 0.15s ease',
+            opacity: hovered || copied ? 1 : 0.6,
+            flexShrink: 0,
+            marginTop: 1,
+          }}
+        >
+          {copied ? <CheckIcon size={12} color={isDark ? '#4ADE80' : '#16A34A'} /> : <CopyIcon size={12} />}
+          <span>{copied ? 'Copied' : 'Copy'}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Plaintext Formatter for Assistant Response Copying ──────────────────────
+function formatAssistantTextForCopy(structuredData, rawText) {
+  if (!structuredData) return rawText || '';
+  const lines = [];
+
+  if (structuredData.title?.text) {
+    lines.push(structuredData.title.text);
+    lines.push('');
+  }
+
+  (structuredData.sections || []).forEach((sec) => {
+    if (sec.type === 'metric_list' && sec.items) {
+      sec.items.forEach((it) => {
+        lines.push(`• ${it.label}: ${it.value}${it.note ? ` (${it.note})` : ''}`);
+      });
+      lines.push('');
+    } else if (sec.type === 'insight_block') {
+      if (sec.heading) lines.push(`[${sec.heading}]`);
+      if (sec.body) lines.push(sec.body);
+      lines.push('');
+    } else if (sec.type === 'action_list' && sec.items) {
+      if (sec.heading) lines.push(sec.heading);
+      sec.items.forEach((it, idx) => {
+        lines.push(`${idx + 1}. ${it.title}: ${it.body}`);
+      });
+      lines.push('');
+    } else if (sec.type === 'table' && sec.columns && sec.rows) {
+      if (sec.heading) lines.push(sec.heading);
+      lines.push(sec.columns.join(' | '));
+      sec.rows.forEach((r) => {
+        const rowStr = r.map((c) => (typeof c === 'object' ? c.text || '' : String(c))).join(' | ');
+        lines.push(rowStr);
+      });
+      lines.push('');
+    }
+  });
+
+  const res = lines.join('\n').trim();
+  return res || rawText || '';
+}
+
 // ── Structured Conversation Message Component ──────────────────────────────
-function ConversationMessage({ message, actionStatuses, onApprove, onReject, onUndo }) {
+function ConversationMessage({ message, actionStatuses, onApprove, onReject, onUndo, isDark = true }) {
   const meta = message.agent ? (AGENT_META[message.agent] || AGENT_META.orchestrator) : null;
   const [showSteps, setShowSteps] = useState(false);
+  const [copied, setCopied] = useState(false);
   const steps = message.steps || [];
 
   // Parse structured data payload or sanitize markdown into structured card schema
@@ -1380,91 +1762,31 @@ function ConversationMessage({ message, actionStatuses, onApprove, onReject, onU
     return parseToStructuredSchema(message.text, message.data);
   }, [message.text, message.data]);
 
+  const handleCopyResponse = (e) => {
+    e.stopPropagation();
+    const formatted = formatAssistantTextForCopy(structuredData, message.text);
+    navigator.clipboard.writeText(formatted);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 780 }}>
-      {meta && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginLeft: 2 }}>
-          {meta.icon}
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-              textTransform: 'uppercase',
-              color: meta.color || '#A855F7',
-            }}
-          >
-            {meta.label}
-          </span>
-        </div>
-      )}
-
-      {/* Tool Execution Steps Accordion */}
-      {steps && steps.length > 0 && (
-        <div
-          style={{
-            background: 'rgba(255, 255, 255, 0.025)',
-            border: '1px solid rgba(255, 255, 255, 0.06)',
-            borderRadius: 8,
-            overflow: 'hidden',
-            fontSize: 11.5,
-          }}
-        >
-          <button
-            onClick={() => setShowSteps((s) => !s)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              width: '100%',
-              padding: '5px 10px',
-              background: 'transparent',
-              border: 'none',
-              color: 'rgba(255, 255, 255, 0.6)',
-              cursor: 'pointer',
-              fontSize: 11.5,
-              fontWeight: 500,
-            }}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <ZapIcon size={11} color="#FF6B1A" />
-              {steps.length} tool step{steps.length > 1 ? 's' : ''} completed
-            </span>
-            <ChevronDownIcon size={11} rotate={showSteps ? 180 : 0} />
-          </button>
-          {showSteps && (
-            <div style={{ padding: '4px 10px 6px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
-              {steps.map((st, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 6,
-                    padding: '2px 0',
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    fontFamily: "'SF Mono', 'Roboto Mono', monospace",
-                    fontSize: 11,
-                  }}
-                >
-                  <span style={{ color: '#22C55E' }}>✓</span>
-                  <div>
-                    <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{st.title}:</span>{' '}
-                    <span>{st.details}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Main Structured Card Component */}
-      <StructuredCard data={structuredData} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 960, width: '100%' }}>
+      {/* Main Structured Card Component with Integrated Mountain Hill Crest */}
+      <StructuredCard
+        data={structuredData}
+        agentMeta={meta}
+        onCopy={handleCopyResponse}
+        copied={copied}
+        steps={steps}
+        showSteps={showSteps}
+        setShowSteps={setShowSteps}
+        isDark={isDark}
+      />
 
       {/* Action Approval Proposal Cards */}
       {message.pending_actions && message.pending_actions.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {message.pending_actions.map((act, pIdx) => {
             const status = actionStatuses[act.action_id];
             const isApproved = status === 'approved' || status === 'restoring' || status === 'restored';
@@ -1473,102 +1795,138 @@ function ConversationMessage({ message, actionStatuses, onApprove, onReject, onU
               <div
                 key={act.action_id}
                 style={{
-                  background: isApproved ? 'rgba(34, 197, 94, 0.08)' : '#141620',
-                  borderLeft: `3px solid ${isApproved ? '#22C55E' : '#FF6B1A'}`,
-                  border: `1px solid ${isApproved ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255, 107, 26, 0.35)'}`,
-                  borderRadius: 8,
-                  padding: '10px 12px',
+                  background: isApproved
+                    ? (isDark ? 'rgba(34, 197, 94, 0.08)' : '#F0FDF4')
+                    : (isDark ? 'linear-gradient(135deg, rgba(255, 107, 26, 0.08) 0%, rgba(20, 24, 35, 0.95) 100%)' : '#FFFFFF'),
+                  border: `1.5px solid ${
+                    isApproved
+                      ? (isDark ? 'rgba(34, 197, 94, 0.35)' : '#86EFAC')
+                      : (isDark ? 'rgba(255, 107, 26, 0.35)' : '#CBD5E1')
+                  }`,
+                  borderRadius: 16,
+                  padding: '14px 18px',
+                  boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.2)' : '0 2px 8px rgba(15, 23, 42, 0.05)',
                 }}
               >
                 {isApproved ? (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <CheckIcon size={14} color="#22C55E" />
-                      <div style={{ fontSize: 12.5, fontWeight: 600, color: '#22C55E' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <CheckIcon size={16} color="#22C55E" />
+                      <div style={{ fontSize: 13.5, fontWeight: 650, color: '#16A34A' }}>
                         Action Confirmed: {act.diff_summary}
                       </div>
                     </div>
-                    {(act.tool?.includes('delete') || act.tool?.includes('bulk') || act.action_type?.includes('delete')) && onUndo && (
+                    {status !== 'restored' && onUndo && (
                       <button
                         onClick={() => onUndo(act.action_id)}
-                        disabled={status === 'restoring' || status === 'restored'}
+                        disabled={status === 'restoring'}
                         style={{
+                          background: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F1F5F9',
+                          border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #CBD5E1',
+                          borderRadius: 8,
+                          padding: '4px 10px',
+                          color: isDark ? '#CBD5E1' : '#334155',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: status === 'restoring' ? 'not-allowed' : 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           gap: 5,
-                          padding: '4px 9px',
-                          borderRadius: 6,
-                          background: status === 'restored' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 107, 26, 0.15)',
-                          border: `1px solid ${status === 'restored' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 107, 26, 0.35)'}`,
-                          color: status === 'restored' ? 'rgba(255, 255, 255, 0.5)' : '#FF8A3D',
-                          fontSize: 11.5,
-                          fontWeight: 600,
-                          cursor: status === 'restored' || status === 'restoring' ? 'default' : 'pointer',
-                          transition: 'all 0.15s ease',
                         }}
-                        title="Restore this deletion within the 48-hour recovery window"
                       >
                         <UndoIcon size={12} />
-                        <span>{status === 'restoring' ? 'Restoring…' : status === 'restored' ? 'Restored' : 'Undo Deletion'}</span>
+                        <span>{status === 'restoring' ? 'Restoring...' : 'Undo'}</span>
                       </button>
                     )}
                   </div>
                 ) : (
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#FF8A3D', textTransform: 'uppercase' }}>
-                        Approval Required
-                      </span>
-                      <span style={{ fontSize: 10.5, color: 'rgba(255, 255, 255, 0.4)', fontFamily: 'monospace' }}>
-                        #{pIdx + 1}
-                      </span>
-                    </div>
-
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#FFFFFF', marginBottom: 4 }}>
-                      {act.diff_summary}
-                    </div>
-
-                    <div style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.45)', marginBottom: 8 }}>
-                      Target tool: <code style={{ fontFamily: 'monospace', background: 'rgba(255,255,255,0.06)', padding: '1px 4px', borderRadius: 3 }}>{act.tool}</code>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button
-                        onClick={() => onApprove(act.action_id)}
-                        disabled={Boolean(status)}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                        <div
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: '50%',
+                            background: isDark ? 'rgba(255, 107, 26, 0.2)' : '#FFF7ED',
+                            border: isDark ? 'none' : '1px solid #FDBA74',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            marginTop: 2,
+                          }}
+                        >
+                          <ZapIcon size={14} color="#FF6B1A" />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 700, color: isDark ? '#FFFFFF' : '#0F172A' }}>
+                            Proposed Mutation: {act.tool_name}
+                          </div>
+                          <div style={{ fontSize: 12.5, color: isDark ? '#CBD5E1' : '#475569', marginTop: 2, lineHeight: 1.4 }}>
+                            {act.diff_summary}
+                          </div>
+                        </div>
+                      </div>
+                      <div
                         style={{
-                          flex: 1,
-                          padding: '6px 12px',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em',
+                          color: '#D97706',
+                          background: isDark ? 'rgba(245, 158, 11, 0.14)' : '#FEF3C7',
+                          border: isDark ? 'none' : '1px solid #FCD34D',
+                          padding: '2px 8px',
                           borderRadius: 6,
-                          fontSize: 12,
-                          fontWeight: 600,
-                          background: '#FF6B1A',
-                          border: 'none',
-                          color: '#FFFFFF',
-                          cursor: status ? 'default' : 'pointer',
                         }}
                       >
-                        {status === 'approving' ? 'Applying…' : 'Approve & Apply'}
+                        Requires Approval
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10 }}>
+                      <button
+                        onClick={() => onReject && onReject(act.action_id)}
+                        disabled={status === 'rejecting' || status === 'approving'}
+                        style={{
+                          background: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F1F5F9',
+                          border: isDark ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #CBD5E1',
+                          borderRadius: 8,
+                          padding: '6px 14px',
+                          color: isDark ? '#CBD5E1' : '#475569',
+                          fontSize: 12.5,
+                          fontWeight: 650,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {status === 'rejecting' ? 'Rejecting...' : 'Reject'}
                       </button>
                       <button
-                        onClick={() => onReject(act.action_id)}
-                        disabled={Boolean(status)}
+                        onClick={() => onApprove && onApprove(act.action_id)}
+                        disabled={status === 'rejecting' || status === 'approving'}
                         style={{
-                          padding: '6px 12px',
-                          borderRadius: 6,
-                          fontSize: 12,
-                          fontWeight: 500,
-                          background: 'transparent',
-                          border: '1px solid rgba(255, 255, 255, 0.12)',
-                          color: 'rgba(255, 255, 255, 0.7)',
-                          cursor: status ? 'default' : 'pointer',
+                          background: 'linear-gradient(135deg, #FF6B1A 0%, #FF8A3D 100%)',
+                          border: 'none',
+                          borderRadius: 8,
+                          padding: '6px 16px',
+                          color: '#FFFFFF',
+                          fontSize: 12.5,
+                          fontWeight: 750,
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 10px rgba(255, 107, 26, 0.35)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
                         }}
                       >
-                        Reject
+                        <CheckIcon size={13} color="#FFFFFF" />
+                        <span>{status === 'approving' ? 'Applying...' : 'Approve & Apply'}</span>
                       </button>
                     </div>
                   </div>
                 )}
+
               </div>
             );
           })}
@@ -1578,69 +1936,256 @@ function ConversationMessage({ message, actionStatuses, onApprove, onReject, onU
   );
 }
 
-// ── Structured Card Renderer Component ─────────────────────────────────────
-function StructuredCard({ data }) {
+// ── Structured Card Renderer Component with Mountain Hill Structure ─────────
+function StructuredCard({ data, agentMeta, onCopy, copied, steps = [], showSteps = false, setShowSteps, isDark = true }) {
   if (!data) return null;
 
   const { title, sections = [], meta } = data;
 
   return (
-    <div
-      style={{
-        background: 'rgba(255, 255, 255, 0.035)',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: '2px 14px 14px 14px',
-        padding: '16px 18px',
-        color: '#F1F2F6',
-        fontSize: 13.5,
-        lineHeight: 1.55,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-      }}
-    >
-      {/* Card Title Header */}
-      {title && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 4 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-            <div
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', position: 'relative' }}>
+      {/* ── Mountain Hill Top Crest Tab (Seamlessly Merged with Card) ── */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+          width: '100%',
+          marginBottom: -1,
+          position: 'relative',
+          zIndex: 10,
+          paddingLeft: 0,
+          paddingRight: 0,
+        }}
+      >
+        {/* The Mountain Peak Tab (Agent Badge + Steps Toggle, Flush Left Edge) */}
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            background: isDark
+              ? 'linear-gradient(180deg, rgba(255, 107, 26, 0.22) 0%, #151926 100%)'
+              : 'linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 100%)',
+            border: isDark ? '1px solid rgba(255, 107, 26, 0.35)' : '1.5px solid #CBD5E1',
+            borderBottom: isDark ? '1px solid #151926' : '1.5px solid #FFFFFF',
+            borderRadius: '16px 16px 0 0',
+            padding: '7px 18px 8px 14px',
+            boxShadow: isDark ? '0 -4px 16px rgba(255, 107, 26, 0.14)' : '0 -2px 8px rgba(15, 23, 42, 0.04)',
+            marginLeft: 0,
+          }}
+        >
+          {agentMeta?.icon ? (
+            agentMeta.icon
+          ) : (
+            <DynamicAiMascot size={16} state="idle" />
+          )}
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 800,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              color: agentMeta?.color || '#FF8A3D',
+            }}
+          >
+            {agentMeta?.label || 'YOUR BUSINESS AI'}
+          </span>
+
+          {/* Operational Steps Pill Toggle */}
+          {steps && steps.length > 0 && (
+            <button
+              onClick={() => setShowSteps?.((s) => !s)}
               style={{
-                width: 26,
-                height: 26,
-                borderRadius: 6,
-                background: 'rgba(255, 107, 26, 0.12)',
-                border: '1px solid rgba(255, 107, 26, 0.25)',
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
+                gap: 4,
+                background: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid #CBD5E1',
+                borderRadius: 12,
+                padding: '2px 7px',
+                color: isDark ? 'rgba(255, 255, 255, 0.85)' : '#475569',
+                fontSize: 10.5,
+                fontWeight: 650,
+                cursor: 'pointer',
+                marginLeft: 4,
               }}
             >
-              {getThemedIcon(title.icon || 'ai_review', 14)}
-            </div>
-            <span style={{ fontSize: 14.5, fontWeight: 700, color: '#FFFFFF', letterSpacing: '-0.01em' }}>
-              {title.text}
-            </span>
-          </div>
-
-          {meta && meta.status && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              {getThemedIcon(meta.statusIcon || `status_${meta.status}`, 12)}
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.03em',
-                  color: meta.status === 'critical' ? '#EF4444' : meta.status === 'warning' ? '#F59E0B' : '#10B981',
-                }}
-              >
-                {meta.status}
-              </span>
-            </div>
+              <ZapIcon size={10} color="#FF6B1A" />
+              <span>{steps.length} step{steps.length > 1 ? 's' : ''}</span>
+              <ChevronDownIcon size={10} rotate={showSteps ? 180 : 0} />
+            </button>
           )}
         </div>
-      )}
+
+        {/* Copy Response Button Docked Flush on Top Right */}
+        {onCopy && (
+          <button
+            onClick={onCopy}
+            title={copied ? 'Copied to clipboard!' : 'Copy response'}
+            style={{
+              background: copied
+                ? (isDark ? 'linear-gradient(180deg, rgba(34, 197, 94, 0.25) 0%, #151926 100%)' : '#DCFCE7')
+                : (isDark ? 'linear-gradient(180deg, rgba(255, 107, 26, 0.18) 0%, #151926 100%)' : 'linear-gradient(180deg, #FFF7ED 0%, #FFFFFF 100%)'),
+              border: `1.5px solid ${copied ? (isDark ? 'rgba(34, 197, 94, 0.45)' : '#86EFAC') : (isDark ? 'rgba(255, 107, 26, 0.35)' : '#CBD5E1')}`,
+              borderBottom: isDark ? '1px solid #151926' : '1.5px solid #FFFFFF',
+              borderRadius: '16px 16px 0 0',
+              padding: '7px 16px 8px',
+              color: copied ? (isDark ? '#4ADE80' : '#16A34A') : (isDark ? 'rgba(255, 255, 255, 0.85)' : '#475569'),
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 11,
+              fontWeight: 650,
+              transition: 'all 0.15s ease',
+              marginRight: 0,
+              boxShadow: isDark ? '0 -4px 16px rgba(255, 107, 26, 0.12)' : '0 -2px 8px rgba(15, 23, 42, 0.04)',
+            }}
+          >
+            {copied ? <CheckIcon size={12} color={isDark ? '#4ADE80' : '#16A34A'} /> : <CopyIcon size={12} color="#FF8A3D" />}
+            <span>{copied ? 'Copied' : 'Copy'}</span>
+          </button>
+        )}
+      </div>
+
+      {/* ── Main Message Card Body Fused With Mountain Crest ── */}
+      <div
+        style={{
+          background: isDark
+            ? 'linear-gradient(180deg, #151926 0%, rgba(13, 16, 25, 0.98) 100%)'
+            : '#FFFFFF',
+          border: isDark ? '1px solid rgba(255, 107, 26, 0.35)' : '1.5px solid #CBD5E1',
+          borderRadius: onCopy ? '0 0 22px 22px' : '0 18px 22px 22px', // Flush with both left peak and right copy crest
+          padding: '22px 24px',
+          color: isDark ? '#F8FAFC' : '#0F172A',
+          fontSize: 14,
+          lineHeight: 1.6,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+          boxShadow: isDark
+            ? '0 14px 38px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+            : '0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 1px 4px rgba(15, 23, 42, 0.04)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          position: 'relative',
+          zIndex: 2,
+        }}
+      >
+        {/* Expanded Steps Drawer Inside Card */}
+        {showSteps && steps && steps.length > 0 && (
+          <div
+            style={{
+              background: isDark ? 'rgba(255, 255, 255, 0.025)' : '#F8FAFC',
+              border: isDark ? '1px solid rgba(255, 255, 255, 0.07)' : '1.5px solid #E2E8F0',
+              borderRadius: 14,
+              padding: '10px 14px',
+              fontSize: 12,
+              marginBottom: 8,
+            }}
+          >
+            <div style={{ fontSize: 11.5, fontWeight: 800, color: '#FF8A3D', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>
+              Actions Taken ({steps.length} {steps.length === 1 ? 'step' : 'steps'})
+            </div>
+            {steps.map((st, idx) => {
+              // Convert any technical raw tool strings into clear, friendly plain language
+              let cleanTitle = st.title || 'Checked database';
+              let cleanDetails = st.details || '';
+
+              if (cleanTitle.startsWith('Executed ')) {
+                const rawTool = cleanTitle.replace('Executed ', '');
+                const formatted = rawTool.replace(/^propose_/, '').replace(/^get_/, '').replace(/^list_/, '').replace(/_/g, ' ');
+                cleanTitle = `Checked ${formatted}`;
+              }
+
+              if (cleanDetails.includes('Queried ') || cleanDetails.includes('{')) {
+                cleanDetails = cleanDetails
+                  .replace(/Queried\s+[a-zA-Z0-9_]+\s*(with)?/g, 'Checked database')
+                  .replace(/\{"period":\s*"([^"]+)"\}/g, 'for $1')
+                  .replace(/\{"query":\s*"([^"]+)"\}/g, 'matching "$1"')
+                  .replace(/\{"([^"]+)":\s*"([^"]+)"\}/g, '($1: $2)')
+                  .replace(/_/g, ' ');
+              }
+
+              return (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 8,
+                    padding: '3px 0',
+                    color: isDark ? 'rgba(255, 255, 255, 0.7)' : '#475569',
+                    fontSize: 12,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  <span style={{ color: '#22C55E', fontWeight: 800 }}>✓</span>
+                  <div>
+                    <span style={{ color: isDark ? '#FFFFFF' : '#0F172A', fontWeight: 700 }}>{cleanTitle}:</span>{' '}
+                    <span>{cleanDetails}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Card Title Header */}
+        {title && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 2 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
+              <div
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
+                  background: isDark ? 'rgba(255, 107, 26, 0.14)' : '#FFF7ED',
+                  border: isDark ? '1px solid rgba(255, 107, 26, 0.28)' : '1px solid #FDBA74',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  boxShadow: '0 2px 8px rgba(255, 107, 26, 0.18)',
+                }}
+              >
+                {getThemedIcon(title.icon || 'ai_review', 16)}
+              </div>
+              <span style={{ fontSize: 16, fontWeight: 750, color: isDark ? '#FFFFFF' : '#0F172A', letterSpacing: '-0.01em' }}>
+                {title.text}
+              </span>
+            </div>
+
+            {meta && meta.status && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '3px 10px',
+                  borderRadius: 20,
+                  background: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F1F5F9',
+                  border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #CBD5E1',
+                }}
+              >
+                {getThemedIcon(meta.statusIcon || `status_${meta.status}`, 12)}
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 750,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    color: meta.status === 'critical' ? (isDark ? '#F87171' : '#DC2626') : meta.status === 'warning' ? (isDark ? '#FBBF24' : '#D97706') : (isDark ? '#4ADE80' : '#16A34A'),
+                  }}
+                >
+                  {meta.status}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
 
       {/* Sections Array */}
       {sections.map((sec, sIdx) => {
@@ -1652,7 +2197,7 @@ function StructuredCard({ data }) {
               key={sIdx}
               style={{
                 height: 1,
-                background: 'rgba(255, 255, 255, 0.07)',
+                background: isDark ? 'rgba(255, 255, 255, 0.06)' : '#E2E8F0',
                 margin: '2px 0',
               }}
             />
@@ -1665,39 +2210,43 @@ function StructuredCard({ data }) {
               key={sIdx}
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-                gap: 8,
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: 12,
               }}
             >
               {sec.items.map((item, iIdx) => (
                 <div
                   key={iIdx}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.025)',
-                    border: '1px solid rgba(255, 255, 255, 0.06)',
-                    borderRadius: 8,
-                    padding: '9px 12px',
+                    background: isDark
+                      ? 'linear-gradient(135deg, rgba(255, 107, 26, 0.07) 0%, rgba(255, 255, 255, 0.025) 100%)'
+                      : '#F8FAFC',
+                    border: isDark ? '1px solid rgba(255, 107, 26, 0.18)' : '1.5px solid #E2E8F0',
+                    borderRadius: 16,
+                    padding: '14px 18px',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
+                    boxShadow: isDark ? '0 4px 14px rgba(0, 0, 0, 0.12)' : '0 1px 4px rgba(15, 23, 42, 0.03)',
                   }}
                 >
-                  <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                  <div style={{ fontSize: 11, fontWeight: 650, color: isDark ? 'rgba(255, 255, 255, 0.65)' : '#64748B', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                     {item.label}
                   </div>
                   <div
                     style={{
-                      fontFamily: "'SF Mono', 'Roboto Mono', monospace",
-                      fontSize: 15,
-                      fontWeight: 700,
-                      color: item.value?.startsWith('₹') ? '#FF8A3D' : '#FFFFFF',
-                      marginTop: 3,
+                      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                      fontSize: 22,
+                      fontWeight: 800,
+                      color: item.value?.startsWith('₹') ? '#FF8A3D' : (isDark ? '#FFFFFF' : '#0F172A'),
+                      letterSpacing: '-0.02em',
+                      marginTop: 4,
                     }}
                   >
                     {item.value}
                   </div>
                   {item.note && (
-                    <div style={{ fontSize: 10.5, color: 'rgba(255, 255, 255, 0.4)', fontStyle: 'italic', marginTop: 2 }}>
+                    <div style={{ fontSize: 11.5, color: isDark ? 'rgba(255, 255, 255, 0.55)' : '#64748B', marginTop: 3 }}>
                       {item.note}
                     </div>
                   )}
@@ -1713,22 +2262,24 @@ function StructuredCard({ data }) {
             <div
               key={sIdx}
               style={{
-                background: isWarning ? 'rgba(245, 158, 11, 0.05)' : 'rgba(255, 107, 26, 0.04)',
-                border: `1px solid ${isWarning ? 'rgba(245, 158, 11, 0.25)' : 'rgba(255, 107, 26, 0.2)'}`,
-                borderLeft: `3px solid ${isWarning ? '#F59E0B' : '#FF6B1A'}`,
-                borderRadius: 8,
-                padding: '12px 14px',
+                background: isWarning
+                  ? (isDark ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%)' : '#FFFBEB')
+                  : (isDark ? 'linear-gradient(135deg, rgba(255, 107, 26, 0.09) 0%, rgba(255, 255, 255, 0.02) 100%)' : '#FFF7ED'),
+                border: `1.5px solid ${isWarning ? (isDark ? 'rgba(245, 158, 11, 0.3)' : '#FCD34D') : (isDark ? 'rgba(255, 107, 26, 0.28)' : '#FDBA74')}`,
+                borderRadius: 16,
+                padding: '16px 20px',
+                boxShadow: isDark ? '0 4px 16px rgba(0, 0, 0, 0.12)' : '0 2px 8px rgba(15, 23, 42, 0.03)',
               }}
             >
               {sec.heading && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 6 }}>
-                  {getThemedIcon(sec.icon || 'ai_review', 14)}
-                  <span style={{ fontSize: 13, fontWeight: 700, color: isWarning ? '#FBBF24' : '#FFFFFF' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 7 }}>
+                  {getThemedIcon(sec.icon || 'ai_review', 16)}
+                  <span style={{ fontSize: 14, fontWeight: 750, color: isWarning ? (isDark ? '#FBBF24' : '#D97706') : (isDark ? '#FFFFFF' : '#0F172A'), letterSpacing: '-0.01em' }}>
                     {sec.heading}
                   </span>
                 </div>
               )}
-              <div style={{ fontSize: 13, color: 'rgba(255, 255, 255, 0.85)', lineHeight: 1.55 }}>
+              <div style={{ fontSize: 13.5, color: isDark ? '#E2E8F0' : '#334155', lineHeight: 1.6 }}>
                 {sec.body}
               </div>
             </div>
@@ -1736,80 +2287,101 @@ function StructuredCard({ data }) {
         }
 
         if (sec.type === 'action_list' && Array.isArray(sec.items)) {
+          const validItems = sec.items.filter((item) => item && (item.title?.trim() || item.body?.trim()));
+          if (validItems.length === 0) return null;
+
           return (
             <div
               key={sIdx}
               style={{
-                background: 'rgba(255, 255, 255, 0.02)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
-                borderRadius: 8,
-                padding: '12px 14px',
+                margin: '4px 0',
+                background: isDark ? 'rgba(255, 107, 26, 0.04)' : '#F8FAFC',
+                border: isDark ? '1px solid rgba(255, 107, 26, 0.15)' : '1.5px solid #E2E8F0',
+                borderRadius: 16,
+                padding: '16px 20px',
               }}
             >
               {sec.heading && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
-                  {getThemedIcon(sec.icon || 'tip', 14)}
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 }}>
+                  {getThemedIcon(sec.icon || 'tip', 16)}
+                  <span style={{ fontSize: 14, fontWeight: 750, color: isDark ? '#FFFFFF' : '#0F172A', letterSpacing: '-0.01em' }}>
                     {sec.heading}
                   </span>
                 </div>
               )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {sec.items.map((item, aIdx) => (
-                  <div key={aIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                    <span
-                      style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: 4,
-                        background: 'rgba(255, 107, 26, 0.15)',
-                        color: '#FF8A3D',
-                        fontSize: 11,
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
-                        marginTop: 1,
-                      }}
-                    >
-                      {aIdx + 1}
-                    </span>
-                    <div style={{ fontSize: 12.5, lineHeight: 1.5 }}>
-                      <strong style={{ color: '#FFFFFF' }}>{item.title}: </strong>
-                      <span style={{ color: 'rgba(255, 255, 255, 0.8)' }}>{item.body}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {validItems.map((item, aIdx) => {
+                  const title = item.title?.trim();
+                  const body = item.body?.trim();
+                  return (
+                    <div key={aIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                      <span
+                        style={{
+                          width: 22,
+                          height: 22,
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #FF6B1A 0%, #FF8A3D 100%)',
+                          color: '#FFFFFF',
+                          fontSize: 11,
+                          fontWeight: 750,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          marginTop: 2,
+                          boxShadow: '0 2px 8px rgba(255, 107, 26, 0.35)',
+                        }}
+                      >
+                        {aIdx + 1}
+                      </span>
+                      <div style={{ fontSize: 13, lineHeight: 1.55 }}>
+                        {title && <strong style={{ color: isDark ? '#FFFFFF' : '#0F172A', fontWeight: 700 }}>{title}{body ? ': ' : ''}</strong>}
+                        {body && <span style={{ color: isDark ? '#CBD5E1' : '#475569' }}>{body}</span>}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           );
         }
 
+
         if (sec.type === 'table' && Array.isArray(sec.columns) && Array.isArray(sec.rows)) {
           return (
-            <div key={sIdx} style={{ margin: '4px 0', overflowX: 'auto' }}>
+            <div
+              key={sIdx}
+              style={{
+                margin: '4px 0',
+                background: isDark ? 'rgba(255, 255, 255, 0.018)' : '#FFFFFF',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1.5px solid #E2E8F0',
+                borderRadius: 16,
+                padding: '12px 16px',
+                overflowX: 'auto',
+              }}
+            >
               {sec.heading && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
-                  {getThemedIcon(sec.icon || 'attendance', 14)}
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  {getThemedIcon(sec.icon || 'attendance', 15)}
+                  <span style={{ fontSize: 14, fontWeight: 750, color: isDark ? '#FFFFFF' : '#0F172A', letterSpacing: '-0.01em' }}>
                     {sec.heading}
                   </span>
                 </div>
               )}
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.12)', textAlign: 'left' }}>
+                  <tr style={{ background: isDark ? 'rgba(255, 255, 255, 0.035)' : '#F1F5F9', borderRadius: 10, textAlign: 'left' }}>
                     {sec.columns.map((col, cIdx) => (
                       <th
                         key={cIdx}
                         style={{
-                          padding: '6px 10px',
-                          color: 'rgba(255, 255, 255, 0.5)',
+                          padding: '9px 14px',
+                          color: isDark ? 'rgba(255, 255, 255, 0.55)' : '#64748B',
                           textTransform: 'uppercase',
-                          fontSize: 10.5,
-                          fontWeight: 600,
-                          letterSpacing: '0.04em',
+                          fontSize: 11,
+                          fontWeight: 650,
+                          letterSpacing: '0.05em',
+                          border: 'none',
                         }}
                       >
                         {col}
@@ -1822,19 +2394,26 @@ function StructuredCard({ data }) {
                     <tr
                       key={rIdx}
                       style={{
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                        borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.04)' : '1px solid #E2E8F0',
                         transition: 'background 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.03)' : '#F8FAFC';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'transparent';
                       }}
                     >
                       {row.map((cell, cellIdx) => (
                         <td
                           key={cellIdx}
                           style={{
-                            padding: '7px 10px',
-                            color: '#FFFFFF',
+                            padding: '11px 14px',
+                            color: isDark ? '#F8FAFC' : '#0F172A',
+                            fontVariantNumeric: 'tabular-nums',
                           }}
                         >
-                          <TableCellRenderer cell={cell} />
+                          <TableCellRenderer cell={cell} isDark={isDark} />
                         </td>
                       ))}
                     </tr>
@@ -1847,12 +2426,14 @@ function StructuredCard({ data }) {
 
         return null;
       })}
+      </div>
     </div>
   );
 }
 
+
 // ── Table Cell Renderer (Supports status badge objects) ────────────────────
-function TableCellRenderer({ cell }) {
+function TableCellRenderer({ cell, isDark = true }) {
   if (cell === null || cell === undefined) return '-';
 
   if (typeof cell === 'object') {
@@ -1864,12 +2445,26 @@ function TableCellRenderer({ cell }) {
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 5,
-          padding: '2px 8px',
-          borderRadius: 4,
-          background: isWarn ? 'rgba(245, 158, 11, 0.12)' : isSuccess ? 'rgba(16, 185, 129, 0.12)' : 'rgba(255, 255, 255, 0.06)',
-          color: isWarn ? '#F59E0B' : isSuccess ? '#10B981' : '#FFFFFF',
-          border: `1px solid ${isWarn ? 'rgba(245, 158, 11, 0.3)' : isSuccess ? 'rgba(16, 185, 129, 0.3)' : 'transparent'}`,
+          gap: 6,
+          padding: '3px 10px',
+          borderRadius: 20,
+          background: isWarn
+            ? (isDark ? 'rgba(245, 158, 11, 0.14)' : '#FEF3C7')
+            : isSuccess
+            ? (isDark ? 'rgba(16, 185, 129, 0.14)' : '#DCFCE7')
+            : (isDark ? 'rgba(255, 255, 255, 0.06)' : '#F1F5F9'),
+          color: isWarn
+            ? (isDark ? '#FBBF24' : '#D97706')
+            : isSuccess
+            ? (isDark ? '#34D399' : '#16A34A')
+            : (isDark ? '#FFFFFF' : '#334155'),
+          border: `1px solid ${
+            isWarn
+              ? (isDark ? 'rgba(245, 158, 11, 0.3)' : '#FCD34D')
+              : isSuccess
+              ? (isDark ? 'rgba(16, 185, 129, 0.3)' : '#86EFAC')
+              : (isDark ? 'transparent' : '#CBD5E1')
+          }`,
           fontSize: 11.5,
           fontWeight: 600,
         }}
@@ -2042,10 +2637,14 @@ function sanitizeMarkdownToStructured(rawText) {
     // Check for Numbered Action Items: "1. Push High-Margin: ..."
     const numMatch = line.match(/^(\d+)\.\s*\*\*?([^*:]+)\*\*?:?\s*(.*)$/);
     if (numMatch) {
-      currentActions.push({
-        title: numMatch[2].trim(),
-        body: numMatch[3].trim(),
-      });
+      const itemTitle = numMatch[2].trim();
+      const itemBody = numMatch[3].trim();
+      if (itemTitle || itemBody) {
+        currentActions.push({
+          title: itemTitle,
+          body: itemBody,
+        });
+      }
       continue;
     }
 
@@ -2271,8 +2870,9 @@ function CpuIcon({ size = 16, color = 'currentColor' }) {
 
 function CloseIcon({ size = 16, color = 'currentColor' }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 6 6 18" /><path d="m6 6 12 12" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   );
 }
@@ -2318,6 +2918,15 @@ function ChevronDownIcon({ size = 14, color = 'currentColor', rotate = 0 }) {
   );
 }
 
+function CopyIcon({ size = 13, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+      <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+    </svg>
+  );
+}
+
 function CheckIcon({ size = 12, color = 'currentColor' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -2334,4 +2943,5 @@ function UndoIcon({ size = 12, color = 'currentColor' }) {
     </svg>
   );
 }
+
 

@@ -7,9 +7,14 @@ from agents.llm_adapter import LLMAdapter, AgentResponse, get_adapter, ToolCall
 from agents.crypto_utils import decrypt_api_key
 from agents.fast_path import classify_intent_deterministic, try_zero_cost_fast_path
 from agents.pricing import calculate_cost
+from agents.graph_runner import GRAPH
 from models import (
+    db,
     AgentConfig,
     AgentPermission,
+    AgentActionLog,
+    AgentCheckpoint,
+    AgentInteractionAudit,
     Category,
     ItemGroup,
     ExpenseType,
@@ -17,6 +22,7 @@ from models import (
 )
 from agents.status_labels import (
     get_status_label,
+    get_step_human_summary,
     ROUTING_LABEL,
     LLM_CALL_LABEL,
     SYNTHESIS_LABEL,
@@ -35,9 +41,12 @@ def _describe_tools(tools: List[Dict[str, Any]]) -> str:
 
 GLOBAL_FORMATTING_AND_REVIEW_INSTRUCTIONS = (
     "FORMATTING & STORE REVIEW RULES (CRITICAL - STRUCTURED JSON ONLY):\n"
-    "1. You MUST respond with a valid JSON object adhering strictly to the structured schema below.\n"
-    "2. NEVER output freeform markdown strings, raw markdown headers (###), horizontal rules (---), pipe tables, or inline emoji characters.\n"
-    "3. Use structured section types ('metric_list', 'insight_block', 'action_list', 'table', 'divider') and icon enum strings instead of emojis.\n"
+    "1. You MUST respond with a single valid JSON object adhering strictly to the schema below. "
+    "No text before or after the JSON. No markdown code fences around it.\n"
+    "2. NEVER output freeform markdown strings, raw markdown headers (###), horizontal rules "
+    "(---), pipe tables, or inline emoji characters anywhere in any field value.\n"
+    "3. Use structured section types ('metric_list', 'insight_block', 'action_list', 'table', "
+    "'divider') and icon enum strings instead of emojis.\n"
     "4. Target Schema:\n"
     "{\n"
     '  "title": { "icon": "<icon_enum>", "text": "<Title Text>" },\n'
@@ -78,13 +87,136 @@ GLOBAL_FORMATTING_AND_REVIEW_INSTRUCTIONS = (
     '    "statusIcon": "status_normal | status_warning | status_critical"\n'
     "  }\n"
     "}\n"
-    "ALLOWED ICON ENUMS: sales_comparison, prediction, tip, ai_review, alert_warning, alert_success, alert_critical, inventory, staff, attendance, low_stock, insight, divider, finance, expense, bill, product, order, status_normal, status_warning, status_critical.\n"
-    "5. Format all currency as ₹ with 2 decimals (e.g. ₹1,450.00). Dates in YYYY-MM-DD format.\n"
-    "6. STORE DATA REVIEW REQUIREMENT: Whenever answering questions regarding store data, include an `insight_block` with icon `ai_review` offering intelligent business commentary for the shop owner.\n"
+    "ALLOWED ICON ENUMS: sales_comparison, prediction, tip, ai_review, alert_warning, "
+    "alert_success, alert_critical, inventory, staff, attendance, low_stock, insight, divider, "
+    "finance, expense, bill, product, order, status_normal, status_warning, status_critical.\n"
+    "5. Format all currency as ₹ (e.g. ₹1,450.00, always 2 decimals). Dates in YYYY-MM-DD format. "
+    "Percentages to 1 decimal (e.g. 61.2%).\n"
+    "6. STORE DATA REVIEW REQUIREMENT: Whenever answering a question that references actual "
+    "store data (sales, stock, attendance, expenses — anything from a query tool), include an "
+    "`insight_block` with icon `ai_review` offering one piece of genuine business commentary, "
+    "not a restatement of the numbers already shown in `metric_list`/`table`. If the request is "
+    "purely conversational (e.g. 'hi', 'what can you do') and touches no store data, omit "
+    "`insight_block` entirely rather than inventing filler commentary.\n\n"
+
     "7. SCOPED DELETION & PARITY RULES:\n"
-    "   - History-bearing records (Products, Workers, Bills) CANNOT be permanently deleted to preserve transaction and payroll history. When requested, explain the policy and propose setting status to Inactive (`active=False`) or adjusting stock to 0.\n"
-    "   - Entities that CAN be deleted via confirmation proposals: Categories (`propose_delete_category`), Item Groups (`propose_delete_item_group`), Expenses (`propose_delete_expense`), Expense Types (`propose_delete_expense_type`), Reminders (`propose_delete_reminder`), and Bulk Deletions (`propose_bulk_delete_*`).\n"
+    "   - History-bearing records (Products, Workers, Bills) CANNOT be permanently deleted, to "
+    "preserve transaction and payroll history. When requested, explain the policy in an "
+    "`insight_block` with icon `alert_warning` and propose the alternative: setting status to "
+    "Inactive (`active=False`) for Products/Workers, or a stock adjustment to 0 rather than a "
+    "delete.\n"
+    "   - Entities that CAN be deleted via confirmation proposals: Categories "
+    "(`propose_delete_category`), Item Groups (`propose_delete_item_group`), Expenses "
+    "(`propose_delete_expense`), Expense Types (`propose_delete_expense_type`), Reminders "
+    "(`propose_delete_reminder`), and Bulk Deletions (`propose_bulk_delete_*`).\n"
+    "   - A bulk deletion proposal's `table` section MUST list a real sample of matched rows "
+    "(up to 10) plus a total count note (e.g. \"...and 34 more\") — never a bare count alone. "
+    "Never call a bulk delete tool with an empty or unbounded filter.\n\n"
+
+    "8. ABSOLUTE ANTI-HALLUCINATION & APPROVAL RULES (CRITICAL FINANCIAL & DATA INTEGRITY):\n"
+    "   - NEVER claim, state, or imply that an action has been 'approved', 'executed', 'logged', "
+    "'saved', or 'completed' — in ANY field, including `insight_block.body` and "
+    "`action_list` items — unless a mutating tool call in THIS turn actually returned "
+    "status: 'executed'.\n"
+    "   - When a mutating tool returns status: 'proposed', the action has NOT been saved. You "
+    "MUST say so explicitly in `insight_block.body` (e.g. \"This is staged and awaiting your "
+    "approval below — nothing has been saved yet.\") using icon `alert_warning`, and set "
+    "`meta.status` to \"warning\". Never set `meta.status` to \"normal\" for a turn that only "
+    "produced a proposal.\n"
+    "   - If NO mutating tool was executed and NO proposal was generated, you are strictly "
+    "forbidden from fabricating a transaction ID, voucher number, worker record, or database "
+    "entry anywhere in the JSON — including inside a `table` row or `metric_list` value. State "
+    "clearly, in `insight_block.body`, what additional detail is needed, or that you are about "
+    "to query the database first.\n"
+    "   - CONTRAST EXAMPLE (do this, not that):\n"
+    '     WRONG: { "type": "insight_block", "icon": "alert_success", "heading": "Expense Logged", '
+    '"body": "I have recorded ₹2,400 for the vegetable vendor." }  ← tool only returned '
+    "'proposed', so this fabricates completion.\n"
+    '     RIGHT: { "type": "insight_block", "icon": "alert_warning", "heading": "Awaiting Your '
+    'Approval", "body": "I\'ve staged a ₹2,400.00 expense for the vegetable vendor, category '
+    'Raw Materials, dated today. Nothing is saved yet — approve below to confirm." }\n\n'
+
+    "9. TOOL CALL MANDATE FOR MUTATING ACTIONS:\n"
+    "   - Whenever the user instructs to log, record, add, adjust, update, advance, or delete "
+    "money or records, you MUST invoke the corresponding mutating tool (`propose_log_expense`, "
+    "`propose_record_advance`, `propose_create_worker`, `propose_adjust_stock`, "
+    "`propose_delete_category`, etc.) as an actual tool call. NEVER write a fake proposal "
+    "directly into the JSON response text without a real tool call behind it — the JSON "
+    "`action_list`/`insight_block` describe a proposal that already exists as a tool result; "
+    "they never substitute for calling the tool.\n"
+    "   - Only include `action_list` when offering concrete, specific operational advice (e.g. "
+    "'Push High-Margin Pairings' with a real body explaining which items and why). NEVER output "
+    "an empty, vague, or placeholder item such as `{ \"title\": \"1\", \"body\": \"\" }` or "
+    "`{ \"title\": \"Action\", \"body\": \"Consider reviewing this\" }` — if you have no concrete "
+    "action to suggest, omit the `action_list` section entirely rather than padding it.\n\n"
+
+    "10. SELF-CHECK BEFORE RESPONDING — verify silently before emitting the JSON:\n"
+    "   a. Does every currency value use ₹ with exactly 2 decimals?\n"
+    "   b. Does `insight_block` (if present) say something the metrics don't already say "
+    "verbatim?\n"
+    "   c. If any tool call this turn returned status 'proposed', does `meta.status` = "
+    "\"warning\" and does the body clearly say nothing is saved yet?\n"
+    "   d. Is every `action_list` item concrete and non-empty, or is the whole section omitted?\n"
+    "   e. Is the output ONE valid JSON object with no surrounding prose, no markdown fences, "
+    "no trailing commas?\n"
+    "   If any check fails, silently correct the JSON before returning it — do not narrate the "
+    "correction.\n\n"
+
+    "11. FULL WORKED EXAMPLE (proposed action, not yet executed):\n"
+    "User: 'give 1000 to raju bhai for coldrink bill'\n"
+    "After calling propose_log_expense (tool returns status: 'proposed'), respond:\n"
+    "{\n"
+    '  "title": { "icon": "expense", "text": "Expense Staged for Approval" },\n'
+    '  "sections": [\n'
+    "    {\n"
+    '      "type": "metric_list",\n'
+    '      "items": [\n'
+    '        { "label": "Amount", "value": "₹1,000.00" },\n'
+    '        { "label": "Vendor", "value": "Raju Bhai" },\n'
+    '        { "label": "Category", "value": "Beverages / Coldrink" }\n'
+    "      ]\n"
+    "    },\n"
+    '    { "type": "divider" },\n'
+    "    {\n"
+    '      "type": "insight_block",\n'
+    '      "icon": "alert_warning",\n'
+    '      "heading": "Awaiting Your Approval",\n'
+    '      "body": "I\'ve staged a ₹1,000.00 expense to Raju Bhai for the coldrink bill, dated '
+    'today. Nothing has been saved yet — approve below to confirm."\n'
+    "    }\n"
+    "  ],\n"
+    '  "meta": { "status": "warning", "statusIcon": "status_warning" }\n'
+    "}\n\n"
+
+    "12. FULL WORKED EXAMPLE (read-only analytics, no mutation):\n"
+    "User: 'how did we do today'\n"
+    "After calling get_sales_summary, respond:\n"
+    "{\n"
+    '  "title": { "icon": "sales_comparison", "text": "Today\'s Performance" },\n'
+    '  "sections": [\n'
+    "    {\n"
+    '      "type": "metric_list",\n'
+    '      "items": [\n'
+    '        { "label": "Total Sales", "value": "₹2,710.00", "note": "28 orders" },\n'
+    '        { "label": "Net Profit", "value": "₹2,710.00", "note": "₹0.00 expenses recorded" },\n'
+    '        { "label": "Avg. Bill Value", "value": "₹96.79" }\n'
+    "      ]\n"
+    "    },\n"
+    '    { "type": "divider" },\n'
+    "    {\n"
+    '      "type": "insight_block",\n'
+    '      "icon": "ai_review",\n'
+    '      "heading": "What Stands Out",\n'
+    '      "body": "100% of today\'s payments were cash with zero UPI — worth checking if your QR '
+    'code display is visible at the counter, since most stores this size see at least some '
+    'digital split."\n'
+    "    }\n"
+    "  ],\n"
+    '  "meta": { "status": "normal", "statusIcon": "status_normal" }\n'
+    "}\n"
 )
+
+
 
 
 class DomainAgent:
@@ -206,16 +338,18 @@ class DomainAgent:
                     max_tool_rounds,
                 )
                 dispatch_res = PermissionGate.dispatch_tool(
-                    agent_name=self.name, tool_name=tc.name, args=tc.args, actor_sub=actor_sub
+                    agent_name=self.name,
+                    tool_name=tc.name,
+                    args=tc.args,
+                    actor_sub=actor_sub,
+                    user_message=user_message,
                 )
                 last_data = dispatch_res
 
-                step_desc = f"Queried {tc.name}"
-                if tc.args:
-                    step_desc += f" with {json.dumps(tc.args)}"
+                step_title, step_desc = get_step_human_summary(tc.name, tc.args)
                 steps.append(
                     {
-                        "title": f"Executed {tc.name}",
+                        "title": step_title,
                         "details": step_desc,
                         "tool": tc.name,
                         "status": "completed",
@@ -253,15 +387,28 @@ class DomainAgent:
                 )
 
             for tm in tool_call_messages:
+                if pending_actions:
+                    synth_content = (
+                        f"[Tool Result for '{tm['name']}']:\n{tm['content']}\n\n"
+                        "CRITICAL INSTRUCTION - ACTION PROPOSAL GENERATED (NOT YET SAVED/EXECUTED):\n"
+                        "An action proposal has been staged and is waiting for the user's explicit confirmation via the 'Approve & Apply' button.\n"
+                        "- You MUST NOT claim that the action is completed, recorded, saved, or logged.\n"
+                        "- State in the insight_block: 'Action proposal prepared. Please review the details and click Approve & Apply below to save changes to the database.'\n"
+                        "- Synthesize a clean, structured JSON object adhering strictly to the specified schema."
+                    )
+                else:
+                    synth_content = (
+                        f"[Tool Result for '{tm['name']}']:\n{tm['content']}\n\n"
+                        "Please synthesize your answer for the shop owner as a clean, structured JSON object adhering strictly to the specified schema:\n"
+                        "- No raw markdown, no '###', no '---', no pipe-tables, and no emoji characters. Use typed sections ('metric_list', 'insight_block', 'action_list', 'table') with icon enums.\n"
+                        "- If no mutating tool was executed, DO NOT claim that any database change was made.\n"
+                        "- Always include an 'insight_block' with icon 'ai_review' offering intelligent store recommendations."
+                    )
+
                 follow_up_messages.append(
                     {
                         "role": "user",
-                        "content": (
-                            f"[Tool Result for '{tm['name']}']:\n{tm['content']}\n\n"
-                            "Please synthesize your answer for the shop owner as a clean, structured JSON object adhering strictly to the specified schema:\n"
-                            "- No raw markdown, no '###', no '---', no pipe-tables, and no emoji characters. Use typed sections ('metric_list', 'insight_block', 'action_list', 'table') with icon enums.\n"
-                            "- Always include an 'insight_block' with icon 'ai_review' offering intelligent store recommendations."
-                        ),
+                        "content": synth_content,
                     }
                 )
 
@@ -324,6 +471,118 @@ class DomainAgent:
             if evt_type == "final":
                 last_final = data
         return last_final or {}
+
+    def build_initial_state(
+        self,
+        user_message: str,
+        model_name: str,
+        history: Optional[List[Dict[str, Any]]] = None,
+        actor_sub: str = "admin",
+        max_tokens: int = 800,
+        max_tool_rounds: int = 3,
+        conversation_id: str = "",
+    ) -> Dict[str, Any]:
+        """
+        Build the initial AgentState dict for GRAPH.run().
+
+        conversation_id is initially empty string — the graph runner will
+        populate it with str(action_id) the first time a tool is proposed
+        and a checkpoint is needed. The caller may also pass a pre-generated
+        conversation_id for multi-turn sessions.
+        """
+        messages = self._build_context_messages(user_message, history)
+        return {
+            "conversation_id": conversation_id,
+            "domain": self.name,
+            "agent_name": self.name,
+            "actor_sub": actor_sub,
+            "user_message": user_message,
+            "model_name": model_name,
+            "max_tokens": max_tokens,
+            "max_tool_rounds": max_tool_rounds,
+            "tools": self.tools,
+            "messages": messages,
+            "current_round": 0,
+            "current_node": "call_llm",
+            "tool_calls_pending": [],
+            "last_llm_response_content": None,
+            "pending_tool_call": None,
+            "steps": [],
+            "executed_actions": [],
+            "pending_actions": [],
+            "_pending_tool_messages": [],
+            "total_input_tokens": 0,
+            "total_output_tokens": 0,
+            "total_estimated_cost": 0.0,
+            "status": "running",
+            "final_response": None,
+            "error": None,
+        }
+
+    def run_graph(
+        self,
+        user_message: str,
+        adapter: LLMAdapter,
+        model_name: str,
+        history: Optional[List[Dict[str, Any]]] = None,
+        actor_sub: str = "admin",
+        max_tokens: int = 800,
+        max_tool_rounds: int = 3,
+        conversation_id: str = "",
+    ) -> Dict[str, Any]:
+        """
+        Execute the agent via the state graph (GRAPH.run()).  Produces the
+        same final payload shape as run_stream()'s "final" event so callers
+        are interchangeable.
+
+        This is the new primary path used by the approve/resume routes.
+        run_stream() remains the active streaming path for SSE /chat.
+        """
+        state = self.build_initial_state(
+            user_message=user_message,
+            model_name=model_name,
+            history=history,
+            actor_sub=actor_sub,
+            max_tokens=max_tokens,
+            max_tool_rounds=max_tool_rounds,
+            conversation_id=conversation_id,
+        )
+        final_state = GRAPH.run(state, adapter)
+
+        if final_state.get("status") == "error":
+            return {
+                "agent": self.name,
+                "response": final_state.get("error", "An unexpected error occurred."),
+                "pending_actions": [],
+                "executed_actions": [],
+                "steps": final_state.get("steps", []),
+                "input_tokens": final_state.get("total_input_tokens", 0),
+                "output_tokens": final_state.get("total_output_tokens", 0),
+                "estimated_cost": final_state.get("total_estimated_cost", 0.0),
+                "error": final_state.get("error"),
+            }
+
+        return {
+            "agent": self.name,
+            "response": final_state.get("final_response") or "",
+            "steps": final_state.get("steps", []),
+            "data": (
+                final_state.get("executed_actions", [{}])[-1]
+                if final_state.get("executed_actions")
+                else (
+                    final_state.get("pending_actions", [{}])[-1]
+                    if final_state.get("pending_actions")
+                    else None
+                )
+            ),
+            "pending_actions": final_state.get("pending_actions", []),
+            "executed_actions": final_state.get("executed_actions", []),
+            "input_tokens": final_state.get("total_input_tokens", 0),
+            "output_tokens": final_state.get("total_output_tokens", 0),
+            "estimated_cost": final_state.get("total_estimated_cost", 0.0),
+            "graph_status": final_state.get("status"),
+            "conversation_id": final_state.get("conversation_id", ""),
+        }
 
 
 # =============================================================================
@@ -674,10 +933,96 @@ class OrchestratorAgent:
     ) -> str:
         """Fallback LLM intent classification if deterministic pattern matching was ambiguous."""
         prompt = (
-            "Classify inquiry into one domain: billing, inventory, product, worker, expense, analytics, reminder.\n"
-            "Return ONLY the single lowercase word."
-        )
+            "You are the InfoOS Root AI Orchestrator for a franchise retail/restaurant store. "
+            "Your ONLY job is to classify the user's message into exactly ONE domain agent. "
+            "You do not answer the question yourself — you only route it.\n\n"
 
+            "DOMAINS AND WHAT THEY OWN:\n\n"
+
+            "expense — money going OUT of the business to a third party (vendors, suppliers, "
+            "utilities, one-off cash payments), and reviewing past spend.\n"
+            "  Examples: 'give 1000 to raju bhai for coldrink bill', 'paid the electricity bill', "
+            "'record an expense', 'log today's vendor payment', 'how much did we spend on vegetables "
+            "this month', 'add a new expense category for maintenance'\n\n"
+
+            "billing — a CUSTOMER-facing sales transaction at the POS: creating, viewing, or voiding "
+            "a customer's bill/receipt/order, table numbers, tokens.\n"
+            "  Examples: 'show recent bills', 'void bill #104', 'what's on table 4's bill', "
+            "'bill 2 burgers for takeaway', 'what was our last customer's total', 'reprint token 12's "
+            "receipt'\n\n"
+
+            "worker — staff-related: attendance, shifts, salaries, payroll, advances, adding/removing "
+            "employees.\n"
+            "  Examples: 'who is on duty today', 'mark Ramesh present', 'what's Salman's salary this "
+            "month', 'give Priya a 2000 advance', 'add a new worker named Salman', 'how many days did "
+            "Ravi work this month'\n\n"
+
+            "inventory — physical STOCK quantities of ingredients/materials/direct-sale items, not "
+            "prices or the menu itself.\n"
+            "  Examples: 'check low stock items', 'how much cheese left', 'we got a new delivery of "
+            "50kg flour', 'reduce paneer stock by 4 units', 'stock audit for this week'\n\n"
+
+            "product — the MENU/CATALOG definition: item names, prices, categories, groups, recipes, "
+            "variations — not how much stock exists, not a customer's bill.\n"
+            "  Examples: 'add a new burger to the menu', 'change pizza price to 250', 'create a "
+            "category called Beverages', 'disable the small size for cold coffee', 'what categories "
+            "do we have'\n\n"
+
+            "analytics — READ-ONLY store-wide performance: sales totals, revenue, profit, trends, "
+            "top items, payment method breakdown — asking 'how are we doing', not asking to change "
+            "anything.\n"
+            "  Examples: 'what are today's sales', 'top 5 items this week', 'compare this month to "
+            "last month', 'what percent of payments are cash', 'how's business been lately'\n\n"
+
+            "reminder — scheduling a future alert/task for the OWNER, not a business transaction "
+            "itself.\n"
+            "  Examples: 'remind me at 5pm to call the vendor', 'set a daily reminder to check the "
+            "freezer', 'snooze my rent reminder', 'what reminders do I have pending'\n\n"
+
+            "DISAMBIGUATION RULES for commonly confused cases — apply these BEFORE guessing:\n\n"
+
+            "1. Money changing hands to a PERSON/VENDOR (not a customer) → always 'expense', even if "
+            "phrased casually or mentions a name (e.g. 'gave 500 to the milkman' is expense, NOT "
+            "worker, even though a person is named — the milkman isn't staff).\n"
+            "2. Money involving a NAMED EMPLOYEE specifically about pay/advance/salary → 'worker', "
+            "not 'expense' (e.g. 'give Priya a 2000 advance' is worker; 'give raju bhai 1000 for "
+            "coldrink' is expense because raju bhai is a vendor, not staff. If unclear whether the "
+            "named person is staff or a vendor, prefer 'expense' unless the message explicitly says "
+            "'advance', 'salary', or 'attendance').\n"
+            "3. PRICE or MENU changes → 'product'. STOCK QUANTITY changes → 'inventory'. "
+            "('change pizza price' = product; 'we're low on pizza dough' = inventory. If a message "
+            "mixes both, e.g. 'we sold out of pizza, raise the price', prefer 'inventory' since the "
+            "stock-out is the actionable trigger.)\n"
+            "4. A question about a CUSTOMER's bill/order → 'billing'. A question about overall STORE "
+            "performance/totals → 'analytics'. ('what's table 4's total' = billing; 'what were our "
+            "total sales today' = analytics.)\n"
+            "5. 'Attendance' or 'who is working' → always 'worker', never 'analytics', even though it "
+            "could sound like a report.\n"
+            "6. If the message is a pure question with no entity named at all and could plausibly fit "
+            "several domains, prefer 'analytics' as the safest general fallback — it is read-only and "
+            "causes no harm if the routing guess is imperfect.\n\n"
+
+            "OUTPUT FORMAT — CRITICAL:\n"
+            "Return ONLY one lowercase word, nothing else: no punctuation, no explanation, no "
+            "quotes, no restating the question. Valid outputs are exactly one of:\n"
+            "expense | billing | worker | inventory | product | analytics | reminder\n\n"
+
+            "EXAMPLES OF FULL BEHAVIOR:\n"
+            "Input: 'i give 5000 for raw material today notedown this'\n"
+            "Output: expense\n\n"
+            "Input: 'mark salman absent today'\n"
+            "Output: worker\n\n"
+            "Input: 'how much paneer do we have left'\n"
+            "Output: inventory\n\n"
+            "Input: 'add cold coffee to beverages category at 130 rupees'\n"
+            "Output: product\n\n"
+            "Input: 'void the bill i just made for table 2'\n"
+            "Output: billing\n\n"
+            "Input: 'how did we do this week compared to last week'\n"
+            "Output: analytics\n\n"
+            "Input: 'remind me tomorrow morning to order more gas cylinders'\n"
+            "Output: reminder"
+        )
         try:
             res = adapter.chat(
                 messages=[
@@ -793,6 +1138,31 @@ class OrchestratorAgent:
             max_tokens=max_tokens,
             max_tool_rounds=max_tool_rounds,
         ):
+            if evt_type == "final":
+                # Create immutable AgentInteractionAudit record in SQLite
+                try:
+                    pending_list = data.get("pending_actions") or []
+                    executed_list = data.get("executed_actions") or []
+                    steps_list = data.get("steps") or []
+                    
+                    status = "executed" if executed_list else "proposal_generated" if pending_list else "completed"
+                    has_mutation = bool(pending_list or executed_list)
+                    
+                    audit_record = AgentInteractionAudit(
+                        user_message=user_message,
+                        routed_agent=domain,
+                        tools_called=json.dumps([s.get("tool") for s in steps_list if s.get("tool")]),
+                        tool_results=json.dumps(steps_list),
+                        status=status,
+                        has_mutation=has_mutation,
+                        assistant_response=data.get("response", ""),
+                        performed_by=actor_sub,
+                    )
+                    db.session.add(audit_record)
+                    db.session.commit()
+                except Exception as audit_err:
+                    _log.error("Failed to write AgentInteractionAudit: %s", audit_err)
+
             yield (evt_type, data)
 
     @classmethod

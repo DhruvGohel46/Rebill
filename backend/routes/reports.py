@@ -1,5 +1,4 @@
 from flask import Blueprint, request, jsonify, send_file
-from sqlalchemy import extract
 from services.db_service import DatabaseService
 from services.excel_service import ExcelService
 from services.excel_xlsx_service import ExcelXLSXService
@@ -18,59 +17,223 @@ excel_xlsx_service = ExcelXLSXService()
 summary_service = SummaryService(db)
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 1. DAILY SALES REPORT (.xlsx)
+# ─────────────────────────────────────────────────────────────────────────────
 @reports_bp.route("/excel/today", methods=["GET"])
+@reports_bp.route("/excel/daily", methods=["GET"])
 @safe_route
-def export_today_excel():
-    """Export sales data to Excel (.xlsx format) for today or a specific date."""
+def export_daily_sales_excel():
+    """
+    1. Daily Sales Report
+    Detailed breakdown of items sold, summaries, and profits for a specific date.
+    Sheets: Summary, Item-Wise Breakdown, Bill Log
+    """
     target_date_str = request.args.get("date")
+    filepath = excel_xlsx_service.export_daily_sales_report(target_date_str)
 
-    if target_date_str:
-        bills = db.get_bills_by_date_range(target_date_str, target_date_str)
-        download_name = f"sales_report_{target_date_str}.xlsx"
-        summary = summary_service.get_summary_for_date(target_date_str)
-    else:
-        bills = db.get_todays_bills()
-        today_str = date.today().strftime("%Y-%m-%d")
-        download_name = f"sales_report_{today_str}.xlsx"
-        summary = summary_service.get_today_summary()
+    if not filepath or not os.path.exists(filepath):
+        raise Exception("Failed to generate Daily Sales Report")
 
-    if not bills:
-        if target_date_str:
-            raise NotFoundError(
-                f"No bills found for date {target_date_str}", code="NO_BILLS_FOR_DATE"
-            )
-
-        # Return a sample Excel file when no bills exist (only for Today default)
-        today = date.today().strftime("%Y-%m-%d")
-        sample_filepath = excel_xlsx_service.create_sample_report()
-        if sample_filepath:
-            return send_file(
-                sample_filepath,
-                as_attachment=True,
-                download_name=f"sample_sales_report_{today}.xlsx",
-                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            )
-        else:
-            raise Exception("No bills found for today and failed to create sample report")
-
-    report_type = request.args.get("type", "detailed")
-
-    if report_type == "summary":
-        filepath = excel_xlsx_service.export_summary_report(summary)
-    elif report_type == "simple":
-        filepath = excel_xlsx_service.export_simple_sales_report(bills)
-    else:
-        filepath = excel_xlsx_service.export_detailed_sales_report(bills, summary)
-
-    if not filepath:
-        raise Exception("Failed to generate Excel report")
-
+    filename = os.path.basename(filepath)
     return send_file(
         filepath,
         as_attachment=True,
-        download_name=os.path.basename(filepath),
+        download_name=filename,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 2. WEEKLY SALES SUMMARY (.xlsx)
+# ─────────────────────────────────────────────────────────────────────────────
+@reports_bp.route("/excel/weekly", methods=["GET"])
+@safe_route
+def export_weekly_sales_excel():
+    """
+    2. Weekly Sales Summary
+    Aggregated product overview and revenues from Monday to Sunday.
+    Sheets: Week Overview, Product Overview
+    """
+    date_param = request.args.get("date")
+    filepath = excel_xlsx_service.export_weekly_sales_summary(date_param)
+
+    if not filepath or not os.path.exists(filepath):
+        raise Exception("Failed to generate Weekly Sales Summary")
+
+    filename = os.path.basename(filepath)
+    return send_file(
+        filepath,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 3. MONTHLY SALES SUMMARY (.xlsx)
+# ─────────────────────────────────────────────────────────────────────────────
+@reports_bp.route("/excel/monthly", methods=["GET"])
+@safe_route
+def export_monthly_sales_excel():
+    """
+    3. Monthly Sales Summary
+    Monthly product-wise totals and overall gross sales report.
+    Sheets: Month Overview, Daily Breakdown, Product-Wise Totals
+    """
+    month = request.args.get("month", type=int) or date.today().month
+    year = request.args.get("year", type=int) or date.today().year
+
+    if not (1 <= month <= 12):
+        raise ValidationError("Invalid month (must be 1-12)", code="INVALID_MONTH")
+
+    filepath = excel_xlsx_service.export_monthly_sales_summary(month, year)
+
+    if not filepath or not os.path.exists(filepath):
+        raise Exception("Failed to generate Monthly Sales Summary")
+
+    filename = os.path.basename(filepath)
+    return send_file(
+        filepath,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. WEEKLY EXPENSE REPORT (.xlsx)
+# ─────────────────────────────────────────────────────────────────────────────
+@reports_bp.route("/excel/expenses/weekly", methods=["GET"])
+@safe_route
+def export_weekly_expense_excel():
+    """
+    4. Weekly Expense Report
+    Categorized business outflows and details recorded for the current week.
+    Single sheet: Table A Category Summary, Table B Full Ledger
+    """
+    date_param = request.args.get("date")
+    filepath = excel_xlsx_service.export_weekly_expense_report(date_param)
+
+    if not filepath or not os.path.exists(filepath):
+        raise Exception("Failed to generate Weekly Expense Report")
+
+    filename = os.path.basename(filepath)
+    return send_file(
+        filepath,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 5. MONTHLY EXPENSE REPORT (.xlsx)
+# ─────────────────────────────────────────────────────────────────────────────
+@reports_bp.route("/excel/expenses/monthly", methods=["GET"])
+@safe_route
+def export_monthly_expense_excel():
+    """
+    5. Monthly Expense Report
+    Detailed monthly accounting report for utility, supplier and operational costs.
+    Sheets: Category Summary, Vendor Breakdown, Full Ledger
+    """
+    month = request.args.get("month", type=int) or date.today().month
+    year = request.args.get("year", type=int) or date.today().year
+
+    if not (1 <= month <= 12):
+        raise ValidationError("Invalid month (must be 1-12)", code="INVALID_MONTH")
+
+    filepath = excel_xlsx_service.export_monthly_expense_report(month, year)
+
+    if not filepath or not os.path.exists(filepath):
+        raise Exception("Failed to generate Monthly Expense Report")
+
+    filename = os.path.basename(filepath)
+    return send_file(
+        filepath,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 6. YEARLY EXPENSE AUDIT (.xlsx)
+# ─────────────────────────────────────────────────────────────────────────────
+@reports_bp.route("/excel/expenses/yearly", methods=["GET"])
+@reports_bp.route("/excel/yearly-expenses", methods=["GET"])
+@safe_route
+def export_yearly_expense_excel():
+    """
+    6. Yearly Expense Audit
+    Year-to-date business expenses breakdown and category summaries.
+    Sheets: Year Overview, Category Breakdown (Year Pivot), Full Ledger
+    """
+    year = request.args.get("year", type=int) or date.today().year
+    filepath = excel_xlsx_service.export_yearly_expense_audit(year)
+
+    if not filepath or not os.path.exists(filepath):
+        raise Exception("Failed to generate Yearly Expense Audit")
+
+    filename = os.path.basename(filepath)
+    return send_file(
+        filepath,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 7. MASTER FINANCIAL SHEET (.xlsx)
+# ─────────────────────────────────────────────────────────────────────────────
+@reports_bp.route("/excel/master-financial", methods=["GET"])
+@safe_route
+def export_master_financial_excel():
+    """
+    7. Master Financial Sheet (Combined Sales & Expense Yearly Audit)
+    Sheets:
+      1. Executive Summary (KPIs, Combined month-by-month table)
+      2. Sales Detail (Year)
+      3. Expense Detail (Year Pivot)
+      4. Payroll Summary
+      5. Full Transaction Log (Unified Chronological with Running Balance)
+    """
+    year = request.args.get("year", type=int) or date.today().year
+    filepath = excel_xlsx_service.export_master_financial_sheet(year)
+
+    if not filepath or not os.path.exists(filepath):
+        raise Exception("Failed to generate Master Financial Sheet")
+
+    filename = os.path.basename(filepath)
+    return send_file(
+        filepath,
+        as_attachment=True,
+        download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Legacy & Helper Endpoints
+# ─────────────────────────────────────────────────────────────────────────────
+@reports_bp.route("/excel/expenses", methods=["GET"])
+@safe_route
+def export_expenses_legacy():
+    """Legacy expense router with range=week|month|year."""
+    range_type = request.args.get("range", "week")
+    today = date.today()
+
+    if range_type == "month":
+        month = request.args.get("month", type=int) or today.month
+        year = request.args.get("year", type=int) or today.year
+        return export_monthly_expense_excel()
+    elif range_type == "year":
+        year = request.args.get("year", type=int) or today.year
+        return export_yearly_expense_excel()
+    else:
+        return export_weekly_expense_excel()
 
 
 @reports_bp.route("/csv/today", methods=["GET"])
@@ -78,13 +241,11 @@ def export_today_excel():
 def export_today_csv():
     """Export today's bills data as CSV."""
     bills = db.get_todays_bills()
-
     if not bills:
         raise NotFoundError("No bills found for today", code="NO_BILLS_TODAY")
 
     today_str = date.today().strftime("%Y-%m-%d")
     temp_filepath = os.path.join(excel_service.export_dir, f"bills_{today_str}.csv")
-
     csv_content = excel_service.generate_bills_csv(bills)
 
     with open(temp_filepath, "w", encoding="utf-8") as f:
@@ -98,229 +259,61 @@ def export_today_csv():
     )
 
 
-@reports_bp.route("/preview/excel", methods=["GET"])
-@safe_route
-def preview_excel_data():
-    """Preview Excel data without downloading."""
-    bills = db.get_todays_bills()
-
-    if not bills:
-        raise NotFoundError("No bills found for today", code="NO_BILLS_TODAY")
-
-    filepath = excel_service.export_today_sales_to_csv(bills)
-
-    if not filepath:
-        raise Exception("Failed to generate preview")
-
-    content = excel_service.get_csv_content(filepath)
-
-    return (
-        jsonify(
-            {
-                "success": True,
-                "preview": content,
-                "row_count": len(bills),
-                "message": "Preview generated successfully",
-            }
-        ),
-        200,
-    )
-
-
-@reports_bp.route("/preview/xml", methods=["GET"])
-@safe_route
-def preview_xml_data():
-    """Preview XML data without downloading."""
-    bills = db.get_todays_bills()
-
-    if not bills:
-        raise NotFoundError("No bills found for today", code="NO_BILLS_TODAY")
-
-    xml_content = excel_service.generate_bills_xml(bills)
-
-    return (
-        jsonify(
-            {
-                "success": True,
-                "preview": xml_content,
-                "message": "XML preview generated successfully",
-            }
-        ),
-        200,
-    )
-
-
 @reports_bp.route("/available-reports", methods=["GET"])
 @safe_route
 def get_available_reports():
-    """Get list of available reports and their info."""
+    """Get list of all 7 available standardized Excel reports."""
     reports_info = {
-        "excel_reports": [
+        "standard_reports": [
             {
-                "name": "Simple Sales Report",
-                "endpoint": "/api/reports/excel/today?type=simple",
-                "description": "Basic sales data with bill details",
-                "format": "CSV",
+                "id": "daily_sales",
+                "name": "Daily Sales Report",
+                "endpoint": "/api/reports/excel/daily",
+                "description": "Detailed breakdown of items sold, summaries, and profits for a specific date.",
+                "sheets": ["Summary", "Item-Wise Breakdown", "Bill Log"]
             },
             {
-                "name": "Summary Report",
-                "endpoint": "/api/reports/excel/today?type=summary",
-                "description": "Daily summary with category totals",
-                "format": "CSV",
+                "id": "weekly_sales",
+                "name": "Weekly Sales Summary",
+                "endpoint": "/api/reports/excel/weekly",
+                "description": "Aggregated product overview and revenues from Monday to Sunday.",
+                "sheets": ["Week Overview", "Product Overview"]
             },
             {
-                "name": "Detailed Sales Report",
-                "endpoint": "/api/reports/excel/today?type=detailed",
-                "description": "Comprehensive report with summary and detailed bills",
-                "format": "CSV",
+                "id": "monthly_sales",
+                "name": "Monthly Sales Summary",
+                "endpoint": "/api/reports/excel/monthly",
+                "description": "Monthly product-wise totals and overall gross sales report.",
+                "sheets": ["Month Overview", "Daily Breakdown", "Product-Wise Totals"]
             },
-        ],
-        "xml_reports": [
             {
-                "name": "Today's Bills CSV",
-                "endpoint": "/api/reports/csv/today",
-                "description": "Raw CSV data of today's bills",
-                "format": "CSV",
+                "id": "weekly_expenses",
+                "name": "Weekly Expense Report",
+                "endpoint": "/api/reports/excel/expenses/weekly",
+                "description": "Categorized business outflows and details recorded for the current week.",
+                "sheets": ["Category Summary & Full Ledger"]
+            },
+            {
+                "id": "monthly_expenses",
+                "name": "Monthly Expense Report",
+                "endpoint": "/api/reports/excel/expenses/monthly",
+                "description": "Detailed monthly accounting report for utility, supplier and operational costs.",
+                "sheets": ["Category Summary", "Vendor Breakdown", "Full Ledger"]
+            },
+            {
+                "id": "yearly_expenses",
+                "name": "Yearly Expense Audit",
+                "endpoint": "/api/reports/excel/expenses/yearly",
+                "description": "Year-to-date business expenses breakdown and category summaries.",
+                "sheets": ["Year Overview", "Category Breakdown (Year Pivot)", "Full Ledger"]
+            },
+            {
+                "id": "master_financial",
+                "name": "Master Financial Sheet",
+                "endpoint": "/api/reports/excel/master-financial",
+                "description": "Combined Sales & Expense yearly audit with payroll and unified transaction ledger.",
+                "sheets": ["Executive Summary", "Sales Detail (Year)", "Expense Detail (Year)", "Payroll Summary", "Transaction Log"]
             }
-        ],
-        "preview_endpoints": [
-            {
-                "name": "Excel Preview",
-                "endpoint": "/api/reports/preview/excel",
-                "description": "Preview Excel data before download",
-            },
-            {
-                "name": "XML Preview",
-                "endpoint": "/api/reports/preview/xml",
-                "description": "Preview XML data before download",
-            },
-        ],
+        ]
     }
-
     return jsonify({"success": True, "reports": reports_info}), 200
-
-
-@reports_bp.route("/excel/monthly", methods=["GET"])
-@safe_route
-def export_monthly_excel():
-    """Export monthly product-wise sales report."""
-    month = request.args.get("month", type=int)
-    year = request.args.get("year", type=int)
-
-    if not month or not year:
-        raise ValidationError("Month and Year are required", code="MISSING_MONTH_YEAR")
-
-    if not (1 <= month <= 12):
-        raise ValidationError("Invalid month", code="INVALID_MONTH")
-
-    summary = summary_service.get_monthly_product_summary(month, year)
-
-    if "error" in summary:
-        raise Exception(f"Error generating summary: {summary['error']}")
-
-    filepath = excel_xlsx_service.export_monthly_product_sales_report(summary)
-
-    if not filepath:
-        raise Exception("Failed to generate Excel report")
-
-    return send_file(
-        filepath,
-        as_attachment=True,
-        download_name=os.path.basename(filepath),
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-
-
-@reports_bp.route("/excel/weekly", methods=["GET"])
-@safe_route
-def export_weekly_excel():
-    """Export weekly product-wise sales report."""
-    date_param = request.args.get("date")
-
-    if not date_param:
-        raise ValidationError("Date parameter is required", code="MISSING_DATE")
-
-    summary = summary_service.get_weekly_product_summary(date_param)
-
-    if "error" in summary:
-        raise Exception(f"Error generating summary: {summary['error']}")
-
-    filepath = excel_xlsx_service.export_weekly_product_sales_report(summary)
-
-    if not filepath:
-        raise Exception("Failed to generate Excel report")
-
-    return send_file(
-        filepath,
-        as_attachment=True,
-        download_name=os.path.basename(filepath),
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
-
-
-@reports_bp.route("/excel/expenses", methods=["GET"])
-@safe_route
-def export_expenses():
-    """Export expenses for a simplified range."""
-    from models import Expense
-    from sqlalchemy import func
-    from datetime import timedelta
-
-    range_type = request.args.get("range", "today")
-    today = date.today()
-
-    query = Expense.query
-    from sqlalchemy import func
-
-    if range_type == "today":
-        query = query.filter(func.date(Expense.date) == today)
-        title = f"Daily Expenses - {today}"
-        filename = f"Expenses_{today}.xlsx"
-    elif range_type == "week":
-        start_week = today - timedelta(days=today.weekday())
-        end_week = start_week + timedelta(days=6)
-        query = query.filter(
-            func.date(Expense.date) >= start_week,
-            func.date(Expense.date) <= end_week,
-        )
-        title = f"Weekly Expenses - {start_week} to {end_week}"
-        filename = f"Expenses_Weekly_{today}.xlsx"
-    elif range_type == "month":
-        import calendar
-
-        start_month = today.replace(day=1)
-        _, last_day = calendar.monthrange(today.year, today.month)
-        end_month = today.replace(day=last_day)
-        query = query.filter(
-            func.date(Expense.date) >= start_month,
-            func.date(Expense.date) <= end_month,
-        )
-        title = f"Monthly Expenses - {today.strftime('%B %Y')}"
-        filename = f"Expenses_Monthly_{today.month}_{today.year}.xlsx"
-    elif range_type == "year":
-        start_year = today.replace(month=1, day=1)
-        end_year = today.replace(month=12, day=31)
-        query = query.filter(
-            func.date(Expense.date) >= start_year,
-            func.date(Expense.date) <= end_year,
-        )
-        title = f"Yearly Expenses - {today.year}"
-        filename = f"Expenses_Yearly_{today.year}.xlsx"
-    else:
-        title = f"Expenses - {today}"
-        filename = f"Expenses_{today}.xlsx"
-
-    expenses = query.order_by(Expense.date.desc()).all()
-    expense_list = [e.to_dict() for e in expenses]
-
-    filepath = excel_xlsx_service.export_expenses_report(expense_list, title, filename)
-
-    if not filepath:
-        raise Exception("Failed to generate report")
-
-    return send_file(
-        filepath,
-        as_attachment=True,
-        download_name=filename,
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )

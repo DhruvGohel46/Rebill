@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useSettings } from '../../context/SettingsContext';
+import { useTheme } from '../../context/ThemeContext';
 import MotionIcon from './MotionIcon';
 
 const Sidebar = ({
@@ -10,7 +11,7 @@ const Sidebar = ({
     navItems = [],
     onNavigate,
 }) => {
-
+    const { isDark } = useTheme();
     const { settings } = useSettings();
     const location = useLocation();
     const navigate = useNavigate();
@@ -154,6 +155,9 @@ const Sidebar = ({
                 position: 'relative',
                 borderRadius: 'var(--radius-sharp)',
                 margin: '0',
+                background: isDark ? 'var(--glass-sidebar)' : '#FFFFFF',
+                borderRight: isDark ? '1px solid var(--glass-border)' : '1px solid #E2E8F0',
+                boxShadow: isDark ? 'none' : '2px 0 12px rgba(15, 23, 42, 0.04)',
             }}
         >
             {/* Header / Logo Area */}
@@ -163,8 +167,9 @@ const Sidebar = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: isCollapsed ? 'center' : 'flex-start',
-                padding: isCollapsed ? '0' : 'var(--spacing-4) var(--spacing-6)',
-                marginBottom: 'var(--spacing-6)'
+                padding: isCollapsed ? 'var(--spacing-3) 0' : 'var(--spacing-4) var(--spacing-6)',
+                borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #E2E8F0',
+                marginBottom: 'var(--spacing-3)'
             }}>
                 <AnimatePresence mode="wait">
                     {!isCollapsed ? (
@@ -192,8 +197,17 @@ const Sidebar = ({
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0 }}
                             style={{
-                                fontSize: 'var(--text-xl)',
-                                fontWeight: 'var(--font-semibold)',
+                                width: '42px',
+                                height: '42px',
+                                borderRadius: '12px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                background: isDark ? 'rgba(255, 106, 0, 0.12)' : '#FFF7ED',
+                                border: isDark ? '1px solid rgba(255, 106, 0, 0.3)' : '1px solid #FDBA74',
+                                boxShadow: isDark ? 'none' : '0 2px 6px rgba(249, 115, 22, 0.12)',
+                                fontSize: 'var(--text-lg)',
+                                fontWeight: 700,
                                 color: 'var(--primary-500)',
                             }}
                         >
@@ -258,39 +272,44 @@ const Sidebar = ({
                                 WebkitBackdropFilter: 'var(--glass-blur)',
                                 border: isEditing
                                     ? '1.5px dashed var(--primary-500)'
-                                    : (isActive ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid var(--glass-border)'),
+                                    : (isActive ? '1px solid #FF8A00' : (isDark ? '1px solid var(--glass-border)' : '1px solid #E2E8F0')),
                                 background: (isActive && !isEditing) 
                                     ? 'linear-gradient(135deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 100%), var(--primary-500)' 
-                                    : (isEditing ? 'rgba(255, 255, 255, 0.02)' : 'transparent'),
-                                color: (isActive && !isEditing) ? 'var(--text-inverse)' : 'var(--text-secondary)',
+                                    : (isEditing ? (isDark ? 'rgba(255, 255, 255, 0.02)' : '#F8FAFC') : (isDark ? 'transparent' : '#FFFFFF')),
+                                color: (isActive && !isEditing) ? 'var(--text-inverse)' : (isDark ? 'var(--text-secondary)' : '#334155'),
                                 boxShadow: isEditing
                                     ? '0 8px 24px rgba(255, 138, 0, 0.15)'
-                                    : (isActive ? 'inset 0 1px 1px rgba(255,255,255,0.6), inset 0 -2px 4px rgba(0,0,0,0.2), 0 8px 16px rgba(255, 106, 0, 0.3)' : 'none'),
+                                    : (isActive ? 'inset 0 1px 1px rgba(255,255,255,0.6), inset 0 -2px 4px rgba(0,0,0,0.2), 0 6px 16px rgba(255, 106, 0, 0.35)' : (isDark ? 'none' : '0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03)')),
                                 opacity: draggedItemId === item.id ? 0.35 : ((isEditing && item.visible === false) ? 0.4 : 1),
                             }}
                             onMouseEnter={(e) => {
                                 if (isEditing) return;
                                 if (!isActive) {
-                                    e.currentTarget.style.background = 'var(--glass-card)';
-                                    e.currentTarget.style.color = 'var(--text-primary)';
+                                    e.currentTarget.style.background = isDark ? 'var(--glass-card)' : '#F8FAFC';
+                                    e.currentTarget.style.color = isDark ? 'var(--text-primary)' : '#0F172A';
+                                    e.currentTarget.style.border = isDark ? '1px solid var(--glass-border)' : '1px solid #CBD5E1';
+                                    e.currentTarget.style.boxShadow = isDark ? 'none' : '0 3px 8px rgba(15, 23, 42, 0.08)';
                                     e.currentTarget.style.transform = 'translateX(4px)';
                                 } else {
                                     e.currentTarget.style.transform = 'translateX(4px) scale(1.02)';
-                                    e.currentTarget.style.boxShadow = 'inset 0 1px 1px rgba(255,255,255,0.8), inset 0 -2px 4px rgba(0,0,0,0.2), 0 12px 20px rgba(255, 106, 0, 0.4)';
+                                    e.currentTarget.style.boxShadow = 'inset 0 1px 1px rgba(255,255,255,0.8), inset 0 -2px 4px rgba(0,0,0,0.2), 0 10px 22px rgba(255, 106, 0, 0.45)';
                                 }
                             }}
                             onMouseLeave={(e) => {
                                 if (isEditing) return;
                                 if (!isActive) {
-                                    e.currentTarget.style.background = 'transparent';
-                                    e.currentTarget.style.color = 'var(--text-secondary)';
+                                    e.currentTarget.style.background = isDark ? 'transparent' : '#FFFFFF';
+                                    e.currentTarget.style.color = isDark ? 'var(--text-secondary)' : '#334155';
+                                    e.currentTarget.style.border = isDark ? '1px solid var(--glass-border)' : '1px solid #E2E8F0';
+                                    e.currentTarget.style.boxShadow = isDark ? 'none' : '0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03)';
                                     e.currentTarget.style.transform = 'translateX(0)';
                                 } else {
                                     e.currentTarget.style.transform = 'translateX(0) scale(1)';
-                                    e.currentTarget.style.boxShadow = 'inset 0 1px 1px rgba(255,255,255,0.6), inset 0 -2px 4px rgba(0,0,0,0.2), 0 8px 16px rgba(255, 106, 0, 0.3)';
+                                    e.currentTarget.style.boxShadow = 'inset 0 1px 1px rgba(255,255,255,0.6), inset 0 -2px 4px rgba(0,0,0,0.2), 0 6px 16px rgba(255, 106, 0, 0.35)';
                                 }
                             }}
                         >
+
                             {/* Left Side: Icon & Label */}
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: isCollapsed ? 'center' : 'flex-start' }}>
                                 {/* Icon Wrapper */}
@@ -344,10 +363,10 @@ const Sidebar = ({
                                             setCustomizedNavItems(updated);
                                         }}
                                         style={{
-                                            background: 'rgba(255, 255, 255, 0.08)',
-                                            border: 'none',
+                                            background: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                                            border: isDark ? 'none' : '1px solid #CBD5E1',
                                             cursor: index === 0 ? 'default' : 'pointer',
-                                            color: index === 0 ? 'rgba(255,255,255,0.15)' : 'var(--primary-500)',
+                                            color: index === 0 ? (isDark ? 'rgba(255,255,255,0.15)' : '#94A3B8') : 'var(--primary-500)',
                                             padding: '6px',
                                             borderRadius: '6px',
                                             display: 'flex',
@@ -372,10 +391,10 @@ const Sidebar = ({
                                             setCustomizedNavItems(updated);
                                         }}
                                         style={{
-                                            background: 'rgba(255, 255, 255, 0.08)',
-                                            border: 'none',
+                                            background: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                                            border: isDark ? 'none' : '1px solid #CBD5E1',
                                             cursor: index === customizedNavItems.length - 1 ? 'default' : 'pointer',
-                                            color: index === customizedNavItems.length - 1 ? 'rgba(255,255,255,0.15)' : 'var(--primary-500)',
+                                            color: index === customizedNavItems.length - 1 ? (isDark ? 'rgba(255,255,255,0.15)' : '#94A3B8') : 'var(--primary-500)',
                                             padding: '6px',
                                             borderRadius: '6px',
                                             display: 'flex',
@@ -397,14 +416,14 @@ const Sidebar = ({
                                     position: 'absolute',
                                     left: '100%',
                                     marginLeft: '12px',
-                                    background: 'var(--surface-primary, #1e1f22)',
-                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                    background: isDark ? 'var(--surface-primary, #1e1f22)' : '#FFFFFF',
+                                    border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid #CBD5E1',
                                     borderRadius: '8px',
                                     padding: '6px 8px',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '6px',
-                                    boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                                    boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.3)' : '0 8px 24px rgba(15, 23, 42, 0.12)',
                                     zIndex: 100,
                                     pointerEvents: 'auto',
                                 }}>
@@ -420,10 +439,10 @@ const Sidebar = ({
                                             setCustomizedNavItems(updated);
                                         }}
                                         style={{
-                                            background: 'rgba(255, 255, 255, 0.08)',
-                                            border: 'none',
+                                            background: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                                            border: isDark ? 'none' : '1px solid #CBD5E1',
                                             cursor: index === 0 ? 'default' : 'pointer',
-                                            color: index === 0 ? 'rgba(255,255,255,0.15)' : 'var(--primary-500)',
+                                            color: index === 0 ? (isDark ? 'rgba(255,255,255,0.15)' : '#94A3B8') : 'var(--primary-500)',
                                             padding: '4px',
                                             borderRadius: '4px',
                                             display: 'flex',
@@ -447,10 +466,10 @@ const Sidebar = ({
                                             setCustomizedNavItems(updated);
                                         }}
                                         style={{
-                                            background: 'rgba(255, 255, 255, 0.08)',
-                                            border: 'none',
+                                            background: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+                                            border: isDark ? 'none' : '1px solid #CBD5E1',
                                             cursor: index === customizedNavItems.length - 1 ? 'default' : 'pointer',
-                                            color: index === customizedNavItems.length - 1 ? 'rgba(255,255,255,0.15)' : 'var(--primary-500)',
+                                            color: index === customizedNavItems.length - 1 ? (isDark ? 'rgba(255,255,255,0.15)' : '#94A3B8') : 'var(--primary-500)',
                                             padding: '4px',
                                             borderRadius: '4px',
                                             display: 'flex',
@@ -472,7 +491,8 @@ const Sidebar = ({
 
             {/* Bottom Actions Area */}
             <div style={{
-                padding: isCollapsed ? 'var(--spacing-4) var(--spacing-2)' : 'var(--spacing-6)',
+                padding: isCollapsed ? 'var(--spacing-3) var(--spacing-2)' : 'var(--spacing-4) var(--spacing-6)',
+                borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.06)' : '1px solid #E2E8F0',
                 display: 'flex',
                 flexDirection: isCollapsed ? 'column' : 'row',
                 alignItems: 'center',
@@ -545,9 +565,9 @@ const Sidebar = ({
                             whileTap={{ scale: 0.95 }}
                             style={{
                                 flex: 0.8,
-                                background: 'rgba(255,255,255,0.06)',
-                                color: '#ffffff',
-                                border: 'none',
+                                background: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9',
+                                color: isDark ? '#ffffff' : '#334155',
+                                border: isDark ? 'none' : '1px solid #CBD5E1',
                                 borderRadius: '10px',
                                 padding: '10px',
                                 fontSize: '12px',
@@ -570,22 +590,27 @@ const Sidebar = ({
                                 onClick={() => setIsEditing(true)}
                                 whileTap={{ scale: 0.92 }}
                                 onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = 'var(--glass-card)';
+                                    e.currentTarget.style.background = isDark ? 'var(--glass-card)' : '#F1F5F9';
+                                    e.currentTarget.style.borderColor = isDark ? 'var(--glass-border)' : '#FF8A00';
+                                    e.currentTarget.style.boxShadow = isDark ? 'none' : '0 2px 6px rgba(15, 23, 42, 0.08)';
                                     e.currentTarget.style.transform = 'scale(1.05)';
                                 }}
                                 onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = 'transparent';
+                                    e.currentTarget.style.background = isDark ? 'transparent' : '#F8FAFC';
+                                    e.currentTarget.style.borderColor = isDark ? 'var(--glass-border)' : '#CBD5E1';
+                                    e.currentTarget.style.boxShadow = isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)';
                                     e.currentTarget.style.transform = 'scale(1)';
                                 }}
                                 style={{
-                                    background: 'transparent',
-                                    border: '1px solid var(--glass-border)',
+                                    background: isDark ? 'transparent' : '#F8FAFC',
+                                    border: isDark ? '1px solid var(--glass-border)' : '1px solid #CBD5E1',
+                                    boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
                                     padding: '6px 10px',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '6px',
                                     cursor: 'pointer',
-                                    color: 'var(--text-secondary)',
+                                    color: isDark ? 'var(--text-secondary)' : '#334155',
                                     fontSize: '11px',
                                     fontWeight: 600,
                                     borderRadius: '8px',
@@ -603,23 +628,28 @@ const Sidebar = ({
                                 onClick={() => setIsEditing(true)}
                                 whileTap={{ scale: 0.92 }}
                                 onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = 'var(--glass-card)';
+                                    e.currentTarget.style.background = isDark ? 'var(--glass-card)' : '#F1F5F9';
+                                    e.currentTarget.style.borderColor = isDark ? 'var(--glass-border)' : '#FF8A00';
+                                    e.currentTarget.style.boxShadow = isDark ? 'none' : '0 2px 6px rgba(15, 23, 42, 0.08)';
                                     e.currentTarget.style.transform = 'scale(1.05)';
                                 }}
                                 onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = 'transparent';
+                                    e.currentTarget.style.background = isDark ? 'transparent' : '#F8FAFC';
+                                    e.currentTarget.style.borderColor = isDark ? 'var(--glass-border)' : '#CBD5E1';
+                                    e.currentTarget.style.boxShadow = isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)';
                                     e.currentTarget.style.transform = 'scale(1)';
                                 }}
                                 style={{
-                                    background: 'transparent',
-                                    border: '1px solid var(--glass-border)',
+                                    background: isDark ? 'transparent' : '#F8FAFC',
+                                    border: isDark ? '1px solid var(--glass-border)' : '1px solid #CBD5E1',
+                                    boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
                                     width: '32px',
                                     height: '32px',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     cursor: 'pointer',
-                                    color: 'var(--text-secondary)',
+                                    color: isDark ? 'var(--text-secondary)' : '#334155',
                                     borderRadius: '8px',
                                     transition: 'all var(--transition-normal) var(--ease-out)',
                                 }}
@@ -637,23 +667,28 @@ const Sidebar = ({
                             onClick={toggleCollapse}
                             whileTap={{ scale: 0.92 }}
                             onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = 'var(--glass-card)';
+                                    e.currentTarget.style.background = isDark ? 'var(--glass-card)' : '#F1F5F9';
+                                    e.currentTarget.style.borderColor = isDark ? 'var(--glass-border)' : '#FF8A00';
+                                    e.currentTarget.style.boxShadow = isDark ? 'none' : '0 2px 6px rgba(15, 23, 42, 0.08)';
                                     e.currentTarget.style.transform = 'scale(1.05)';
                                 }}
                             onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = 'transparent';
+                                    e.currentTarget.style.background = isDark ? 'transparent' : '#F8FAFC';
+                                    e.currentTarget.style.borderColor = isDark ? 'var(--glass-border)' : '#CBD5E1';
+                                    e.currentTarget.style.boxShadow = isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)';
                                     e.currentTarget.style.transform = 'scale(1)';
                                 }}
                             style={{
-                                background: 'transparent',
-                                border: '1px solid var(--glass-border)',
+                                background: isDark ? 'transparent' : '#F8FAFC',
+                                border: isDark ? '1px solid var(--glass-border)' : '1px solid #CBD5E1',
+                                boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
                                 width: '32px',
                                 height: '32px',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 cursor: 'pointer',
-                                color: 'var(--text-secondary)',
+                                color: isDark ? 'var(--text-secondary)' : '#334155',
                                 transition: 'all var(--transition-normal) var(--ease-out)',
                                 borderRadius: '8px',
                             }}

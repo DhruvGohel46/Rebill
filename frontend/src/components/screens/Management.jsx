@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useDebounce } from '../../hooks/useDebounce';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAnimation } from '../../hooks/useAnimation';
-import { FiSearch, FiPackage, FiTrendingUp, FiAlertTriangle } from 'react-icons/fi';
+import { FiSearch, FiPackage, FiTrendingUp, FiAlertTriangle, FiGrid, FiDownload, FiUpload, FiRefreshCw } from 'react-icons/fi';
 import { productsAPI, categoriesAPI, importMenuAPI, handleAPIError, formatCurrency } from '../../utils/api';
 import { useAlert as useToast } from '../../context/AlertContext';
 import GroupManagement from './GroupManagement';
@@ -71,7 +71,7 @@ const IconHeart = ({ filled, ...props }) => (
   </svg>
 );
 
-const ProductManagement = () => {
+const ProductManagement = ({ activeTab, setActiveTab }) => {
   const { staggerContainer, staggerItem } = useAnimation();
   const { showSuccess, showError } = useToast();
   const { settings } = useSettings();
@@ -782,59 +782,131 @@ const ProductManagement = () => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="glass-panel pm-inventory-panel"
       ref={topRef}
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100%',
-        borderRadius: 'var(--radius-3xl)',
-        overflow: 'visible',
-        background: 'var(--glass-panel)',
-        border: '1px solid var(--glass-border)',
-        boxShadow: 'var(--shadow-xl)',
+        width: '100%',
+        gap: '16px'
       }}
     >
-      {/* Header */}
+      {/* Header Card with Unified Navigation */}
       <div style={{
-        padding: 'var(--spacing-8) var(--spacing-8) var(--spacing-6) var(--spacing-8)',
+        padding: '18px 24px',
         display: 'flex',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
+        alignItems: 'center',
+        background: isDark
+          ? 'linear-gradient(165deg, #18191D 0%, #111215 100%)'
+          : '#FFFFFF',
+        border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #E2E8F0',
+        borderRadius: '24px',
+        margin: '0 0 8px 0',
+        boxShadow: isDark
+          ? '0 10px 30px -8px rgba(0, 0, 0, 0.5)'
+          : '0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 0 1px 1px rgba(0, 0, 0, 0.02)',
+        flexWrap: 'wrap',
+        gap: '16px'
       }}>
-        <div>
-          <h2 style={{ fontSize: 'var(--text-3xl)', fontWeight: '700', margin: 0, color: 'var(--text-primary)', letterSpacing: '-0.02em', textShadow: '0 10px 30px rgba(0, 0, 0, 0.25)' }}>
-            {productViewTab === 'active' ? 'Active Products' : 'Inactive Products'}
-          </h2>
-          <p style={{ margin: 'var(--spacing-1) 0 0 0', color: 'var(--text-secondary)', fontSize: 'var(--text-lg)', opacity: 0.75 }}>
-            Manage your product catalog and pricing
-          </p>
+        {/* Left: Title + Segmented Navigation Tabs */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+          <div>
+            <h1 style={{
+              fontSize: '1.65rem',
+              fontWeight: '900',
+              margin: 0,
+              color: isDark ? '#FFFFFF' : '#0F172A',
+              letterSpacing: '-0.02em'
+            }}>
+              Management
+            </h1>
+          </div>
+
+          {setActiveTab && (
+            <div style={{
+              display: 'inline-flex',
+              background: isDark ? '#1C1D22' : '#F1F5F9',
+              borderRadius: '999px',
+              padding: '4px',
+              border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #CBD5E1',
+              gap: '4px'
+            }}>
+              <button
+                type="button"
+                onClick={() => setActiveTab('products')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '7px 18px',
+                  background: activeTab === 'products'
+                    ? 'linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%)'
+                    : 'transparent',
+                  border: 'none',
+                  borderRadius: '999px',
+                  color: activeTab === 'products' ? '#FFFFFF' : (isDark ? '#94A3B8' : '#64748B'),
+                  fontWeight: activeTab === 'products' ? 750 : 600,
+                  fontSize: '0.86rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.18s ease',
+                  boxShadow: activeTab === 'products' ? '0 3px 10px rgba(255, 107, 26, 0.35)' : 'none'
+                }}
+              >
+                <FiPackage size={16} /> Products Catalog
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('groups')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '7px 18px',
+                  background: activeTab === 'groups'
+                    ? 'linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%)'
+                    : 'transparent',
+                  border: 'none',
+                  borderRadius: '999px',
+                  color: activeTab === 'groups' ? '#FFFFFF' : (isDark ? '#94A3B8' : '#64748B'),
+                  fontWeight: activeTab === 'groups' ? 750 : 600,
+                  fontSize: '0.86rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.18s ease',
+                  boxShadow: activeTab === 'groups' ? '0 3px 10px rgba(255, 107, 26, 0.35)' : 'none'
+                }}
+              >
+                <FiGrid size={16} /> Category & Groups
+              </button>
+            </div>
+          )}
         </div>
-        <div style={{ display: 'flex', gap: 'var(--spacing-3)', alignItems: 'center' }}>
+
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           {/* Mode Switcher */}
           <div style={{
             display: 'flex',
-            backgroundColor: 'rgba(255,255,255,0.05)',
+            backgroundColor: isDark ? '#1C1D22' : '#F1F5F9',
             padding: '3px',
-            borderRadius: '10px',
-            border: '1px solid rgba(255,255,255,0.08)',
-            marginRight: 'var(--spacing-2)'
+            borderRadius: '12px',
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #CBD5E1',
+            marginRight: '6px'
           }}>
             <button
               type="button"
               onClick={() => setIsOnlineMode(false)}
               style={{
-                padding: '6px 12px',
-                borderRadius: '8px',
-                fontSize: '11px',
-                fontWeight: '600',
+                padding: '6px 14px',
+                borderRadius: '9px',
+                fontSize: '12px',
+                fontWeight: '700',
                 border: 'none',
                 cursor: 'pointer',
-                backgroundColor: !isOnlineMode ? '#f97316' : 'transparent',
-                color: !isOnlineMode ? 'white' : 'var(--text-secondary)',
-                transition: 'all 0.2s'
+                backgroundColor: !isOnlineMode ? '#FF6B1A' : 'transparent',
+                color: !isOnlineMode ? '#FFFFFF' : (isDark ? '#94A3B8' : '#64748B'),
+                boxShadow: !isOnlineMode ? '0 2px 8px rgba(255, 107, 26, 0.3)' : 'none',
+                transition: 'all 0.18s ease'
               }}
             >
               Offline
@@ -849,22 +921,23 @@ const ProductManagement = () => {
                 setIsOnlineMode(true);
               }}
               style={{
-                padding: '6px 12px',
-                borderRadius: '8px',
-                fontSize: '11px',
-                fontWeight: '600',
+                padding: '6px 14px',
+                borderRadius: '9px',
+                fontSize: '12px',
+                fontWeight: '700',
                 border: 'none',
                 cursor: 'pointer',
-                backgroundColor: isOnlineMode ? '#f97316' : 'transparent',
-                color: isOnlineMode ? 'white' : 'var(--text-secondary)',
-                transition: 'all 0.2s'
+                backgroundColor: isOnlineMode ? '#FF6B1A' : 'transparent',
+                color: isOnlineMode ? '#FFFFFF' : (isDark ? '#94A3B8' : '#64748B'),
+                boxShadow: isOnlineMode ? '0 2px 8px rgba(255, 107, 26, 0.3)' : 'none',
+                transition: 'all 0.18s ease'
               }}
             >
               Online
             </button>
           </div>
 
-          {/* Action Buttons depending on Mode and Role */}
+          {/* Action Buttons */}
           {!isOnlineMode ? (
             <>
               <button
@@ -872,42 +945,44 @@ const ProductManagement = () => {
                 onClick={handleExportMenu}
                 title="Export entire SQLite menu to JSON package"
                 style={{
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 'var(--spacing-2)',
-                  padding: 'var(--spacing-3) var(--spacing-5)',
-                  borderRadius: 'var(--radius-xl)',
-                  fontSize: 'var(--text-sm)',
-                  fontWeight: '600',
-                  border: '1px solid rgba(72,187,120,0.35)',
-                  background: 'rgba(72,187,120,0.08)',
-                  color: '#48bb78',
+                  gap: '7px',
+                  padding: '0 16px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  fontSize: '0.84rem',
+                  fontWeight: '700',
+                  border: isDark ? '1px solid rgba(16, 185, 129, 0.35)' : '1.5px solid #86EFAC',
+                  background: isDark ? 'rgba(16, 185, 129, 0.1)' : '#F0FDF4',
+                  color: isDark ? '#34D399' : '#16A34A',
                   cursor: 'pointer',
-                  transition: 'all 0.2s',
+                  transition: 'all 0.18s ease'
                 }}
               >
-                Export Menu
+                <FiDownload size={15} /> Export Menu
               </button>
               <button
                 type="button"
                 onClick={openImportModal}
                 title="Bulk import products from CSV / XLSX"
                 style={{
-                  display: 'flex',
+                  display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 'var(--spacing-2)',
-                  padding: 'var(--spacing-3) var(--spacing-5)',
-                  borderRadius: 'var(--radius-xl)',
-                  fontSize: 'var(--text-sm)',
-                  fontWeight: '600',
-                  border: '1px solid rgba(99,179,237,0.35)',
-                  background: 'rgba(99,179,237,0.08)',
-                  color: '#63b3ed',
+                  gap: '7px',
+                  padding: '0 16px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  fontSize: '0.84rem',
+                  fontWeight: '700',
+                  border: isDark ? '1px solid rgba(59, 130, 246, 0.35)' : '1.5px solid #93C5FD',
+                  background: isDark ? 'rgba(59, 130, 246, 0.1)' : '#EFF6FF',
+                  color: isDark ? '#60A5FA' : '#2563EB',
                   cursor: 'pointer',
-                  transition: 'all 0.2s',
+                  transition: 'all 0.18s ease'
                 }}
               >
-                Add in Bulk
+                <FiUpload size={15} /> Bulk Ingest
               </button>
             </>
           ) : (
@@ -918,21 +993,22 @@ const ProductManagement = () => {
                   onClick={handleImportFromFranchise}
                   disabled={importingFromFranchise}
                   style={{
-                    display: 'flex',
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    gap: 'var(--spacing-2)',
-                    padding: 'var(--spacing-3) var(--spacing-5)',
-                    borderRadius: 'var(--radius-xl)',
-                    fontSize: 'var(--text-sm)',
-                    fontWeight: '600',
-                    border: '1px solid rgba(159,122,234,0.35)',
-                    background: 'rgba(159,122,234,0.08)',
-                    color: '#9f7aea',
+                    gap: '7px',
+                    padding: '0 16px',
+                    height: '40px',
+                    borderRadius: '12px',
+                    fontSize: '0.84rem',
+                    fontWeight: '700',
+                    border: '1px solid rgba(139, 92, 246, 0.35)',
+                    background: 'rgba(139, 92, 246, 0.1)',
+                    color: '#A78BFA',
                     cursor: 'pointer',
-                    transition: 'all 0.2s',
+                    transition: 'all 0.18s ease'
                   }}
                 >
-                  {importingFromFranchise ? "Importing..." : "Import Master Menu"}
+                  <FiDownload size={15} /> {importingFromFranchise ? "Importing..." : "Import Franchise Menu"}
                 </button>
               )}
               {cloudRole === 'master' && (
@@ -941,43 +1017,51 @@ const ProductManagement = () => {
                   onClick={handlePublishMenu}
                   disabled={publishingMenu}
                   style={{
-                    display: 'flex',
+                    display: 'inline-flex',
                     alignItems: 'center',
-                    gap: 'var(--spacing-2)',
-                    padding: 'var(--spacing-3) var(--spacing-5)',
-                    borderRadius: 'var(--radius-xl)',
-                    fontSize: 'var(--text-sm)',
-                    fontWeight: '600',
-                    border: '1px solid rgba(246,173,85,0.35)',
-                    background: 'rgba(246,173,85,0.08)',
-                    color: '#f6ad55',
+                    gap: '7px',
+                    padding: '0 16px',
+                    height: '40px',
+                    borderRadius: '12px',
+                    fontSize: '0.84rem',
+                    fontWeight: '700',
+                    border: '1px solid rgba(245, 158, 11, 0.35)',
+                    background: 'rgba(245, 158, 11, 0.1)',
+                    color: '#FBBF24',
                     cursor: 'pointer',
-                    transition: 'all 0.2s',
+                    transition: 'all 0.18s ease'
                   }}
                 >
-                  {publishingMenu ? "Publishing..." : "Publish Menu"}
+                  <FiUpload size={15} /> {publishingMenu ? "Publishing..." : "Publish Menu"}
                 </button>
               )}
             </>
           )}
 
-          <Button
-            variant="primary"
+          <button
+            type="button"
             onClick={() => setShowAddForm(true)}
             disabled={showAddForm}
             style={{
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              gap: 'var(--spacing-2)',
-              padding: 'var(--spacing-3) var(--spacing-6)',
-              borderRadius: 'var(--radius-xl)',
-              fontSize: 'var(--text-base)',
-              fontWeight: '600',
-              boxShadow: '0 8px 18px rgba(249, 115, 22, 0.25)',
+              gap: '8px',
+              padding: '0 20px',
+              height: '40px',
+              borderRadius: '14px',
+              fontSize: '0.88rem',
+              fontWeight: '800',
+              border: 'none',
+              background: 'linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%)',
+              color: '#FFFFFF',
+              boxShadow: '0 6px 20px rgba(255, 107, 26, 0.35)',
+              cursor: showAddForm ? 'not-allowed' : 'pointer',
+              opacity: showAddForm ? 0.6 : 1,
+              transition: 'all 0.18s ease'
             }}
           >
             <IconPlus aria-hidden="true" /> Add Product
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -1344,30 +1428,35 @@ const ProductManagement = () => {
 
       {/* Controls: Search & Filters */}
       <div style={{
-        padding: '0 var(--spacing-8) var(--spacing-6) var(--spacing-8)',
+        padding: '0 0 16px 0',
         display: 'flex',
-        gap: 'var(--spacing-4)',
+        gap: '14px',
         alignItems: 'center',
         flexWrap: 'wrap',
         position: 'relative',
         zIndex: 100,
       }}>
-        {/* Search */}
-        <div className="inventory-search">
+        {/* Search Input */}
+        <div className="inventory-search" style={{ flex: '1 1 260px' }}>
           <FiSearch className="inventory-search-icon" />
           <input
             className="inventory-search-input"
             type="text"
-            placeholder="Search by name or ID…"
+            placeholder="Search by name, ID or category…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            style={{
+              background: isDark ? '#16171B' : '#FFFFFF',
+              border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #CBD5E1',
+              color: isDark ? '#FFFFFF' : '#0F172A'
+            }}
           />
         </div>
 
         {/* Category Filter */}
-        <div style={{ minWidth: '160px' }}>
+        <div style={{ minWidth: '180px' }}>
           <GlobalSelect
-            options={[{ label: 'All categories', value: 'all' }, ...categories.map(cat => ({ label: cat.name, value: cat.id }))]}
+            options={[{ label: 'All Categories', value: 'all' }, ...categories.map(cat => ({ label: cat.name, value: cat.id }))]}
             value={categoryFilter}
             onChange={(val) => setCategoryFilter(val)}
             placeholder="Filter Category"
@@ -1376,76 +1465,124 @@ const ProductManagement = () => {
           />
         </div>
 
-        {/* View Tabs */}
-        <div className="inventory-filters">
+        {/* Segmented Filter Pills */}
+        <div style={{
+          display: 'inline-flex',
+          background: isDark ? '#16171B' : '#F1F5F9',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #CBD5E1',
+          borderRadius: '14px',
+          padding: '3px',
+          gap: '3px'
+        }}>
           <button
             onClick={() => setProductViewTab('active')}
-            className={`inventory-filter-btn ${productViewTab === 'active' ? 'is-active' : ''}`}
+            style={{
+              padding: '7px 16px',
+              border: 'none',
+              borderRadius: '10px',
+              fontSize: '0.84rem',
+              fontWeight: '700',
+              background: productViewTab === 'active' ? '#FF6B1A' : 'transparent',
+              color: productViewTab === 'active' ? '#FFFFFF' : (isDark ? '#94A3B8' : '#64748B'),
+              cursor: 'pointer',
+              transition: 'all 0.18s ease',
+              boxShadow: productViewTab === 'active' ? '0 2px 8px rgba(255, 107, 26, 0.3)' : 'none'
+            }}
           >
-            Active
+            Active ({products.filter(p => p.active).length})
           </button>
           <button
             onClick={() => setProductViewTab('inactive')}
-            className={`inventory-filter-btn ${productViewTab === 'inactive' ? 'is-active' : ''}`}
+            style={{
+              padding: '7px 16px',
+              border: 'none',
+              borderRadius: '10px',
+              fontSize: '0.84rem',
+              fontWeight: '700',
+              background: productViewTab === 'inactive' ? '#FF6B1A' : 'transparent',
+              color: productViewTab === 'inactive' ? '#FFFFFF' : (isDark ? '#94A3B8' : '#64748B'),
+              cursor: 'pointer',
+              transition: 'all 0.18s ease',
+              boxShadow: productViewTab === 'inactive' ? '0 2px 8px rgba(255, 107, 26, 0.3)' : 'none'
+            }}
           >
-            Inactive
+            Inactive ({products.filter(p => !p.active).length})
           </button>
         </div>
 
         {/* Refresh */}
-        <Button
-          variant="secondary"
+        <button
           onClick={loadProducts}
-          icon={loading ? <div className="spinner" /> : null}
-          style={{ borderRadius: 'var(--radius-xl)' }}
+          disabled={loading}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            height: '42px',
+            padding: '0 16px',
+            borderRadius: '14px',
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #CBD5E1',
+            background: isDark ? '#16171B' : '#FFFFFF',
+            color: isDark ? '#FFFFFF' : '#0F172A',
+            fontSize: '0.86rem',
+            fontWeight: '700',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            transition: 'all 0.18s ease'
+          }}
         >
+          <FiRefreshCw className={loading ? 'spinner' : ''} size={15} />
           Refresh
-        </Button>
+        </button>
       </div>
 
       {/* Stats Bar */}
-      <div style={{ padding: '0 var(--spacing-8) var(--spacing-4) var(--spacing-8)' }}>
+      <div style={{ padding: '0 0 18px 0' }}>
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ display: 'flex', gap: 'var(--spacing-4)', width: '100%' }}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', width: '100%' }}
         >
           {[
-            { label: 'Total Products', value: filteredProducts.length, color: '#3b82f6', icon: <FiPackage /> },
-            { label: 'Active', value: products.filter(p => p.active).length, color: '#10b981', icon: <FiTrendingUp /> },
-            { label: 'Inactive', value: products.filter(p => !p.active).length, color: '#f59e0b', icon: <FiAlertTriangle /> },
+            { label: 'Total Catalog', value: filteredProducts.length, color: '#3B82F6', icon: <FiPackage size={20} /> },
+            { label: 'Active in Menu', value: products.filter(p => p.active).length, color: '#10B981', icon: <FiTrendingUp size={20} /> },
+            { label: 'Disabled / Hidden', value: products.filter(p => !p.active).length, color: '#F59E0B', icon: <FiAlertTriangle size={20} /> },
           ].map((item) => (
             <div
               key={item.label}
               style={{
-                flex: 1,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 'var(--spacing-4)',
-                padding: 'var(--spacing-4) var(--spacing-6)',
-                background: 'color-mix(in srgb, var(--glass-card) 92%, transparent)',
-                border: '1px solid var(--glass-border)',
-                borderRadius: 'var(--radius-2xl)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                gap: '16px',
+                padding: '18px 22px',
+                background: isDark ? 'linear-gradient(165deg, #18191E 0%, #121316 100%)' : '#FFFFFF',
+                border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #E2E8F0',
+                borderRadius: '24px',
+                boxShadow: isDark
+                  ? '0 10px 30px -8px rgba(0, 0, 0, 0.5)'
+                  : '0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 0 1px 1px rgba(0, 0, 0, 0.02)',
               }}
             >
               <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '12px',
-                background: `color-mix(in srgb, ${item.color} 15%, transparent)`,
+                width: '46px',
+                height: '46px',
+                borderRadius: '15px',
+                background: `${item.color}15`,
+                border: `1px solid ${item.color}30`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: item.color,
-                fontSize: '1.2rem',
-                border: `1px solid color-mix(in srgb, ${item.color} 20%, transparent)`,
+                flexShrink: 0
               }}>
                 {item.icon}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: 'var(--text-xs)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-tertiary)' }}>{item.label}</span>
-                <span style={{ fontSize: 'var(--text-xl)', fontWeight: '800', color: 'var(--text-primary)', marginTop: '2px' }}>{item.value}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.06em', color: isDark ? '#94A3B8' : '#64748B' }}>
+                  {item.label}
+                </span>
+                <span style={{ fontSize: '1.45rem', fontWeight: '850', color: isDark ? '#FFFFFF' : '#0F172A', letterSpacing: '-0.02em' }}>
+                  {item.value}
+                </span>
               </div>
             </div>
           ))}
@@ -1453,7 +1590,7 @@ const ProductManagement = () => {
       </div>
 
       {/* Scrollable Content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 var(--spacing-8) var(--spacing-8) var(--spacing-8)', position: 'relative', zIndex: 10 }}>
+      <div style={{ flex: 1, padding: '0 0 24px 0', position: 'relative', zIndex: 10 }}>
 
         {/* Add/Edit Form */}
         <AnimatePresence>
@@ -1717,118 +1854,208 @@ const ProductManagement = () => {
                         key={product.product_id}
                         variants={staggerItem}
                       >
-                        <Card
-                          className={`pmCard ${!product.active ? 'pmCardInactive' : ''} card-zoom`}
-                          padding={showImages ? 'calc(20px * var(--display-zoom))' : 'calc(16px * var(--display-zoom))'}
-                          hover={true}
+                        <div
+                          className={`pmCard ${!product.active ? 'pmCardInactive' : ''}`}
                           style={{
-                            minHeight: showImages ? '180px' : 'auto',
-                            marginBottom: '0'
+                            background: isDark
+                              ? 'linear-gradient(165deg, #18191E 0%, #121316 100%)'
+                              : '#FFFFFF',
+                            border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #E2E8F0',
+                            borderRadius: '24px',
+                            padding: '20px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            boxShadow: isDark
+                              ? '0 10px 30px -8px rgba(0, 0, 0, 0.5)'
+                              : '0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 0 1px 1px rgba(0, 0, 0, 0.02)',
+                            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                            minHeight: showImages ? '220px' : 'auto',
+                            position: 'relative'
                           }}
                         >
                           {showImages && (
-                            <div className="pmCardImageContainer">
+                            <div style={{
+                              width: '100%',
+                              height: '140px',
+                              borderRadius: '18px',
+                              background: isDark ? '#141518' : '#F8FAFC',
+                              border: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #E2E8F0',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              overflow: 'hidden',
+                              marginBottom: '14px',
+                              position: 'relative'
+                            }}>
                               {product.image_filename ? (
                                 <img
                                   src={productsAPI.getImageUrl(product.image_filename, product.updated_at)}
                                   alt={product.name}
-                                  className="pmCardImage"
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }}
                                   onError={(e) => {
                                     e.target.style.display = 'none';
                                     e.target.nextSibling.style.display = 'flex';
                                   }}
                                 />
                               ) : null}
-                              <div className="pmCardImagePlaceholder" style={{ display: product.image_filename ? 'none' : 'flex', position: product.image_filename ? 'absolute' : 'relative', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                                <span>No Image</span>
+                              <div style={{ display: product.image_filename ? 'none' : 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', color: isDark ? '#64748B' : '#94A3B8' }}>
+                                <FiPackage size={28} />
+                                <span style={{ fontSize: '11px', fontWeight: 600 }}>No Image</span>
                               </div>
                             </div>
                           )}
 
-                          <div className="pmCardContent" style={{ padding: showImages ? 'calc(16px * var(--display-zoom))' : '0 0 calc(8px * var(--display-zoom)) 0', gap: showImages ? 'calc(12px * var(--display-zoom))' : 'calc(8px * var(--display-zoom))' }}>
-                            <div className="pmCardHeader">
-                              <div className="pmName" title={product.name} style={{ fontSize: showImages ? 'calc(16px * var(--text-scale))' : 'calc(17px * var(--text-scale))', WebkitLineClamp: showImages ? 2 : 1 }}>{product.name}</div>
-                              <div className="pmPriceRow">
-                                <div className="pmPrice">{formatCurrency(product.price)}</div>
-                                {Array.isArray(product.variations) && product.variations.length > 0 && (
-                                  <div style={{ fontSize: 'calc(11px * var(--text-scale))', color: 'var(--text-tertiary)', fontWeight: 600 }}>
-                                    {product.variations.length} variation{product.variations.length === 1 ? '' : 's'}
-                                  </div>
-                                )}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 'calc(6px * var(--display-zoom))' }}>
-                                  <div className="pmBadge">{product.category_name || product.category || 'Other'}</div>
-                                  <motion.button
-                                    className="pmFavoriteBtn"
-                                    whileHover={{ scale: 1.2 }}
-                                    whileTap={{ scale: 0.85 }}
-                                    onClick={(e) => { e.stopPropagation(); handleToggleFavorite(product); }}
-                                    title={product.favorite ? 'Remove from Favorites' : 'Add to Favorites'}
-                                    style={{
-                                      background: 'none',
-                                      border: 'none',
-                                      cursor: 'pointer',
-                                      padding: 'calc(4px * var(--display-zoom))',
-                                      color: product.favorite ? '#EF4444' : 'var(--text-tertiary)',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      transition: 'color 0.2s ease',
-                                    }}
-                                  >
-                                    <IconHeart filled={product.favorite} />
-                                  </motion.button>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, justifyContent: 'space-between' }}>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
+                                <h4 style={{
+                                  fontSize: '1.02rem',
+                                  fontWeight: '800',
+                                  margin: 0,
+                                  color: isDark ? '#FFFFFF' : '#0F172A',
+                                  letterSpacing: '-0.01em',
+                                  lineHeight: 1.3
+                                }}>
+                                  {product.name}
+                                </h4>
+                                <motion.button
+                                  whileHover={{ scale: 1.2 }}
+                                  whileTap={{ scale: 0.85 }}
+                                  onClick={(e) => { e.stopPropagation(); handleToggleFavorite(product); }}
+                                  title={product.favorite ? 'Remove from Favorites' : 'Add to Favorites'}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    padding: '2px',
+                                    color: product.favorite ? '#EF4444' : (isDark ? '#64748B' : '#94A3B8'),
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexShrink: 0
+                                  }}
+                                >
+                                  <IconHeart filled={product.favorite} />
+                                </motion.button>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap', marginTop: '6px' }}>
+                                <div style={{ fontSize: '1.18rem', fontWeight: '850', color: '#FF6B1A', letterSpacing: '-0.02em' }}>
+                                  {formatCurrency(product.price)}
+                                </div>
+                                <div style={{
+                                  fontSize: '0.68rem',
+                                  fontWeight: '750',
+                                  padding: '3px 9px',
+                                  borderRadius: '999px',
+                                  background: isDark ? 'rgba(255, 107, 26, 0.12)' : '#FFF7ED',
+                                  border: isDark ? '1px solid rgba(255, 107, 26, 0.3)' : '1px solid #FDBA74',
+                                  color: isDark ? '#FF8C42' : '#EA580C',
+                                  letterSpacing: '0.04em',
+                                  textTransform: 'uppercase'
+                                }}>
+                                  {product.category_name || product.category || 'Standard'}
                                 </div>
                               </div>
+
+                              {Array.isArray(product.variations) && product.variations.length > 0 && (
+                                <div style={{ fontSize: '0.74rem', color: isDark ? '#94A3B8' : '#64748B', fontWeight: 650, marginTop: '4px' }}>
+                                  {product.variations.length} variation{product.variations.length === 1 ? '' : 's'} available
+                                </div>
+                              )}
                             </div>
 
-                            {showImages && (
-                              <div className="pmMetaRow" style={{ justifyContent: 'center', width: '100%' }}>
-                                <div className="pmId">ID: {product.product_id}</div>
-                              </div>
-                            )}
-
-                            <div className={`pmActions ${showImages ? 'pmActionsWithBorder' : ''}`}>
-                              <div className="pmStockRow">
-                                <span className="pmStockLabel">Stock</span>
-                                <span className="pmStockValue" style={{
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '10px', borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #F1F5F9' }}>
+                              <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                fontSize: '0.78rem',
+                                padding: '6px 12px',
+                                borderRadius: '10px',
+                                background: isDark ? 'rgba(255, 255, 255, 0.03)' : '#F8FAFC'
+                              }}>
+                                <span style={{ color: isDark ? '#94A3B8' : '#64748B', fontWeight: 600 }}>Stock</span>
+                                <span style={{
+                                  fontWeight: '800',
                                   color: (product.stock === 0 || product.stock_status === 'Out of Stock') ? '#EF4444' :
                                     product.stock_status === 'Low Stock' ? '#F59E0B' : '#10B981'
                                 }}>
-                                  {product.stock !== undefined ? product.stock : '-'}
+                                  {product.stock !== undefined ? product.stock : 'Active'}
                                 </span>
                               </div>
 
-                              <div className="pmButtonGrid">
-                                <button className="pmActionBtn" onClick={() => handleEdit(product)} style={{ justifyContent: 'center' }}>
-                                  <IconEdit /> {showImages ? 'Edit' : ''}
+                              <div style={{ display: 'grid', gridTemplateColumns: product.active ? '1fr 1fr' : '1fr 1fr', gap: '8px' }}>
+                                <button
+                                  className="pmActionBtn"
+                                  onClick={() => handleEdit(product)}
+                                  style={{
+                                    height: '36px',
+                                    borderRadius: '12px',
+                                    background: isDark ? 'rgba(59, 130, 246, 0.1)' : '#EFF6FF',
+                                    border: isDark ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid #BFDBFE',
+                                    color: isDark ? '#60A5FA' : '#2563EB',
+                                    fontWeight: 750,
+                                    fontSize: '0.80rem',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '6px'
+                                  }}
+                                >
+                                  <IconEdit /> Edit
                                 </button>
                                 {product.active ? (
-                                  <button className="pmActionBtn pmActionDanger" onClick={() => handleDisable(product)} title="Deactivate" style={{ justifyContent: 'center' }}>
-                                    <IconPower /> {showImages ? 'Disable' : ''}
+                                  <button
+                                    className="pmActionBtn"
+                                    onClick={() => handleDisable(product)}
+                                    title="Deactivate"
+                                    style={{
+                                      height: '36px',
+                                      borderRadius: '12px',
+                                      background: isDark ? 'rgba(245, 158, 11, 0.1)' : '#FFFBEB',
+                                      border: isDark ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid #FDE68A',
+                                      color: isDark ? '#FBBF24' : '#D97706',
+                                      fontWeight: 750,
+                                      fontSize: '0.80rem',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      gap: '6px'
+                                    }}
+                                  >
+                                    <IconPower /> Disable
                                   </button>
                                 ) : (
-                                  <>
-                                    <button className="pmActionBtn pmActionReactivate" onClick={() => handleReactivate(product)} title="Reactivate" style={{ color: '#10B981', borderColor: 'rgba(16, 185, 129, 0.3)', background: 'rgba(16, 185, 129, 0.1)', justifyContent: 'center' }}>
-                                      <IconPower /> {showImages ? 'Enable' : ''}
-                                    </button>
-                                    <button className="pmActionBtn" onClick={() => handleDeleteDirect(product)} title="Delete Permanently" style={{
-                                      color: '#EF4444',
-                                      borderColor: 'rgba(239, 68, 68, 0.3)',
-                                      background: 'rgba(239, 68, 68, 0.1)',
+                                  <button
+                                    className="pmActionBtn"
+                                    onClick={() => handleReactivate(product)}
+                                    title="Reactivate"
+                                    style={{
+                                      height: '36px',
+                                      borderRadius: '12px',
+                                      background: isDark ? 'rgba(16, 185, 129, 0.1)' : '#F0FDF4',
+                                      border: isDark ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid #BBF7D0',
+                                      color: isDark ? '#34D399' : '#16A34A',
+                                      fontWeight: 750,
+                                      fontSize: '0.80rem',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
                                       justifyContent: 'center',
-                                      gridColumn: '1 / -1'
-                                    }}>
-                                      <IconTrash /> {showImages ? 'Delete Permanently' : ''}
-                                    </button>
-                                  </>
+                                      gap: '6px'
+                                    }}
+                                  >
+                                    <IconPower /> Enable
+                                  </button>
                                 )}
                               </div>
                             </div>
                           </div>
-                        </Card>
+                        </div>
                       </motion.div>
                     ))}
                   </motion.div>
@@ -2069,89 +2296,35 @@ const ProductManagement = () => {
 };
 
 const Management = () => {
-  const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState('products');
 
   return (
     <PageContainer>
       <div className="pmPage">
-        {/* Header - Centered Toggle Button / Pill Navigation */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'center',
-          marginBottom: 'calc(24px * var(--display-zoom))',
-          width: '100%'
-        }}>
-          <div style={{
-            display: 'inline-flex',
-            background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.03)',
-            borderRadius: '999px',
-            padding: '4px',
-            border: '1px solid var(--glass-border)',
-            gap: '2px',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
-          }}>
-            <button
-              onClick={() => setActiveTab('products')}
-              style={{
-                padding: '8px 24px',
-                background: activeTab === 'products' ? '#F97316' : 'transparent',
-                border: 'none',
-                borderRadius: '999px',
-                color: activeTab === 'products' ? 'white' : 'var(--text-secondary)',
-                fontWeight: activeTab === 'products' ? 600 : 500,
-                fontSize: '14px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                outline: 'none',
-                boxShadow: activeTab === 'products' ? '0 2px 8px rgba(249, 115, 22, 0.3)' : 'none'
-              }}
-            >
-              Products
-            </button>
-            <button
-              onClick={() => setActiveTab('groups')}
-              style={{
-                padding: '8px 24px',
-                background: activeTab === 'groups' ? '#F97316' : 'transparent',
-                border: 'none',
-                borderRadius: '999px',
-                color: activeTab === 'groups' ? 'white' : 'var(--text-secondary)',
-                fontWeight: activeTab === 'groups' ? 600 : 500,
-                fontSize: '14px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                outline: 'none',
-                boxShadow: activeTab === 'groups' ? '0 2px 8px rgba(249, 115, 22, 0.3)' : 'none'
-              }}
-            >
-              Groups
-            </button>
-          </div>
-        </div>
-
         {/* Content */}
         <AnimatePresence mode="wait">
           {activeTab === 'products' && (
             <motion.div
               key="products"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
-              transition={{ duration: 0.2 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.22 }}
+              style={{ width: '100%' }}
             >
-              <ProductManagement />
+              <ProductManagement activeTab={activeTab} setActiveTab={setActiveTab} />
             </motion.div>
           )}
           {activeTab === 'groups' && (
             <motion.div
               key="groups"
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
-              transition={{ duration: 0.2 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.22 }}
+              style={{ width: '100%' }}
             >
-              <GroupManagement />
+              <GroupManagement activeTab={activeTab} setActiveTab={setActiveTab} />
             </motion.div>
           )}
         </AnimatePresence>

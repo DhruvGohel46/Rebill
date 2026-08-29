@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime
 from typing import Dict, Any, Tuple
 from models import db, AgentConfig, AgentPermission, AgentActionLog
 from agents.tools import execute_read_tool, execute_mutating_tool
@@ -258,7 +259,12 @@ class PermissionGate:
 
     @classmethod
     def dispatch_tool(
-        cls, agent_name: str, tool_name: str, args: Dict[str, Any], actor_sub: str = "admin"
+        cls,
+        agent_name: str,
+        tool_name: str,
+        args: Dict[str, Any],
+        actor_sub: str = "admin",
+        user_message: str = "",
     ) -> Dict[str, Any]:
         """Dispatch a tool call through the permission gate and deletion policy."""
         if not cls.is_agent_system_enabled():
@@ -344,6 +350,7 @@ class PermissionGate:
                 tool_name=tool_name,
                 args_json=json.dumps(args),
                 diff_summary=diff_text,
+                user_message=user_message,
                 status="proposed",
                 performed_by=actor_sub,
             )
@@ -368,6 +375,7 @@ class PermissionGate:
             tool_name=tool_name,
             args_json=json.dumps(args),
             diff_summary=diff_text,
+            user_message=user_message,
             status="proposed",
             performed_by=actor_sub,
         )
@@ -379,6 +387,21 @@ class PermissionGate:
         if exec_res.get("success", False):
             action_log.status = "executed"
             action_log.result_summary = json.dumps(exec_res)
+            action_log.execution_timestamp = datetime.now()
+            
+            # Extract affected entity id if present
+            entity_id = (
+                exec_res.get("expense_id")
+                or exec_res.get("product_id")
+                or exec_res.get("worker_id")
+                or exec_res.get("bill_no")
+                or exec_res.get("reminder_id")
+                or exec_res.get("category_id")
+                or exec_res.get("group_id")
+            )
+            if entity_id:
+                action_log.affected_entity_id = str(entity_id)
+
             db.session.commit()
             return {
                 "action_id": action_log.id,

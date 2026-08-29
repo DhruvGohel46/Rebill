@@ -283,25 +283,25 @@ export const borderRadius = {
   full: '9999px',
 };
 
-// Shadows - Human Quality Depth
+// Shadows - Human Quality Depth with Crisp Light Theme Definition
 export const shadows = {
   none: 'none',
-  sm: '0 1px 1px rgba(0,0,0,0.01)',
-  base: '0 1px 1px rgba(0,0,0,0.01), 0 1px 2px rgba(0,0,0,0.02)',
-  md: '0 1px 2px -1px rgba(0, 0, 0, 0.02)',
-  lg: '0 2px 4px -2px rgba(0, 0, 0, 0.03)',
-  xl: '0 4px 8px -2px rgba(0, 0, 0, 0.04)',
-  '2xl': '0 6px 12px -4px rgba(0, 0, 0, 0.05)',
+  sm: '0 1px 2px 0 rgba(15, 23, 42, 0.05)',
+  base: '0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.04)',
+  md: '0 4px 6px -1px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.05)',
+  lg: '0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04)',
+  xl: '0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04)',
+  '2xl': '0 25px 50px -12px rgba(15, 23, 42, 0.15)',
 
-  // ReBill Signature Card Shadows (Tinted slate for premium soft volume)
-  card: '0 1px 2px rgba(0,0,0,0.02), 0 2px 4px rgba(0,0,0,0.03)',
-  cardHover: '0 4px 8px rgba(0,0,0,0.05), 0 0 0 1px rgba(255, 106, 0, 0.10)', // Minimal lift glow
+  // ReBill Signature Card Shadows (High contrast depth for rapid retail workflows)
+  card: '0 2px 8px -2px rgba(15, 23, 42, 0.08), 0 1px 3px -1px rgba(15, 23, 42, 0.05)',
+  cardHover: '0 8px 20px -4px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(255, 106, 0, 0.20)',
 
   // Dark Theme Shadows
   cardDark: '0 1px 0 rgba(255,255,255,0.01), 0 2px 8px rgba(0,0,0,0.20)',
   cardDarkHover: '0 6px 16px rgba(0,0,0,0.30), 0 0 0 1px rgba(255,106,0,0.15)', // Minimal lift glow
 
-  inner: 'inset 0 1px 2px 0 rgba(0, 0, 0, 0.03)',
+  inner: 'inset 0 1px 2px 0 rgba(15, 23, 42, 0.06)',
 
   // Colored shadows for accent elements
   primary: {
@@ -352,15 +352,15 @@ export const breakpoints = {
 // Glassmorphism tokens
 const glass = {
   light: {
-    sidebar: 'linear-gradient(135deg, rgba(255, 255, 255, 0.70) 0%, rgba(255, 255, 255, 0.30) 100%)',
-    card: 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.80) 40%, rgba(255, 255, 255, 0.50) 100%)',
-    modal: 'linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.85))',
-    input: 'rgba(0, 0, 0, 0.03)',
-    dropdown: 'rgba(255, 255, 255, 0.98)',
-    header: 'linear-gradient(135deg, rgba(255, 255, 255, 0.80), rgba(255, 255, 255, 0.40))',
-    border: 'rgba(255, 255, 255, 0.8)',
+    sidebar: '#FFFFFF',
+    card: '#FFFFFF',
+    modal: '#FFFFFF',
+    input: '#F8FAFC',
+    dropdown: '#FFFFFF',
+    header: '#FFFFFF',
+    border: '#E2E8F0',
     specular: 'rgba(255, 255, 255, 1)', // Brilliant top-left 3D highlight
-    blur: 'blur(4px)',
+    blur: 'none',
   },
   dark: {
     sidebar: 'linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01))',

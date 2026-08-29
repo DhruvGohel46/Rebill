@@ -110,6 +110,27 @@ def start_dashboard_refresher():
                         NotificationService.auto_cleanup()
                     except Exception as ce:
                         _log.warning("Notification cleanup error: %s", ce)
+
+                    # Purge completed agent graph checkpoints after 24 h;
+                    # expire stale waiting_approval checkpoints after 7 days.
+                    try:
+                        from models import AgentCheckpoint
+                        from datetime import timedelta
+                        cutoff_done = now - timedelta(hours=24)
+                        cutoff_expired = now - timedelta(days=7)
+                        AgentCheckpoint.query.filter(
+                            AgentCheckpoint.status == "done",
+                            AgentCheckpoint.updated_at <= cutoff_done,
+                        ).delete(synchronize_session=False)
+                        AgentCheckpoint.query.filter(
+                            AgentCheckpoint.status == "waiting_approval",
+                            AgentCheckpoint.updated_at <= cutoff_expired,
+                        ).update({"status": "expired"}, synchronize_session=False)
+                        db.session.commit()
+                    except Exception as ace:
+                        _log.debug("Agent checkpoint cleanup error: %s", ace)
+                        db.session.rollback()
+
                 except Exception as e:
                     _log.error("Reminder checker error: %s", e)
                     db.session.rollback()
@@ -308,6 +329,15 @@ def create_app(config_name="default"):
 
     # Register centralized error handlers (400, 404, 405, 409, 500)
     register_error_handlers(app)
+
+    # Automatically verify tables and programmatic column migrations on app initialization
+    with app.app_context():
+        try:
+            db.create_all()
+            run_programmatic_sqlite_migrations(app, db)
+            run_programmatic_postgres_migrations(app, db)
+        except Exception as e:
+            _log.error("Automatic startup DB schema verification error: %s", e)
 
     return app
 
@@ -669,8 +699,93 @@ def run_programmatic_sqlite_migrations(app, db):
                             "ALTER TABLE agent_action_logs ADD COLUMN estimated_cost REAL DEFAULT 0.0"
                         )
                     )
+                if "user_message" not in log_cols:
+                    _log.info("Migrating SQLite: Adding user_message to agent_action_logs")
+                    conn.execute(
+                        text("ALTER TABLE agent_action_logs ADD COLUMN user_message TEXT")
+                    )
+                if "affected_entity_id" not in log_cols:
+                    _log.info("Migrating SQLite: Adding affected_entity_id to agent_action_logs")
+                    conn.execute(
+                        text(
+                            "ALTER TABLE agent_action_logs ADD COLUMN affected_entity_id VARCHAR(100)"
+                        )
+                    )
+                if "execution_timestamp" not in log_cols:
+                    _log.info("Migrating SQLite: Adding execution_timestamp to agent_action_logs")
+                    conn.execute(
+                        text(
+                            "ALTER TABLE agent_action_logs ADD COLUMN execution_timestamp DATETIME"
+                        )
+                    )
+
+                # 10. Live Order View: merge_groups table + payment columns on bills + pending_revenue on daily_sales_summary
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS merge_groups (
+                        id TEXT PRIMARY KEY,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        created_by TEXT,
+                        member_bill_ids TEXT,
+                        total_amount FLOAT DEFAULT 0,
+                        amount_paid FLOAT DEFAULT 0,
+                        amount_pending FLOAT DEFAULT 0,
+                        status TEXT DEFAULT 'open',
+                        settled_at DATETIME
+                    )
+                """))
+                conn.execute(
+                    text("CREATE INDEX IF NOT EXISTS idx_merge_groups_status ON merge_groups(status)")
+                )
+
+                # Re-read bills columns (may have been read earlier, re-fetch to be safe)
+                res = conn.execute(text("PRAGMA table_info(bills)"))
+                bills_cols_v2 = [row[1] for row in res.fetchall()]
+
+                if "payment_status" not in bills_cols_v2:
+                    _log.info("Migrating SQLite: Adding payment_status column to bills")
+                    conn.execute(
+                        text("ALTER TABLE bills ADD COLUMN payment_status TEXT DEFAULT 'paid'")
+                    )
+                if "amount_paid" not in bills_cols_v2:
+                    _log.info("Migrating SQLite: Adding amount_paid column to bills")
+                    conn.execute(
+                        text("ALTER TABLE bills ADD COLUMN amount_paid FLOAT DEFAULT 0")
+                    )
+                if "amount_pending" not in bills_cols_v2:
+                    _log.info("Migrating SQLite: Adding amount_pending column to bills")
+                    conn.execute(
+                        text("ALTER TABLE bills ADD COLUMN amount_pending FLOAT DEFAULT 0")
+                    )
+                if "merge_group_id" not in bills_cols_v2:
+                    _log.info("Migrating SQLite: Adding merge_group_id column to bills")
+                    conn.execute(
+                        text("ALTER TABLE bills ADD COLUMN merge_group_id TEXT REFERENCES merge_groups(id)")
+                    )
+
+                # Backfill: existing bills are all fully paid
+                conn.execute(text("""
+                    UPDATE bills
+                    SET payment_status = 'paid',
+                        amount_paid = total_amount,
+                        amount_pending = 0
+                    WHERE payment_status IS NULL
+                """))
+
+                conn.execute(
+                    text("CREATE INDEX IF NOT EXISTS idx_bills_payment_status ON bills(payment_status)")
+                )
+
+                # Add pending_revenue to daily_sales_summary
+                res = conn.execute(text("PRAGMA table_info(daily_sales_summary)"))
+                dss_cols = [row[1] for row in res.fetchall()]
+                if "pending_revenue" not in dss_cols:
+                    _log.info("Migrating SQLite: Adding pending_revenue to daily_sales_summary")
+                    conn.execute(
+                        text("ALTER TABLE daily_sales_summary ADD COLUMN pending_revenue FLOAT DEFAULT 0")
+                    )
 
             _log.info("Programmatic SQLite migrations completed successfully")
+
     except Exception as e:
         _log.error("Error during programmatic SQLite migrations: %s", e)
 
@@ -804,6 +919,21 @@ def run_programmatic_postgres_migrations(app, db):
                 )
                 conn.execute(
                     text("ALTER TABLE workers ADD COLUMN IF NOT EXISTS salary_day INTEGER")
+                )
+
+                # 6. Add audit columns to agent_action_logs
+                conn.execute(
+                    text("ALTER TABLE agent_action_logs ADD COLUMN IF NOT EXISTS user_message TEXT")
+                )
+                conn.execute(
+                    text(
+                        "ALTER TABLE agent_action_logs ADD COLUMN IF NOT EXISTS affected_entity_id VARCHAR(100)"
+                    )
+                )
+                conn.execute(
+                    text(
+                        "ALTER TABLE agent_action_logs ADD COLUMN IF NOT EXISTS execution_timestamp TIMESTAMP"
+                    )
                 )
 
             _log.info("Programmatic PostgreSQL migrations completed successfully")

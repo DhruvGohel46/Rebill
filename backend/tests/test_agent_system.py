@@ -108,20 +108,45 @@ def test_suggest_and_confirm_flow(app_client):
 
         # Create another action and approve it
         dispatch_res2 = PermissionGate.dispatch_tool(
-            agent_name="reminder",
-            tool_name="propose_create_reminder",
-            args={"title": "Test Reminder", "reminder_time": "2026-08-15T18:00:00"},
+            agent_name="expense",
+            tool_name="propose_log_expense",
+            args={"title": "Milk Supply", "amount": 1200, "category": "Dairy"},
         )
+        assert dispatch_res2["status"] == "proposed"
         action_id2 = dispatch_res2["action_id"]
         approve_res = app_client.post(f"/api/agents/actions/{action_id2}/approve")
         assert approve_res.status_code == 200
         assert approve_res.get_json()["status"] == "executed"
+        assert approve_res.get_json()["affected_entity_id"] is not None
+
 
 
 def test_audit_logs_endpoint(app_client):
-    """Test retrieving audit logs."""
+    """Test retrieving audit logs with search, filtering, and export."""
     res = app_client.get("/api/agents/logs")
     assert res.status_code == 200
     data = res.get_json()
     assert "logs" in data
     assert data["count"] >= 1
+
+    # Test CSV Export
+    csv_res = app_client.get("/api/agents/logs/export?format=csv")
+    assert csv_res.status_code == 200
+    assert "text/csv" in csv_res.headers.get("Content-Type", "")
+    assert "Action ID" in csv_res.data.decode("utf-8")
+
+    # Test JSON Export
+    json_res = app_client.get("/api/agents/logs/export?format=json")
+    assert json_res.status_code == 200
+    json_data = json_res.get_json()
+    assert "logs" in json_data
+
+
+def test_interaction_audits_endpoint(app_client):
+    """Test retrieving interaction conversation audits."""
+    res = app_client.get("/api/agents/interactions")
+    assert res.status_code == 200
+    data = res.get_json()
+    assert "interactions" in data
+    assert "total_count" in data
+

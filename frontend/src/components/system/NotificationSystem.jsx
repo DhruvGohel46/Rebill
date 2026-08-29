@@ -2,6 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNotifications } from '../../context/NotificationContext';
 import { useReminders } from '../../context/ReminderContext';
+import { useTheme } from '../../context/ThemeContext';
 import {
   IoClose,
   IoAlertCircleOutline,
@@ -20,19 +21,20 @@ const getPopupIcon = (priority) => {
   }
 };
 
-const getBorderColor = (priority) => {
+const getBorderColor = (priority, isDark) => {
   switch (priority) {
     case 'critical':
-    case 'error': return 'rgba(239, 68, 68, 0.4)';
-    case 'warning': return 'rgba(245, 158, 11, 0.4)';
-    case 'success': return 'rgba(16, 185, 129, 0.4)';
-    default: return 'rgba(59, 130, 246, 0.4)';
+    case 'error': return isDark ? 'rgba(239, 68, 68, 0.4)' : '#FCA5A5';
+    case 'warning': return isDark ? 'rgba(245, 158, 11, 0.4)' : '#FCD34D';
+    case 'success': return isDark ? 'rgba(16, 185, 129, 0.4)' : '#86EFAC';
+    default: return isDark ? 'rgba(59, 130, 246, 0.4)' : '#93C5FD';
   }
 };
 
 const NotificationSystem = () => {
   const { activePopups, removePopup, markAsCompleted } = useNotifications();
   const { dismissReminder, fetchReminders } = useReminders();
+  const { isDark } = useTheme();
 
   const handleDoneClick = async (e, notif) => {
     e.stopPropagation();
@@ -71,11 +73,13 @@ const NotificationSystem = () => {
             style={{
               pointerEvents: 'auto',
               width: '360px',
-              background: '#0D0D0D',
-              border: `1.5px solid ${getBorderColor(notif.priority)}`,
+              background: isDark ? '#14161C' : '#FFFFFF',
+              border: `1.5px solid ${getBorderColor(notif.priority, isDark)}`,
               borderRadius: '16px',
               padding: '14px 16px',
-              boxShadow: '0 20px 48px rgba(0,0,0,0.85)',
+              boxShadow: isDark
+                ? '0 20px 48px rgba(0,0,0,0.85)'
+                : '0 12px 32px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.04)',
               display: 'flex',
               gap: '12px',
               alignItems: 'flex-start',
@@ -111,7 +115,7 @@ const NotificationSystem = () => {
               <div style={{
                 fontSize: '14px',
                 fontWeight: 700,
-                color: '#FFFFFF',
+                color: isDark ? '#FFFFFF' : '#0F172A',
                 lineHeight: 1.25,
                 marginBottom: '4px',
               }}>
@@ -119,7 +123,7 @@ const NotificationSystem = () => {
               </div>
               <div style={{
                 fontSize: '12.5px',
-                color: '#8E8E93',
+                color: isDark ? '#8E8E93' : '#475569',
                 lineHeight: 1.4,
               }}>
                 {notif.message}
@@ -140,6 +144,7 @@ const NotificationSystem = () => {
                       fontSize: '11px',
                       fontWeight: 700,
                       cursor: 'pointer',
+                      boxShadow: '0 2px 6px rgba(255, 122, 0, 0.3)',
                     }}
                   >
                     DONE
@@ -154,7 +159,7 @@ const NotificationSystem = () => {
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: '#666666',
+                color: isDark ? '#8E8E93' : '#64748B',
                 cursor: 'pointer',
                 padding: '2px',
                 borderRadius: '4px',

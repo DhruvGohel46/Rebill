@@ -1,620 +1,179 @@
-/* ─── Global Reminder Overlay ─────────────────────────────────────── */
+/* ─── Reminders Modern 24px Glass & Curve Styles ─── */
+
+.reminders-page-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  padding-bottom: 24px;
+}
+
+.reminders-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.reminders-search-icon {
+  position: absolute;
+  left: 14px;
+  color: #94A3B8;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.reminders-search-input {
+  width: 100%;
+  padding: 10px 14px 10px 42px !important;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.reminders-search-input:focus {
+  border-color: #FF6B1A !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 26, 0.18) !important;
+}
+
+/* Spinner */
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 107, 26, 0.2);
+  border-top-color: #FF6B1A;
+  border-radius: 50%;
+  animation: rem-spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+@keyframes rem-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Global Reminder Overlay & Alerts */
 .reminderOverlay {
-    position: fixed;
-    top: 24px;
-    right: 24px;
-    z-index: 10000;
-    pointer-events: none; /* Only cards are clickable */
-    width: 320px;
-    display: flex;
-    flex-direction: column;
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 10000;
+  pointer-events: none;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
 }
 
-/* ─── Notification Card ────────────────────────────────────────────── */
 .reminderAlertCard {
-    background: rgba(28, 33, 40, 0.82);
-    backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 28px;
-    padding: 20px;
-    box-shadow:
-        0 10px 30px rgba(0, 0, 0, 0.45),
-        inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    box-sizing: border-box;
-    width: 320px;
-    pointer-events: auto;
-    color: #ffffff;
-    overflow: hidden;
-    position: relative;
-}
-
-.reminderAlertCard::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 28px;
-    background: radial-gradient(120% 120% at 10% 0%, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.0) 60%);
-    pointer-events: none;
+  background: rgba(24, 25, 29, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 20px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
+  width: 320px;
+  pointer-events: auto;
+  color: #FFFFFF;
+  overflow: hidden;
+  position: relative;
 }
 
 .reminderAlertHeader {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
 }
 
 .reminderIconGlow {
-    width: 48px;
-    height: 48px;
-    background: linear-gradient(135deg, #f97316, #c2410c);
-    border-radius: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 5px 15px rgba(249, 115, 22, 0.4);
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #FF6B1A, #EA580C);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(255, 107, 26, 0.4);
 }
 
 .reminderTitleGroup {
-    flex: 1;
+  flex: 1;
 }
 
 .reminderTitle {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: -0.2px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
 }
 
 .reminderTimeLabel {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.5);
-    font-weight: 500;
+  font-size: 12px;
+  color: #94A3B8;
+  font-weight: 600;
 }
 
 .reminderDesc {
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.8);
-    line-height: 1.5;
-    margin: 0 0 20px 0;
+  font-size: 13px;
+  color: #CBD5E1;
+  line-height: 1.5;
+  margin: 0 0 16px 0;
 }
 
 .reminderActions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
 }
 
 .snoozeGroup {
-    display: flex;
-    gap: 6px;
+  display: flex;
+  gap: 6px;
 }
 
 .snoozeBtn {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-    padding: 6px 12px;
-    border-radius: 14px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+  padding: 6px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .dismissBtn {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #ffffff;
-    padding: 8px 16px;
-    border-radius: 16px;
-    font-size: 11px;
-    font-weight: 800;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    letter-spacing: 0.5px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  background: linear-gradient(135deg, #FF6B1A, #EA580C);
+  border: none;
+  color: #FFFFFF;
+  padding: 7px 16px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(255, 107, 26, 0.3);
 }
 
-.soundIndicator {
-    margin-top: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 11px;
-    color: #f97316;
-    font-weight: 700;
-}
-
-.soundWave {
-    width: 6px;
-    height: 6px;
-    background: #f97316;
-    border-radius: 50%;
-    animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.7); }
-    100% { transform: scale(3); opacity: 0; box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); }
-}
-
-@keyframes ringing {
-    0% { transform: rotate(0); }
-    10% { transform: rotate(15deg); }
-    20% { transform: rotate(-15deg); }
-    30% { transform: rotate(15deg); }
-    40% { transform: rotate(-15deg); }
-    50% { transform: rotate(0); }
-    100% { transform: rotate(0); }
-}
-
-.ringing {
-    animation: ringing 0.8s infinite ease-in-out;
-}
-
-/* ─── Management Dashboard ─────────────────────────────────────────── */
-.remindersHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--spacing-6);
-}
-
-.headerTitle {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-5);
-}
-
-.headerTitle h1 {
-    font-size: 28px;
-    font-weight: 800;
-    margin: 0;
-    letter-spacing: -0.5px;
-    background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.headerSubtitle {
-    margin: 4px 0 0 0;
-    font-size: 13px;
-    color: var(--text-muted);
-}
-
-/* ─── ZONE 1: Stats Bar ────────────────────────────────────────────── */
-.statsBar {
-    display: flex;
-    align-items: center;
-    gap: 32px;
-    background: var(--glass-card);
-    border: 1px solid var(--glass-border);
-    backdrop-filter: blur(10px);
-    padding: 12px 24px;
-    border-radius: 24px;
-    margin-bottom: var(--spacing-6);
-}
-
-.statBarItem {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.statBarItem span {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--text-secondary);
-}
-
-.statBarItem i, .statBarItem svg { opacity: 0.8; }
-.statBarItem svg.blue { color: #3b82f6; }
-.statBarItem svg.orange { color: #f97316; }
-.statBarItem svg.green { color: #22c55e; }
-
-.statDivider {
-    width: 1px;
-    height: 20px;
-    background: var(--glass-border);
-}
-
-.statBarItem.total span {
-    color: var(--primary-500);
-}
-
-/* ─── ZONE 2: Action Bar (Horizontal Form) ─────────────────────────── */
-.actionBar {
-    background: var(--glass-card);
-    border: 1px solid var(--glass-border);
-    border-radius: 24px;
-    padding: 12px 16px;
-    margin-bottom: var(--spacing-6);
-    position: relative;
-    z-index: 50;
-}
-
-.barForm {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-.barFormMain {
-    flex: 1;
-    display: flex;
-    gap: 12px;
-}
-
-.barField {
-    flex: 1;
-    min-width: 140px;
-}
-
-.barField.title { flex: 2; }
-.barField.date { min-width: 170px; }
-.barField.time { min-width: 130px; }
-.barField.repeat { min-width: 120px; }
-
-.barField input {
-    width: 100%;
-    background: rgba(0, 0, 0, 0.25) !important;
-    border: 1px solid var(--glass-border) !important;
-    border-radius: 18px !important;
-    color: var(--text-primary) !important;
-    padding: 12px 16px !important;
-    font-size: 14px !important;
-    height: 48px !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-
-/* Adapt for Global Components */
-.barField .barDatePicker, .barField .barTimePicker, .barField .barRepeatDropdown {
-    margin: 0 !important;
-}
-
-.barField .barDatePicker button, .barField .barTimePicker button {
-    height: 48px !important;
-    background: rgba(0, 0, 0, 0.25) !important;
-    border: 1px solid var(--glass-border) !important;
-    border-radius: 18px !important;
-}
-
-.barSubmitBtn {
-    height: 48px !important;
-    padding: 0 24px !important;
-    border-radius: 18px !important;
-    font-weight: 800 !important;
-    font-size: 13px !important;
-    background: var(--primary-500) !important;
-    color: white !important;
-    box-shadow: 0 4px 15px rgba(249, 115, 22, 0.2) !important;
-}
-
-/* ─── ZONE 3: Long Bar Queue ─────────────────────────────────────── */
-.queueZone {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    position: relative;
-    z-index: 6;
-}
-
-.queueHeader {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 10px;
-}
-
-.queueTitle {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: var(--text-primary);
-}
-
-.queueTitle h3 { margin: 0; font-size: 18px; font-weight: 700; opacity: 0.9; }
-
-.listFilters {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.filterTab {
-    padding: 8px 12px;
-    border-radius: 16px;
-    border: 1px solid var(--glass-border);
-    background: transparent;
-    color: var(--text-muted);
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.4px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.filterTab:hover {
-    color: var(--text-primary);
-    border-color: rgba(255,255,255,0.2);
-    background: rgba(255,255,255,0.04);
-}
-
-.filterTab.active {
-    color: #111827;
-    background: var(--primary-500);
-    border-color: var(--primary-500);
-}
-
-.longBarQueue {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.longBarItem {
-    background: var(--glass-card);
-    border: 1px solid var(--glass-border);
-    border-radius: 32px;
-    display: flex;
-    align-items: center;
-    padding: 12px 20px;
-    gap: 16px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-.longBarItem:hover {
-    transform: translateX(4px);
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.15);
-}
-
-.barStatusIndicator {
-    display: none;
-}
-
-.longBarItem.triggered .barStatusIndicator { background: #f97316; }
-.longBarItem.completed .barStatusIndicator { background: #22c55e; }
-
-.barLabel {
-    flex: 2.2;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-}
-
-.barLabel h4 {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.barLabel p {
-    margin: 0;
-    font-size: 12px;
-    color: var(--text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.barTime {
-    flex: 1.4;
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    font-size: 13px;
-    color: var(--text-secondary);
-    font-weight: 500;
-    min-width: 180px;
-    white-space: nowrap;
-}
-
-.barTimeRow {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.barTimeSep {
-    color: rgba(255, 255, 255, 0.35);
-    font-size: 14px;
-    line-height: 1;
-}
-
-.barTime svg { opacity: 0.6; color: var(--primary-500); }
-
-.barType {
-    flex: 0.7;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    min-width: 90px;
-    white-space: nowrap;
-}
-
-.barActions {
-    display: flex;
-    gap: 8px;
-}
-
-.iconAction {
-    width: 36px;
-    height: 36px;
-    border-radius: 16px;
-    border: 1px solid var(--glass-border);
-    background: transparent;
-    color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.iconAction:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text-primary);
-    transform: scale(1.05);
-}
-
-.iconAction.check:hover { color: #22c55e; border-color: #22c55e; }
-.iconAction.delete:hover { color: #ef4444; border-color: #ef4444; }
-
-.emptyQueueBar {
-    padding: 40px;
-    text-align: center;
-    background: rgba(0,0,0,0.1);
-    border: 1px dashed var(--glass-border);
-    border-radius: 24px;
-    color: var(--text-muted);
-    font-size: 14px;
-}
-
-.reminderItem {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 16px;
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 24px;
-    margin-bottom: 12px;
-    transition: all 0.2s;
-    border: 1px solid transparent;
-}
-
-.reminderItem:hover {
-    background: rgba(255, 255, 255, 0.07);
-    border-color: rgba(249, 115, 22, 0.2);
-}
-
-.itemIcon {
-    position: relative;
-    width: 44px;
-    height: 44px;
-    background: rgba(249, 115, 22, 0.1);
-    border-radius: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #f97316;
-}
-
-.statusIndicator {
-    position: absolute;
-    top: -2px;
-    right: -2px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    border: 2px solid #1a1f26;
-}
-
-.statusIndicator.pending { background: #3b82f6; }
-.statusIndicator.triggered { background: #f97316; animation: blink 1s infinite; }
-
-@keyframes blink { 
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-}
-
-.itemContent {
-    flex: 1;
-}
-
-.itemContent h4 {
-    margin: 0 0 4px 0;
-    font-size: 15px;
-}
-
-.itemContent p {
-    margin: 0;
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.5);
-}
-
-.spinning { animation: spin 1s infinite linear; }
-@keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
-
-/* ─── Light Theme Overrides ─────────────────────────────────────────── */
+/* Light Theme Overrides */
 [data-theme="light"] .reminderAlertCard {
-    background: rgba(255, 255, 255, 0.85);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
-    color: #111827;
+  background: #FFFFFF;
+  border: 1.5px solid #E2E8F0;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.1);
+  color: #0F172A;
 }
-[data-theme="light"] .reminderAlertCard::before {
-    background: radial-gradient(120% 120% at 10% 0%, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.0) 60%);
-}
-[data-theme="light"] .reminderTimeLabel {
-    color: rgba(17, 24, 39, 0.5);
-}
+
 [data-theme="light"] .reminderDesc {
-    color: rgba(17, 24, 39, 0.8);
+  color: #475569;
 }
-[data-theme="light"] .snoozeBtn,
-[data-theme="light"] .dismissBtn {
-    background: rgba(0, 0, 0, 0.05);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    color: #111827;
-}
-[data-theme="light"] .barField input,
-[data-theme="light"] .barField .barDatePicker button,
-[data-theme="light"] .barField .barTimePicker button {
-    background: rgba(0, 0, 0, 0.03) !important;
-    border: 1px solid rgba(0, 0, 0, 0.08) !important;
-    color: #111827 !important;
-}
-[data-theme="light"] .filterTab:hover {
-    color: #111827;
-    border-color: rgba(0, 0, 0, 0.15);
-    background: rgba(0, 0, 0, 0.04);
-}
-[data-theme="light"] .filterTab.active {
-    color: #ffffff;
-    background: var(--primary-500);
-}
-[data-theme="light"] .longBarItem:hover {
-    background: rgba(0, 0, 0, 0.03);
-    border-color: rgba(0, 0, 0, 0.1);
-}
-[data-theme="light"] .barTimeSep {
-    color: rgba(0, 0, 0, 0.25);
-}
-[data-theme="light"] .iconAction:hover {
-    background: rgba(0, 0, 0, 0.03);
-    color: var(--text-primary);
-}
-[data-theme="light"] .emptyQueueBar {
-    background: rgba(0, 0, 0, 0.02);
-}
-[data-theme="light"] .reminderItem {
-    background: rgba(0, 0, 0, 0.02);
-}
-[data-theme="light"] .reminderItem:hover {
-    background: rgba(0, 0, 0, 0.04);
-}
-[data-theme="light"] .statusIndicator {
-    border: 2px solid #ffffff;
-}
-[data-theme="light"] .itemContent p {
-    color: rgba(17, 24, 39, 0.6);
+
+[data-theme="light"] .snoozeBtn {
+  background: #F1F5F9;
+  border: 1.5px solid #CBD5E1;
+  color: #334155;
 }

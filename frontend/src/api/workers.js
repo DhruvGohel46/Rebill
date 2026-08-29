@@ -27,8 +27,9 @@ export const workerAPI = {
         return response.data;
     },
 
-    deleteWorker: async (id) => {
-        const response = await api.delete(`/api/workers/${id}`);
+    deleteWorker: async (id, options = {}) => {
+        const params = options.permanent ? { permanent: true } : {};
+        const response = await api.delete(`/api/workers/${id}`, { params });
         return response.data;
     },
 

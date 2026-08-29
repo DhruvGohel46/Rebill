@@ -215,7 +215,6 @@ const Settings = () => {
     });
     const [agentPermissions, setAgentPermissions] = useState([]);
     const [agentLogs, setAgentLogs] = useState([]);
-    const [usageSummary, setUsageSummary] = useState(null);
     const [testingConnection, setTestingConnection] = useState(false);
     const [agentSaving, setAgentSaving] = useState(false);
     const [logFilterAgent, setLogFilterAgent] = useState('');
@@ -223,11 +222,10 @@ const Settings = () => {
 
     const loadAgentData = useCallback(async () => {
         try {
-            const [configRes, permRes, logsRes, usageRes] = await Promise.all([
+            const [configRes, permRes, logsRes] = await Promise.all([
                 agentsAPI.getConfig(),
                 agentsAPI.getPermissions(),
-                agentsAPI.getAuditLogs({ limit: 50 }),
-                agentsAPI.getUsageSummary().catch(() => ({ success: false }))
+                agentsAPI.getAuditLogs({ limit: 50 })
             ]);
             if (configRes.success && configRes.config) {
                 setAgentConfig(prev => ({
@@ -248,9 +246,6 @@ const Settings = () => {
             }
             if (logsRes.success && logsRes.logs) {
                 setAgentLogs(logsRes.logs);
-            }
-            if (usageRes.success && usageRes.usage) {
-                setUsageSummary(usageRes.usage);
             }
         } catch (err) {
             console.error('Failed to load agent settings:', err);
@@ -1539,7 +1534,7 @@ const Settings = () => {
                                             <span className="stLabelTitle">Shop Timings</span>
                                             <span className="stLabelDesc">For automated stock alerts</span>
                                         </div>
-                                        <div style={{ display: 'flex', gap: '10px', maxWidth: '440px' }}>
+                                        <div style={{ display: 'flex', gap: '10px', maxWidth: '580px', width: '100%' }}>
                                             <div style={{ flex: 1 }}>
                                                 <GlobalTimePicker
                                                     value={formSettings.shop_open_time || ''}
@@ -2095,16 +2090,17 @@ const Settings = () => {
 
                         {activeTab === 'workers' && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                                <div style={{ marginBottom: '12px' }}>
-                                    <h2 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 8px 0' }}>Worker Configuration</h2>
-                                    <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>Manage salary settings and worker types</p>
+                                <div style={{ marginBottom: '4px' }}>
+                                    <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px 0' }}>Worker Configuration</h2>
+                                    <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', margin: 0 }}>Manage salary settings and worker types</p>
                                 </div>
 
                                 <div style={{
                                     padding: '24px',
-                                    background: 'var(--surface-primary)',
-                                    border: '1px solid var(--border-secondary)',
-                                    borderRadius: '12px',
+                                    background: isDark ? 'var(--surface-primary)' : '#FFFFFF',
+                                    border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1',
+                                    borderRadius: '16px',
+                                    boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     gap: '20px'
@@ -2119,16 +2115,16 @@ const Settings = () => {
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'space-between',
-                                        padding: '16px 18px',
-                                        background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-                                        border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
-                                        borderRadius: '12px'
+                                        padding: '16px 20px',
+                                        background: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC',
+                                        border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #CBD5E1',
+                                        borderRadius: '14px'
                                     }}>
                                         <div style={{ flex: 1, paddingRight: '16px' }}>
-                                            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                            <div style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
                                                 Use Common Salary Date For All Workers
                                             </div>
-                                            <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '3px' }}>
+                                            <div style={{ fontSize: '12.5px', color: 'var(--text-tertiary)', marginTop: '3px' }}>
                                                 {(formSettings.salary_date_mode || 'GLOBAL') === 'GLOBAL'
                                                     ? 'Enabled — All workers inherit a single global monthly salary date.'
                                                     : 'Disabled — Every worker has an independent salary date configured in their profile.'}
@@ -2156,7 +2152,7 @@ const Settings = () => {
                                                 width: '50px',
                                                 height: '28px',
                                                 borderRadius: '14px',
-                                                background: (formSettings.salary_date_mode || 'GLOBAL') === 'GLOBAL' ? '#F97316' : 'rgba(255,255,255,0.18)',
+                                                background: (formSettings.salary_date_mode || 'GLOBAL') === 'GLOBAL' ? 'linear-gradient(135deg, #FF8A00 0%, #FF6500 100%)' : (isDark ? 'rgba(255,255,255,0.18)' : '#CBD5E1'),
                                                 border: 'none',
                                                 cursor: 'pointer',
                                                 position: 'relative',
@@ -2187,7 +2183,7 @@ const Settings = () => {
                                                 exit={{ opacity: 0, y: -8 }}
                                                 transition={{ duration: 0.18 }}
                                             >
-                                                <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '8px' }}>Monthly Salary Date</label>
+                                                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Monthly Salary Date</label>
                                                 <div style={{ width: '100%' }}>
                                                     <GlobalDatePicker
                                                         value={(() => {
@@ -2220,10 +2216,10 @@ const Settings = () => {
                                                 exit={{ opacity: 0, y: -8 }}
                                                 transition={{ duration: 0.18 }}
                                                 style={{
-                                                    padding: '14px 16px',
-                                                    background: 'rgba(249, 115, 22, 0.08)',
-                                                    border: '1px solid rgba(249, 115, 22, 0.2)',
-                                                    borderRadius: '10px',
+                                                    padding: '14px 18px',
+                                                    background: isDark ? 'rgba(249, 115, 22, 0.08)' : '#FFF7ED',
+                                                    border: isDark ? '1px solid rgba(249, 115, 22, 0.2)' : '1px solid #FDBA74',
+                                                    borderRadius: '12px',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     gap: '12px'
@@ -2240,9 +2236,10 @@ const Settings = () => {
 
                                 <div style={{
                                     padding: '24px',
-                                    background: 'var(--surface-primary)',
-                                    border: '1px solid var(--border-secondary)',
-                                    borderRadius: '12px',
+                                    background: isDark ? 'var(--surface-primary)' : '#FFFFFF',
+                                    border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1',
+                                    borderRadius: '16px',
+                                    boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     gap: '16px'
@@ -2316,16 +2313,16 @@ const Settings = () => {
                                                     >
                                                         {editingWorkerType?.id === type.id && workerEditMode ? (
                                                             <div style={{
-                                                                padding: '16px',
-                                                                background: 'rgba(255,138,0,0.1)',
+                                                                padding: '18px',
+                                                                background: isDark ? 'rgba(255,138,0,0.08)' : '#FFF7ED',
                                                                 border: '1.5px dashed #FF8A00',
-                                                                borderRadius: '8px',
+                                                                borderRadius: '14px',
                                                                 display: 'flex',
                                                                 flexDirection: 'column',
                                                                 gap: '12px'
                                                             }}>
                                                                 <div>
-                                                                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                                                                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
                                                                         Name *
                                                                     </label>
                                                                     <input
@@ -2334,17 +2331,18 @@ const Settings = () => {
                                                                         onChange={(e) => setWorkerTypeForm({ ...workerTypeForm, name: e.target.value })}
                                                                         style={{
                                                                             width: '100%',
-                                                                            padding: '8px',
-                                                                            borderRadius: '4px',
-                                                                            border: '1px solid var(--border-secondary)',
-                                                                            background: 'var(--surface-secondary)',
+                                                                            padding: '10px 14px',
+                                                                            borderRadius: '10px',
+                                                                            border: isDark ? '1px solid var(--border-secondary)' : '1px solid #CBD5E1',
+                                                                            background: isDark ? 'var(--surface-secondary)' : '#FFFFFF',
                                                                             color: 'var(--text-primary)',
-                                                                            fontSize: '14px'
+                                                                            fontSize: '14px',
+                                                                            outline: 'none'
                                                                         }}
                                                                     />
                                                                 </div>
                                                                 <div>
-                                                                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                                                                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
                                                                         Description
                                                                     </label>
                                                                     <textarea
@@ -2353,13 +2351,14 @@ const Settings = () => {
                                                                         rows={2}
                                                                         style={{
                                                                             width: '100%',
-                                                                            padding: '8px',
-                                                                            borderRadius: '4px',
-                                                                            border: '1px solid var(--border-secondary)',
-                                                                            background: 'var(--surface-secondary)',
+                                                                            padding: '10px 14px',
+                                                                            borderRadius: '10px',
+                                                                            border: isDark ? '1px solid var(--border-secondary)' : '1px solid #CBD5E1',
+                                                                            background: isDark ? 'var(--surface-secondary)' : '#FFFFFF',
                                                                             color: 'var(--text-primary)',
                                                                             fontSize: '14px',
-                                                                            resize: 'vertical'
+                                                                            resize: 'vertical',
+                                                                            outline: 'none'
                                                                         }}
                                                                     />
                                                                 </div>
@@ -2370,21 +2369,21 @@ const Settings = () => {
                                                                         onChange={(e) => setWorkerTypeForm({ ...workerTypeForm, is_active: e.target.checked })}
                                                                         style={{ width: '16px', height: '16px' }}
                                                                     />
-                                                                    <label style={{ fontSize: '13px', color: 'var(--text-primary)' }}>Active</label>
+                                                                    <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>Active</label>
                                                                 </div>
                                                                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                                                     <Button
                                                                         onClick={() => setEditingWorkerType(null)}
                                                                         variant="secondary"
                                                                         size="sm"
-                                                                        style={{ height: '32px', padding: '0 12px' }}
+                                                                        style={{ height: '34px', padding: '0 14px' }}
                                                                     >
                                                                         Cancel
                                                                     </Button>
                                                                     <Button
                                                                         onClick={saveInlineWorkerType}
                                                                         size="sm"
-                                                                        style={{ height: '32px', padding: '0 12px' }}
+                                                                        style={{ height: '34px', padding: '0 14px' }}
                                                                     >
                                                                         Save
                                                                     </Button>
@@ -2393,15 +2392,16 @@ const Settings = () => {
                                                         ) : (
                                                             <div
                                                                 style={{
-                                                                    padding: '16px',
-                                                                    background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                                                                    border: workerEditMode ? '1.5px dashed #FF8A00' : '1px solid var(--border-secondary)',
-                                                                    borderRadius: '8px',
+                                                                    padding: '16px 20px',
+                                                                    background: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC',
+                                                                    border: workerEditMode ? '1.5px dashed #FF8A00' : (isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1'),
+                                                                    borderRadius: '14px',
                                                                     display: 'flex',
                                                                     justifyContent: 'space-between',
                                                                     alignItems: 'center',
                                                                     cursor: workerEditMode ? 'pointer' : 'default',
-                                                                    transition: 'all 0.2s'
+                                                                    transition: 'all 0.2s',
+                                                                    boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)'
                                                                 }}
                                                                 onClick={workerEditMode ? () => handleInlineWorkerTypeEdit(type) : undefined}
                                                             >
@@ -2414,7 +2414,7 @@ const Settings = () => {
                                                                             {type.description}
                                                                         </div>
                                                                     )}
-                                                                    <div style={{ fontSize: '12px', color: type.is_active ? 'var(--success-500)' : 'var(--error-500)', marginTop: '4px' }}>
+                                                                    <div style={{ fontSize: '12px', fontWeight: 600, color: type.is_active ? '#10B981' : '#EF4444', marginTop: '4px' }}>
                                                                         {type.is_active ? 'Active' : 'Inactive'}
                                                                     </div>
                                                                 </div>
@@ -2442,16 +2442,17 @@ const Settings = () => {
 
                         {activeTab === 'expenses' && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                                <div style={{ marginBottom: '24px' }}>
-                                    <h2 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 8px 0' }}>Expense Configuration</h2>
-                                    <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>Manage expense types for categorization</p>
+                                <div style={{ marginBottom: '4px' }}>
+                                    <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px 0' }}>Expense Configuration</h2>
+                                    <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', margin: 0 }}>Manage expense types for categorization</p>
                                 </div>
 
                                 <div style={{
                                     padding: '24px',
-                                    background: 'var(--surface-primary)',
-                                    border: '1px solid var(--border-secondary)',
-                                    borderRadius: '12px',
+                                    background: isDark ? 'var(--surface-primary)' : '#FFFFFF',
+                                    border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1',
+                                    borderRadius: '16px',
+                                    boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     gap: '16px'
@@ -2525,16 +2526,16 @@ const Settings = () => {
                                                 >
                                                     {editingExpenseType?.id === type.id && expenseEditMode ? (
                                                         <div style={{
-                                                            padding: '16px',
-                                                            background: 'rgba(255,138,0,0.1)',
+                                                            padding: '18px',
+                                                            background: isDark ? 'rgba(255,138,0,0.08)' : '#FFF7ED',
                                                             border: '1.5px dashed #FF8A00',
-                                                            borderRadius: '8px',
+                                                            borderRadius: '14px',
                                                             display: 'flex',
                                                             flexDirection: 'column',
                                                             gap: '12px'
                                                         }}>
                                                             <div>
-                                                                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                                                                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
                                                                     Name *
                                                                 </label>
                                                                 <input
@@ -2543,17 +2544,18 @@ const Settings = () => {
                                                                     onChange={(e) => setExpenseTypeForm({ ...expenseTypeForm, name: e.target.value })}
                                                                     style={{
                                                                         width: '100%',
-                                                                        padding: '8px',
-                                                                        borderRadius: '4px',
-                                                                        border: '1px solid var(--border-secondary)',
-                                                                        background: 'var(--surface-secondary)',
+                                                                        padding: '10px 14px',
+                                                                        borderRadius: '10px',
+                                                                        border: isDark ? '1px solid var(--border-secondary)' : '1px solid #CBD5E1',
+                                                                        background: isDark ? 'var(--surface-secondary)' : '#FFFFFF',
                                                                         color: 'var(--text-primary)',
-                                                                        fontSize: '14px'
+                                                                        fontSize: '14px',
+                                                                        outline: 'none'
                                                                     }}
                                                                 />
                                                             </div>
                                                             <div>
-                                                                <label style={{ display: 'block', fontSize: '12px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                                                                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
                                                                     Description
                                                                 </label>
                                                                 <textarea
@@ -2562,13 +2564,14 @@ const Settings = () => {
                                                                     rows={2}
                                                                     style={{
                                                                         width: '100%',
-                                                                        padding: '8px',
-                                                                        borderRadius: '4px',
-                                                                        border: '1px solid var(--border-secondary)',
-                                                                        background: 'var(--surface-secondary)',
+                                                                        padding: '10px 14px',
+                                                                        borderRadius: '10px',
+                                                                        border: isDark ? '1px solid var(--border-secondary)' : '1px solid #CBD5E1',
+                                                                        background: isDark ? 'var(--surface-secondary)' : '#FFFFFF',
                                                                         color: 'var(--text-primary)',
                                                                         fontSize: '14px',
-                                                                        resize: 'vertical'
+                                                                        resize: 'vertical',
+                                                                        outline: 'none'
                                                                     }}
                                                                 />
                                                             </div>
@@ -2579,21 +2582,21 @@ const Settings = () => {
                                                                     onChange={(e) => setExpenseTypeForm({ ...expenseTypeForm, is_active: e.target.checked })}
                                                                     style={{ width: '16px', height: '16px' }}
                                                                 />
-                                                                <label style={{ fontSize: '13px', color: 'var(--text-primary)' }}>Active</label>
+                                                                <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>Active</label>
                                                             </div>
                                                             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                                                                 <Button
                                                                     onClick={() => setEditingExpenseType(null)}
                                                                     variant="secondary"
                                                                     size="sm"
-                                                                    style={{ height: '32px', padding: '0 12px' }}
+                                                                    style={{ height: '34px', padding: '0 14px' }}
                                                                 >
                                                                     Cancel
                                                                 </Button>
                                                                 <Button
                                                                     onClick={saveInlineExpenseType}
                                                                     size="sm"
-                                                                    style={{ height: '32px', padding: '0 12px' }}
+                                                                    style={{ height: '34px', padding: '0 14px' }}
                                                                 >
                                                                     Save
                                                                 </Button>
@@ -2602,15 +2605,16 @@ const Settings = () => {
                                                     ) : (
                                                         <div
                                                             style={{
-                                                                padding: '16px',
-                                                                background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-                                                                border: expenseEditMode ? '1.5px dashed #FF8A00' : '1px solid var(--border-secondary)',
-                                                                borderRadius: '8px',
+                                                                padding: '16px 20px',
+                                                                background: isDark ? 'rgba(255,255,255,0.04)' : '#F8FAFC',
+                                                                border: expenseEditMode ? '1.5px dashed #FF8A00' : (isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1'),
+                                                                borderRadius: '14px',
                                                                 display: 'flex',
                                                                 justifyContent: 'space-between',
                                                                 alignItems: 'center',
                                                                 cursor: expenseEditMode ? 'pointer' : 'default',
-                                                                transition: 'all 0.2s'
+                                                                transition: 'all 0.2s',
+                                                                boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)'
                                                             }}
                                                             onClick={expenseEditMode ? () => handleInlineExpenseTypeEdit(type) : undefined}
                                                         >
@@ -2623,7 +2627,7 @@ const Settings = () => {
                                                                         {type.description}
                                                                     </div>
                                                                 )}
-                                                                <div style={{ fontSize: '12px', color: type.is_active ? 'var(--success-500)' : 'var(--error-500)', marginTop: '4px' }}>
+                                                                <div style={{ fontSize: '12px', fontWeight: 600, color: type.is_active ? '#10B981' : '#EF4444', marginTop: '4px' }}>
                                                                     {type.is_active ? 'Active' : 'Inactive'}
                                                                 </div>
                                                             </div>
@@ -2650,90 +2654,72 @@ const Settings = () => {
                         )}
 
                         {activeTab === 'security' && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
                                 {/* Page Header with Status Badge */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                                     <div>
-                                        <h2 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 8px 0' }}>Security & Access</h2>
-                                        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>Manage authentication and access controls</p>
+                                        <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px 0' }}>Security & Access</h2>
+                                        <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', margin: 0 }}>Manage authentication and access controls</p>
                                     </div>
                                     <div style={{
-                                        padding: '6px 12px',
+                                        padding: '6px 14px',
                                         borderRadius: '20px',
                                         fontSize: '12px',
-                                        fontWeight: 600,
+                                        fontWeight: 700,
                                         textTransform: 'uppercase',
                                         letterSpacing: '0.05em',
-                                        background: pinStatus.is_setup ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                        background: pinStatus.is_setup ? (isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5') : (isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEF2F2'),
                                         color: pinStatus.is_setup ? '#10B981' : '#EF4444',
-                                        border: pinStatus.is_setup ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)'
+                                        border: pinStatus.is_setup ? (isDark ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid #A7F3D0') : (isDark ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid #FECACA'),
+                                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
                                     }}>
-                                        {pinStatus.is_setup ? 'Secured' : 'Unsecured'}
+                                        {pinStatus.is_setup ? '● Secured' : '○ Unsecured'}
                                     </div>
                                 </div>
 
                                 {/* Warning Banner */}
                                 {formSettings.require_pin_login !== 'true' && (
                                     <div style={{
-                                        padding: '12px 16px',
-                                        background: 'rgba(239, 68, 68, 0.05)',
-                                        border: '1px solid rgba(239, 68, 68, 0.15)',
-                                        borderRadius: '8px',
-                                        fontSize: '13px',
-                                        color: 'var(--text-primary)'
+                                        padding: '14px 18px',
+                                        background: isDark ? 'rgba(239, 68, 68, 0.08)' : '#FEF2F2',
+                                        border: isDark ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid #FECACA',
+                                        borderRadius: '12px',
+                                        fontSize: '13.5px',
+                                        color: isDark ? '#FCA5A5' : '#B91C1C',
+                                        fontWeight: 500,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '10px'
                                     }}>
-                                        PIN requirement is disabled. Enable it to protect sensitive areas.
+                                        <span>⚠️</span>
+                                        <span>PIN requirement is disabled. Enable it to protect sensitive business areas and financial reports.</span>
                                     </div>
                                 )}
 
                                 {/* Settings Grid */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
                                     {/* Require PIN Toggle */}
                                     <div style={{
-                                        padding: '16px',
-                                        background: 'var(--surface-primary)',
-                                        border: '1px solid var(--border-secondary)',
-                                        borderRadius: '8px',
+                                        padding: '20px 24px',
+                                        background: isDark ? 'var(--surface-primary)' : '#FFFFFF',
+                                        border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1',
+                                        borderRadius: '16px',
+                                        boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)',
                                         display: 'flex',
                                         justifyContent: 'space-between',
                                         alignItems: 'center'
                                     }}>
                                         <div>
-                                            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Require PIN for Owner Role</div>
-                                            <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>Request PIN when switching to Owner role</div>
+                                            <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>Require PIN for Owner Role</div>
+                                            <div style={{ fontSize: '12.5px', color: 'var(--text-tertiary)', marginTop: '2px' }}>Request PIN when switching to Owner role</div>
                                         </div>
-                                        <label style={{
-                                            position: 'relative',
-                                            display: 'inline-block',
-                                            width: '44px',
-                                            height: '24px'
-                                        }}>
+                                        <label className="stToggle">
                                             <input
                                                 type="checkbox"
                                                 checked={formSettings.require_pin_login === 'true'}
                                                 onChange={(e) => handleChange('require_pin_login', e.target.checked ? 'true' : 'false')}
-                                                style={{ opacity: 0, width: 0, height: 0 }}
                                             />
-                                            <span style={{
-                                                position: 'absolute',
-                                                cursor: 'pointer',
-                                                top: 0, left: 0, right: 0, bottom: 0,
-                                                backgroundColor: formSettings.require_pin_login === 'true' ? 'var(--primary-500)' : 'var(--border-secondary)',
-                                                transition: '0.2s',
-                                                borderRadius: '24px'
-                                            }}>
-                                                <span style={{
-                                                    position: 'absolute',
-                                                    content: '""',
-                                                    height: '18px',
-                                                    width: '18px',
-                                                    left: formSettings.require_pin_login === 'true' ? '24px' : '3px',
-                                                    bottom: '3px',
-                                                    backgroundColor: 'white',
-                                                    transition: '0.2s',
-                                                    borderRadius: '50%'
-                                                }}></span>
-                                            </span>
+                                            <span className="stSlider"></span>
                                         </label>
                                     </div>
 
@@ -2741,21 +2727,22 @@ const Settings = () => {
                                     {formSettings.require_pin_login === 'true' && (
                                         <div style={{
                                             padding: '24px',
-                                            background: 'var(--surface-primary)',
-                                            border: '1px solid var(--border-secondary)',
-                                            borderRadius: '8px',
+                                            background: isDark ? 'var(--surface-primary)' : '#FFFFFF',
+                                            border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1',
+                                            borderRadius: '16px',
+                                            boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)',
                                             display: 'flex',
                                             flexDirection: 'column',
-                                            gap: '24px'
+                                            gap: '20px'
                                         }}>
                                             <div>
-                                                <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Authentication PIN</div>
+                                                <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Authentication PIN</div>
                                                 <div style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>Set or change your 4-6 digit security PIN</div>
                                             </div>
 
                                             {pinStatus.is_setup && pinStatus.enabled && formSettings.require_pin_login === 'true' && (
                                                 <div>
-                                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '8px' }}>Current PIN</label>
+                                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Current PIN</label>
                                                     <input
                                                         type="password"
                                                         inputMode="numeric"
@@ -2763,16 +2750,9 @@ const Settings = () => {
                                                         value={pinForm.currentPin}
                                                         onChange={e => handlePinChange('currentPin', e.target.value.replace(/\D/g, ''))}
                                                         placeholder="Enter existing PIN"
+                                                        className="stInput"
                                                         style={{
-                                                            width: '100%',
-                                                            maxWidth: '300px',
-                                                            padding: '10px 12px',
-                                                            background: 'var(--bg-primary)',
-                                                            border: '1px solid var(--border-secondary)',
-                                                            borderRadius: '6px',
-                                                            color: 'var(--text-primary)',
-                                                            fontSize: '14px',
-                                                            outline: 'none'
+                                                            maxWidth: '300px'
                                                         }}
                                                     />
                                                 </div>
@@ -2780,7 +2760,7 @@ const Settings = () => {
 
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                                                 <div>
-                                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '8px' }}>New PIN</label>
+                                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>New PIN</label>
                                                     <input
                                                         type="password"
                                                         inputMode="numeric"
@@ -2788,20 +2768,11 @@ const Settings = () => {
                                                         value={pinForm.newPin}
                                                         onChange={e => handlePinChange('newPin', e.target.value.replace(/\D/g, ''))}
                                                         placeholder="4–6 digits"
-                                                        style={{
-                                                            width: '100%',
-                                                            padding: '10px 12px',
-                                                            background: 'var(--bg-primary)',
-                                                            border: '1px solid var(--border-secondary)',
-                                                            borderRadius: '6px',
-                                                            color: 'var(--text-primary)',
-                                                            fontSize: '14px',
-                                                            outline: 'none'
-                                                        }}
+                                                        className="stInput"
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '8px' }}>Confirm PIN</label>
+                                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Confirm PIN</label>
                                                     <input
                                                         type="password"
                                                         inputMode="numeric"
@@ -2809,27 +2780,18 @@ const Settings = () => {
                                                         value={pinForm.confirmPin}
                                                         onChange={e => handlePinChange('confirmPin', e.target.value.replace(/\D/g, ''))}
                                                         placeholder="Repeat PIN"
-                                                        style={{
-                                                            width: '100%',
-                                                            padding: '10px 12px',
-                                                            background: 'var(--bg-primary)',
-                                                            border: '1px solid var(--border-secondary)',
-                                                            borderRadius: '6px',
-                                                            color: 'var(--text-primary)',
-                                                            fontSize: '14px',
-                                                            outline: 'none'
-                                                        }}
+                                                        className="stInput"
                                                     />
                                                 </div>
                                             </div>
 
-                                            <div style={{ display: 'flex', gap: '12px', paddingTop: '8px', borderTop: '1px solid var(--border-secondary)', marginTop: '8px' }}>
+                                            <div style={{ display: 'flex', gap: '12px', paddingTop: '12px', borderTop: isDark ? '1px solid var(--border-secondary)' : '1px solid #F1F5F9', marginTop: '4px' }}>
                                                 <Button
                                                     variant="primary"
                                                     onClick={handleSavePinChange}
                                                     loading={pinSaving}
                                                     disabled={!pinForm.newPin || !pinForm.confirmPin || pinSaving}
-                                                    style={{ height: '36px' }}
+                                                    style={{ height: '38px', padding: '0 18px' }}
                                                 >
                                                     {pinSaving ? 'Saving...' : pinStatus.is_setup ? 'Update PIN' : 'Set PIN'}
                                                 </Button>
@@ -2839,7 +2801,7 @@ const Settings = () => {
                                                         variant="secondary"
                                                         onClick={handleResetPin}
                                                         disabled={pinSaving}
-                                                        style={{ height: '36px' }}
+                                                        style={{ height: '38px', padding: '0 18px' }}
                                                     >
                                                         Reset
                                                     </Button>
@@ -2850,22 +2812,25 @@ const Settings = () => {
 
                                     {/* Protected Areas Info */}
                                     <div style={{
-                                        padding: '16px',
-                                        background: 'var(--surface-primary)',
-                                        border: '1px solid var(--border-secondary)',
-                                        borderRadius: '8px'
+                                        padding: '20px 24px',
+                                        background: isDark ? 'var(--surface-primary)' : '#FFFFFF',
+                                        border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1',
+                                        borderRadius: '16px',
+                                        boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)'
                                     }}>
-                                        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '12px' }}>Protected Areas</div>
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                            {['Inventory', 'Analytics', 'Settings', 'Worker Records'].map((item, idx) => (
+                                        <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '12px' }}>Protected Areas (Restricted to Owner)</div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                                            {['Inventory Management', 'Sales & Analytics', 'Store Settings', 'Worker Payroll Records'].map((item, idx) => (
                                                 <span key={idx} style={{
-                                                    padding: '4px 10px',
-                                                    background: 'var(--bg-secondary)',
-                                                    borderRadius: '4px',
-                                                    fontSize: '12px',
-                                                    color: 'var(--text-tertiary)'
+                                                    padding: '6px 14px',
+                                                    background: isDark ? 'var(--bg-secondary)' : '#F1F5F9',
+                                                    border: isDark ? '1px solid #3A3E48' : '1px solid #CBD5E1',
+                                                    borderRadius: '10px',
+                                                    fontSize: '12.5px',
+                                                    fontWeight: 600,
+                                                    color: isDark ? '#E2E8F0' : '#334155'
                                                 }}>
-                                                    {item}
+                                                    🔒 {item}
                                                 </span>
                                             ))}
                                         </div>
@@ -2885,9 +2850,9 @@ const Settings = () => {
                                     {/* Data Safety & Privacy Guarantee Banner */}
                                     <div style={{
                                         padding: '16px 20px',
-                                        borderRadius: '12px',
-                                        background: isDark ? 'rgba(249, 115, 22, 0.08)' : 'rgba(249, 115, 22, 0.06)',
-                                        border: '1px solid rgba(249, 115, 22, 0.25)',
+                                        borderRadius: '14px',
+                                        background: isDark ? 'rgba(249, 115, 22, 0.08)' : '#FFF7ED',
+                                        border: isDark ? '1px solid rgba(249, 115, 22, 0.25)' : '1px solid #FDBA74',
                                         display: 'flex',
                                         alignItems: 'flex-start',
                                         gap: '14px',
@@ -2905,10 +2870,11 @@ const Settings = () => {
 
                                     {/* Master Agent Switch */}
                                     <div style={{
-                                        padding: '20px',
-                                        borderRadius: '12px',
-                                        background: 'var(--surface-primary)',
-                                        border: '1px solid var(--border-secondary)',
+                                        padding: '20px 24px',
+                                        borderRadius: '16px',
+                                        background: isDark ? 'var(--surface-primary)' : '#FFFFFF',
+                                        border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1',
+                                        boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'space-between',
@@ -2917,31 +2883,32 @@ const Settings = () => {
                                             <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
                                                 Master Agent Kill Switch
                                             </div>
-                                            <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                                            <div style={{ fontSize: '12.5px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
                                                 Instantly activate or deactivate all autonomous agent features across the entire system.
                                             </div>
                                         </div>
-                                        <label className="stToggleSwitch" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <label className="stToggle">
                                             <input
                                                 type="checkbox"
                                                 checked={agentConfig.enabled}
                                                 onChange={(e) => setAgentConfig(prev => ({ ...prev, enabled: e.target.checked }))}
                                             />
-                                            <span className="stToggleSlider"></span>
+                                            <span className="stSlider"></span>
                                         </label>
                                     </div>
 
                                     {/* Card 1 — Connect */}
                                     <div style={{
-                                        padding: '20px',
-                                        borderRadius: '12px',
-                                        background: 'var(--surface-primary)',
-                                        border: '1px solid var(--border-secondary)',
+                                        padding: '24px',
+                                        borderRadius: '16px',
+                                        background: isDark ? 'var(--surface-primary)' : '#FFFFFF',
+                                        border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1',
+                                        boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)',
                                     }}>
-                                        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>
+                                        <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>
                                             Card 1 — Connect
                                         </div>
-                                        <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '16px' }}>
+                                        <div style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginBottom: '18px' }}>
                                             Configure your LLM provider credentials. This one model applies to all agents throughout the entire system.
                                         </div>
 
@@ -2999,7 +2966,7 @@ const Settings = () => {
                                             </div>
                                         )}
 
-                                        <div className="stFormGroup" style={{ marginBottom: '16px' }}>
+                                        <div className="stFormGroup" style={{ marginBottom: '18px' }}>
                                             <div className="stLabel">
                                                 <span className="stLabelTitle">API Key</span>
                                                 <span className="stLabelDesc">
@@ -3015,11 +2982,12 @@ const Settings = () => {
                                             />
                                         </div>
 
-                                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                                             <Button
                                                 variant="secondary"
                                                 onClick={handleTestLlmConnection}
                                                 loading={testingConnection}
+                                                style={{ height: '38px' }}
                                             >
                                                 Test Connection
                                             </Button>
@@ -3027,6 +2995,7 @@ const Settings = () => {
                                                 variant="primary"
                                                 onClick={handleSaveAgentConfig}
                                                 loading={agentSaving}
+                                                style={{ height: '38px' }}
                                             >
                                                 Save AI Configuration
                                             </Button>
@@ -3035,31 +3004,33 @@ const Settings = () => {
 
                                     {/* Card 2 — What can it do without asking me? */}
                                     <div style={{
-                                        padding: '20px',
-                                        borderRadius: '12px',
-                                        background: 'var(--surface-primary)',
-                                        border: '1px solid var(--border-secondary)',
+                                        padding: '24px',
+                                        borderRadius: '16px',
+                                        background: isDark ? 'var(--surface-primary)' : '#FFFFFF',
+                                        border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1',
+                                        boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)',
                                     }}>
-                                        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>
+                                        <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>
                                             Card 2 — What can it do without asking me?
                                         </div>
-                                        <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '16px' }}>
+                                        <div style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginBottom: '18px' }}>
                                             Choose how autonomously the AI assistant operates before executing changes.
                                         </div>
 
                                         {/* Presets Radio Options */}
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '18px' }}>
                                             <label
                                                 style={{
                                                     display: 'flex',
                                                     alignItems: 'flex-start',
                                                     gap: '12px',
-                                                    padding: '14px 16px',
-                                                    borderRadius: '10px',
-                                                    background: currentPreset === 'ask_always' ? 'rgba(249, 115, 22, 0.08)' : 'var(--bg-secondary)',
-                                                    border: currentPreset === 'ask_always' ? '1px solid #F97316' : '1px solid var(--border-secondary)',
+                                                    padding: '16px 18px',
+                                                    borderRadius: '12px',
+                                                    background: currentPreset === 'ask_always' ? (isDark ? 'rgba(249, 115, 22, 0.12)' : '#FFF7ED') : (isDark ? 'var(--bg-secondary)' : '#F8FAFC'),
+                                                    border: currentPreset === 'ask_always' ? '1.5px solid #FF8A00' : (isDark ? '1px solid var(--border-secondary)' : '1px solid #CBD5E1'),
                                                     cursor: 'pointer',
-                                                    transition: 'all 0.15s ease'
+                                                    transition: 'all 0.15s ease',
+                                                    boxShadow: currentPreset === 'ask_always' ? '0 2px 8px rgba(255, 138, 0, 0.15)' : 'none'
                                                 }}
                                                 onClick={() => handleApplyPreset('ask_always')}
                                             >
@@ -3068,13 +3039,13 @@ const Settings = () => {
                                                     name="agent_preset"
                                                     checked={currentPreset === 'ask_always'}
                                                     onChange={() => handleApplyPreset('ask_always')}
-                                                    style={{ marginTop: '3px', cursor: 'pointer' }}
+                                                    style={{ marginTop: '3px', cursor: 'pointer', accentColor: '#FF8A00' }}
                                                 />
                                                 <div>
-                                                    <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                                    <div style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
                                                         Ask me before anything changes (default)
                                                     </div>
-                                                    <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                                                    <div style={{ fontSize: '12.5px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
                                                         Every agent prepares draft actions as Suggest & Confirm cards. Nothing in the database changes until you click Approve.
                                                     </div>
                                                 </div>
@@ -3085,12 +3056,13 @@ const Settings = () => {
                                                     display: 'flex',
                                                     alignItems: 'flex-start',
                                                     gap: '12px',
-                                                    padding: '14px 16px',
-                                                    borderRadius: '10px',
-                                                    background: currentPreset === 'small_auto' ? 'rgba(249, 115, 22, 0.08)' : 'var(--bg-secondary)',
-                                                    border: currentPreset === 'small_auto' ? '1px solid #F97316' : '1px solid var(--border-secondary)',
+                                                    padding: '16px 18px',
+                                                    borderRadius: '12px',
+                                                    background: currentPreset === 'small_auto' ? (isDark ? 'rgba(249, 115, 22, 0.12)' : '#FFF7ED') : (isDark ? 'var(--bg-secondary)' : '#F8FAFC'),
+                                                    border: currentPreset === 'small_auto' ? '1.5px solid #FF8A00' : (isDark ? '1px solid var(--border-secondary)' : '1px solid #CBD5E1'),
                                                     cursor: 'pointer',
-                                                    transition: 'all 0.15s ease'
+                                                    transition: 'all 0.15s ease',
+                                                    boxShadow: currentPreset === 'small_auto' ? '0 2px 8px rgba(255, 138, 0, 0.15)' : 'none'
                                                 }}
                                                 onClick={() => handleApplyPreset('small_auto')}
                                             >
@@ -3099,13 +3071,13 @@ const Settings = () => {
                                                     name="agent_preset"
                                                     checked={currentPreset === 'small_auto'}
                                                     onChange={() => handleApplyPreset('small_auto')}
-                                                    style={{ marginTop: '3px', cursor: 'pointer' }}
+                                                    style={{ marginTop: '3px', cursor: 'pointer', accentColor: '#FF8A00' }}
                                                 />
                                                 <div>
-                                                    <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                                    <div style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
                                                         Let it handle small stuff automatically
                                                     </div>
-                                                    <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                                                    <div style={{ fontSize: '12.5px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
                                                         Reminders and Analytics execute automatically. Billing, inventory adjustments, menu updates, and expenses still ask for confirmation.
                                                     </div>
                                                 </div>
@@ -3114,16 +3086,16 @@ const Settings = () => {
 
                                         {/* Non-negotiable ceiling banner */}
                                         <div style={{
-                                            fontSize: '11.5px',
-                                            color: 'var(--text-tertiary)',
-                                            padding: '8px 12px',
-                                            borderRadius: '6px',
-                                            background: 'var(--bg-secondary)',
-                                            border: '1px solid var(--border-secondary)',
-                                            marginBottom: '14px',
+                                            fontSize: '12px',
+                                            color: isDark ? '#E2E8F0' : '#475569',
+                                            padding: '10px 14px',
+                                            borderRadius: '10px',
+                                            background: isDark ? 'rgba(255,255,255,0.04)' : '#F1F5F9',
+                                            border: isDark ? '1px solid var(--border-secondary)' : '1px solid #CBD5E1',
+                                            marginBottom: '16px',
                                             display: 'flex',
                                             alignItems: 'center',
-                                            gap: '6px'
+                                            gap: '8px'
                                         }}>
                                             🔒 <span><strong>Non-negotiable ceiling:</strong> Payroll disbursement, old-bill voids, and hard deletes always require explicit owner confirmation regardless of preset.</span>
                                         </div>
@@ -3136,11 +3108,11 @@ const Settings = () => {
                                                 style={{
                                                     background: 'none',
                                                     border: 'none',
-                                                    color: '#F97316',
-                                                    fontSize: '13px',
+                                                    color: '#FF8A00',
+                                                    fontSize: '13.5px',
                                                     fontWeight: 600,
                                                     cursor: 'pointer',
-                                                    padding: '4px 0',
+                                                    padding: '6px 0',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     gap: '6px'
@@ -3151,30 +3123,30 @@ const Settings = () => {
                                             </button>
 
                                             {showAdvancedTiers && (
-                                                <div style={{ marginTop: '14px', overflowX: 'auto' }}>
+                                                <div style={{ marginTop: '16px', overflowX: 'auto', borderRadius: '12px', border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1' }}>
                                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                                                         <thead>
-                                                            <tr style={{ borderBottom: '1px solid var(--border-secondary)', textAlign: 'left' }}>
-                                                                <th style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>Domain Agent</th>
-                                                                <th style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>Capabilities</th>
-                                                                <th style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>Action Tier</th>
-                                                                <th style={{ padding: '10px 12px', color: 'var(--text-secondary)', textAlign: 'center' }}>Enabled</th>
+                                                            <tr style={{ background: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC', borderBottom: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1', textAlign: 'left' }}>
+                                                                <th style={{ padding: '12px 14px', color: 'var(--text-secondary)', fontWeight: 600 }}>Domain Agent</th>
+                                                                <th style={{ padding: '12px 14px', color: 'var(--text-secondary)', fontWeight: 600 }}>Capabilities</th>
+                                                                <th style={{ padding: '12px 14px', color: 'var(--text-secondary)', fontWeight: 600 }}>Action Tier</th>
+                                                                <th style={{ padding: '12px 14px', color: 'var(--text-secondary)', fontWeight: 600, textAlign: 'center' }}>Enabled</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             {agentPermissions.map((perm) => {
                                                                 const isCeiling = perm.is_ceiling_locked;
                                                                 return (
-                                                                    <tr key={perm.agent_name} style={{ borderBottom: '1px solid var(--border-secondary)' }}>
-                                                                        <td style={{ padding: '12px', fontWeight: 600, color: 'var(--text-primary)', textTransform: 'capitalize' }}>
+                                                                    <tr key={perm.agent_name} style={{ borderBottom: isDark ? '1px solid #2C2F36' : '1px solid #E2E8F0' }}>
+                                                                        <td style={{ padding: '12px 14px', fontWeight: 600, color: 'var(--text-primary)', textTransform: 'capitalize' }}>
                                                                             {perm.agent_name}
                                                                             {isCeiling && (
-                                                                                <span style={{ marginLeft: '6px', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(239, 68, 68, 0.15)', color: '#EF4444' }}>
+                                                                                <span style={{ marginLeft: '6px', fontSize: '10px', padding: '2px 6px', borderRadius: '6px', background: 'rgba(239, 68, 68, 0.15)', color: '#EF4444', fontWeight: 600 }}>
                                                                                     Ceiling Locked
                                                                                 </span>
                                                                             )}
                                                                         </td>
-                                                                        <td style={{ padding: '12px', color: 'var(--text-tertiary)', fontSize: '12px' }}>
+                                                                        <td style={{ padding: '12px 14px', color: 'var(--text-tertiary)', fontSize: '12px' }}>
                                                                             {perm.agent_name === 'billing' && 'Product lookup, receipt drafts, same-day voids'}
                                                                             {perm.agent_name === 'inventory' && 'Stock inquiries, adjustments, threshold updates'}
                                                                             {perm.agent_name === 'product' && 'Menu item CRUD, variations, group toggles'}
@@ -3183,7 +3155,7 @@ const Settings = () => {
                                                                             {perm.agent_name === 'analytics' && 'Sales summary, payment breakdown (Read-Only)'}
                                                                             {perm.agent_name === 'reminder' && 'Task scheduling, snoozing, alerts'}
                                                                         </td>
-                                                                        <td style={{ padding: '12px', minWidth: '220px' }}>
+                                                                        <td style={{ padding: '12px 14px', minWidth: '220px' }}>
                                                                             <GlobalSelect
                                                                                 options={[
                                                                                     { value: 'read_only', label: 'Read-Only (No Modifications)' },
@@ -3195,11 +3167,12 @@ const Settings = () => {
                                                                                 style={{ width: '100%' }}
                                                                             />
                                                                         </td>
-                                                                        <td style={{ padding: '12px', textAlign: 'center' }}>
+                                                                        <td style={{ padding: '12px 14px', textAlign: 'center' }}>
                                                                             <input
                                                                                 type="checkbox"
                                                                                 checked={perm.enabled}
                                                                                 onChange={(e) => handleToggleAgentEnabled(perm.agent_name, e.target.checked)}
+                                                                                style={{ width: '16px', height: '16px', accentColor: '#FF8A00' }}
                                                                             />
                                                                         </td>
                                                                     </tr>
@@ -3214,74 +3187,51 @@ const Settings = () => {
 
                                     {/* Card 3 — Usage today */}
                                     <div style={{
-                                        padding: '20px',
-                                        borderRadius: '12px',
-                                        background: 'var(--surface-primary)',
-                                        border: '1px solid var(--border-secondary)',
+                                        padding: '24px',
+                                        borderRadius: '16px',
+                                        background: isDark ? 'var(--surface-primary)' : '#FFFFFF',
+                                        border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1',
+                                        boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)',
                                     }}>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                                             <div>
-                                                <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    Card 3 — Usage today
-                                                    <span style={{ fontSize: '10.5px', padding: '2px 8px', borderRadius: '4px', background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', fontWeight: 600 }}>
-                                                        ⚡ Zero-Cost Fast-Path Active
-                                                    </span>
-                                                </div>
-                                                <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
-                                                    Clear, real-time breakdown of tokens used and estimated provider API expenses today.
+                                                <h4 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+                                                    AI Engine & Multi-Agent Status
+                                                </h4>
+                                                <div style={{ fontSize: '12.5px', color: 'var(--text-tertiary)', marginTop: '2px' }}>
+                                                    Real-time status and operational health of Your Business AI.
                                                 </div>
                                             </div>
-                                            <Button variant="secondary" onClick={loadAgentData} style={{ height: '32px', fontSize: '12px' }}>
-                                                Refresh Usage
+                                            <Button variant="secondary" onClick={loadAgentData} style={{ height: '34px', fontSize: '12px' }}>
+                                                Refresh Status
                                             </Button>
                                         </div>
 
                                         {/* Informative Verbal Summary */}
                                         <div style={{
-                                            padding: '12px 16px',
-                                            marginBottom: '16px',
-                                            borderRadius: '8px',
-                                            background: 'rgba(59, 130, 246, 0.08)',
-                                            border: '1px solid rgba(59, 130, 246, 0.25)',
+                                            padding: '14px 18px',
+                                            marginBottom: '20px',
+                                            borderRadius: '12px',
+                                            background: isDark ? 'rgba(255, 107, 26, 0.08)' : '#FFF7ED',
+                                            border: isDark ? '1px solid rgba(255, 107, 26, 0.25)' : '1px solid #FDBA74',
                                             color: 'var(--text-primary)',
                                             fontSize: '13px',
-                                            lineHeight: '1.5'
+                                            lineHeight: '1.55'
                                         }}>
-                                            💡 <strong>Today's Token Consumption:</strong> You have consumed <strong>{usageSummary ? (usageSummary.total_input_tokens + usageSummary.total_output_tokens).toLocaleString() : 0} tokens</strong> ({usageSummary ? usageSummary.total_input_tokens.toLocaleString() : 0} input / {usageSummary ? usageSummary.total_output_tokens.toLocaleString() : 0} output) across <strong>{usageSummary ? usageSummary.requests_count : 0} requests</strong> today, with an estimated cost of <strong>${usageSummary ? (usageSummary.estimated_cost_usd || 0).toFixed(4) : '0.0000'} USD</strong>.
+                                            ⚡ <strong>Your Business AI:</strong> Connected and optimized for enterprise operations (handling 10,000+ daily orders with real-time multi-agent intelligence and automated audits).
                                         </div>
 
                                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-                                            <div style={{ padding: '14px', background: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--border-secondary)' }}>
-                                                <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Requests Today</div>
-                                                <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '4px' }}>
-                                                    {usageSummary ? usageSummary.requests_count : 0} requests
-                                                </div>
-                                            </div>
-
-                                            <div style={{ padding: '14px', background: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--border-secondary)' }}>
-                                                <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Tokens Consumed Today</div>
-                                                <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '4px' }}>
-                                                    {usageSummary ? (usageSummary.total_input_tokens + usageSummary.total_output_tokens).toLocaleString() : 0}
-                                                </div>
-                                            </div>
-
-                                            <div style={{ padding: '14px', background: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--border-secondary)' }}>
-                                                <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Est. Spend Today (USD)</div>
-                                                <div style={{ fontSize: '18px', fontWeight: 700, color: '#10B981', marginTop: '4px' }}>
-                                                    ${usageSummary ? (usageSummary.estimated_cost_usd || 0).toFixed(4) : '0.0000'}
-                                                </div>
-                                            </div>
-
-                                            <div style={{ padding: '14px', background: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--border-secondary)' }}>
-                                                <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Optimization Engine</div>
-                                                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginTop: '6px' }}>
+                                            <div style={{ padding: '14px 16px', background: isDark ? 'var(--bg-secondary)' : '#F8FAFC', borderRadius: '12px', border: isDark ? '1px solid var(--border-secondary)' : '1px solid #CBD5E1' }}>
+                                                <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Optimization Engine</div>
+                                                <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-secondary)', marginTop: '6px' }}>
                                                     Rolling 6-turn + Tool Caching
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* Collapsible Audit Log Section */}
-                                        <div style={{ borderTop: '1px solid var(--border-secondary)', paddingTop: '16px' }}>
+                                        <div style={{ borderTop: isDark ? '1px solid var(--border-secondary)' : '1px solid #E2E8F0', paddingTop: '16px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                                 <button
                                                     type="button"
@@ -3342,23 +3292,23 @@ const Settings = () => {
                                             </div>
 
                                             {showAuditLogs && (
-                                                <div style={{ marginTop: '12px', maxHeight: '300px', overflowY: 'auto' }}>
+                                                <div style={{ marginTop: '14px', maxHeight: '300px', overflowY: 'auto', borderRadius: '12px', border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1' }}>
                                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                                                         <thead>
-                                                            <tr style={{ borderBottom: '1px solid var(--border-secondary)', textAlign: 'left' }}>
-                                                                <th style={{ padding: '8px 10px', color: 'var(--text-secondary)' }}>Timestamp</th>
-                                                                <th style={{ padding: '8px 10px', color: 'var(--text-secondary)' }}>Agent</th>
-                                                                <th style={{ padding: '8px 10px', color: 'var(--text-secondary)' }}>Action Diff</th>
-                                                                <th style={{ padding: '8px 10px', color: 'var(--text-secondary)' }}>Tokens</th>
-                                                                <th style={{ padding: '8px 10px', color: 'var(--text-secondary)' }}>Est. Cost</th>
-                                                                <th style={{ padding: '8px 10px', color: 'var(--text-secondary)' }}>Status</th>
-                                                                <th style={{ padding: '8px 10px', color: 'var(--text-secondary)' }}>Actor</th>
+                                                            <tr style={{ background: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC', borderBottom: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1', textAlign: 'left' }}>
+                                                                <th style={{ padding: '10px 12px', color: 'var(--text-secondary)', fontWeight: 600 }}>Timestamp</th>
+                                                                <th style={{ padding: '10px 12px', color: 'var(--text-secondary)', fontWeight: 600 }}>Agent</th>
+                                                                <th style={{ padding: '10px 12px', color: 'var(--text-secondary)', fontWeight: 600 }}>Action Diff</th>
+                                                                <th style={{ padding: '10px 12px', color: 'var(--text-secondary)', fontWeight: 600 }}>Tokens</th>
+                                                                <th style={{ padding: '10px 12px', color: 'var(--text-secondary)', fontWeight: 600 }}>Est. Cost</th>
+                                                                <th style={{ padding: '10px 12px', color: 'var(--text-secondary)', fontWeight: 600 }}>Status</th>
+                                                                <th style={{ padding: '10px 12px', color: 'var(--text-secondary)', fontWeight: 600 }}>Actor</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             {agentLogs.length === 0 ? (
                                                                 <tr>
-                                                                    <td colSpan={7} style={{ textAlign: 'center', padding: '20px', color: 'var(--text-tertiary)' }}>
+                                                                    <td colSpan={7} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-tertiary)' }}>
                                                                         No agent action logs recorded yet.
                                                                     </td>
                                                                 </tr>
@@ -3380,28 +3330,28 @@ const Settings = () => {
                                                                     const totalTokens = (l.input_tokens || 0) + (l.output_tokens || 0);
 
                                                                     return (
-                                                                        <tr key={l.id} style={{ borderBottom: '1px solid var(--border-secondary)' }}>
-                                                                            <td style={{ padding: '8px 10px', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>
+                                                                        <tr key={l.id} style={{ borderBottom: isDark ? '1px solid #2C2F36' : '1px solid #E2E8F0' }}>
+                                                                            <td style={{ padding: '10px 12px', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>
                                                                                 {l.created_at ? new Date(l.created_at).toLocaleString() : '-'}
                                                                             </td>
-                                                                            <td style={{ padding: '8px 10px', fontWeight: 600, textTransform: 'capitalize', color: 'var(--text-primary)' }}>
+                                                                            <td style={{ padding: '10px 12px', fontWeight: 600, textTransform: 'capitalize', color: 'var(--text-primary)' }}>
                                                                                 {l.agent_name}
                                                                             </td>
-                                                                            <td style={{ padding: '8px 10px', color: 'var(--text-secondary)' }}>
+                                                                            <td style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>
                                                                                 {l.diff_summary || l.tool_name}
                                                                             </td>
-                                                                            <td style={{ padding: '8px 10px', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>
+                                                                            <td style={{ padding: '10px 12px', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>
                                                                                 {totalTokens > 0 ? `${totalTokens.toLocaleString()} (${l.input_tokens || 0} in / ${l.output_tokens || 0} out)` : '0 (Fast-Path)'}
                                                                             </td>
-                                                                            <td style={{ padding: '8px 10px', color: '#10B981', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                                                            <td style={{ padding: '10px 12px', color: '#10B981', fontWeight: 600, whiteSpace: 'nowrap' }}>
                                                                                 ${(l.estimated_cost || 0).toFixed(5)}
                                                                             </td>
-                                                                            <td style={{ padding: '8px 10px' }}>
-                                                                                <span style={{ padding: '2px 8px', borderRadius: '4px', background: badgeBg, color: badgeColor, fontWeight: 600, fontSize: '11px', textTransform: 'uppercase' }}>
+                                                                            <td style={{ padding: '10px 12px' }}>
+                                                                                <span style={{ padding: '3px 8px', borderRadius: '6px', background: badgeBg, color: badgeColor, fontWeight: 700, fontSize: '11px', textTransform: 'uppercase' }}>
                                                                                     {l.status}
                                                                                 </span>
                                                                             </td>
-                                                                            <td style={{ padding: '8px 10px', color: 'var(--text-tertiary)' }}>
+                                                                            <td style={{ padding: '10px 12px', color: 'var(--text-tertiary)' }}>
                                                                                 {l.performed_by || 'admin'}
                                                                             </td>
                                                                         </tr>
@@ -3426,26 +3376,28 @@ const Settings = () => {
                                 left: 0,
                                 right: 0,
                                 bottom: 0,
-                                background: 'rgba(0,0,0,0.5)',
+                                background: 'rgba(15, 23, 42, 0.65)',
+                                backdropFilter: 'blur(4px)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 zIndex: 1000
                             }}>
                                 <div style={{
-                                    background: 'var(--surface-primary)',
-                                    padding: '24px',
-                                    borderRadius: '12px',
-                                    width: '400px',
-                                    maxWidth: '90%',
-                                    border: '1px solid var(--border-secondary)'
+                                    background: isDark ? '#1B1D22' : '#FFFFFF',
+                                    padding: '28px',
+                                    borderRadius: '18px',
+                                    width: '420px',
+                                    maxWidth: '92%',
+                                    border: isDark ? '1px solid #3A3E48' : '1px solid #CBD5E1',
+                                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
                                 }}>
-                                    <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 16px 0' }}>
+                                    <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 18px 0' }}>
                                         {editingWorkerType ? 'Edit Worker Type' : 'Add Worker Type'}
                                     </h3>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
                                                 Name *
                                             </label>
                                             <input
@@ -3453,19 +3405,11 @@ const Settings = () => {
                                                 value={workerTypeForm.name}
                                                 onChange={(e) => setWorkerTypeForm({ ...workerTypeForm, name: e.target.value })}
                                                 placeholder="e.g., Chef, Waiter, Manager"
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '10px',
-                                                    borderRadius: '6px',
-                                                    border: '1px solid var(--border-secondary)',
-                                                    background: 'var(--surface-secondary)',
-                                                    color: 'var(--text-primary)',
-                                                    fontSize: '14px'
-                                                }}
+                                                className="stInput"
                                             />
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
                                                 Description
                                             </label>
                                             <textarea
@@ -3473,16 +3417,8 @@ const Settings = () => {
                                                 onChange={(e) => setWorkerTypeForm({ ...workerTypeForm, description: e.target.value })}
                                                 placeholder="Optional description"
                                                 rows={3}
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '10px',
-                                                    borderRadius: '6px',
-                                                    border: '1px solid var(--border-secondary)',
-                                                    background: 'var(--surface-secondary)',
-                                                    color: 'var(--text-primary)',
-                                                    fontSize: '14px',
-                                                    resize: 'vertical'
-                                                }}
+                                                className="stInput"
+                                                style={{ resize: 'vertical' }}
                                             />
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -3490,11 +3426,11 @@ const Settings = () => {
                                                 type="checkbox"
                                                 checked={workerTypeForm.is_active}
                                                 onChange={(e) => setWorkerTypeForm({ ...workerTypeForm, is_active: e.target.checked })}
-                                                style={{ width: '16px', height: '16px' }}
+                                                style={{ width: '16px', height: '16px', accentColor: '#FF8A00' }}
                                             />
-                                            <label style={{ fontSize: '14px', color: 'var(--text-primary)' }}>Active</label>
+                                            <label style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>Active</label>
                                         </div>
-                                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                                        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                                             <Button
                                                 onClick={() => {
                                                     setShowWorkerTypeModal(false);
@@ -3502,13 +3438,13 @@ const Settings = () => {
                                                     setWorkerTypeForm({ name: '', description: '', is_active: true });
                                                 }}
                                                 variant="secondary"
-                                                style={{ flex: 1 }}
+                                                style={{ flex: 1, height: '40px' }}
                                             >
                                                 Cancel
                                             </Button>
                                             <Button
                                                 onClick={editingWorkerType ? handleUpdateWorkerType : handleCreateWorkerType}
-                                                style={{ flex: 1 }}
+                                                style={{ flex: 1, height: '40px' }}
                                             >
                                                 {editingWorkerType ? 'Update' : 'Create'}
                                             </Button>
@@ -3526,26 +3462,28 @@ const Settings = () => {
                                 left: 0,
                                 right: 0,
                                 bottom: 0,
-                                background: 'rgba(0,0,0,0.5)',
+                                background: 'rgba(15, 23, 42, 0.65)',
+                                backdropFilter: 'blur(4px)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 zIndex: 1000
                             }}>
                                 <div style={{
-                                    background: 'var(--surface-primary)',
-                                    padding: '24px',
-                                    borderRadius: '12px',
-                                    width: '400px',
-                                    maxWidth: '90%',
-                                    border: '1px solid var(--border-secondary)'
+                                    background: isDark ? '#1B1D22' : '#FFFFFF',
+                                    padding: '28px',
+                                    borderRadius: '18px',
+                                    width: '420px',
+                                    maxWidth: '92%',
+                                    border: isDark ? '1px solid #3A3E48' : '1px solid #CBD5E1',
+                                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
                                 }}>
-                                    <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 16px 0' }}>
+                                    <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 18px 0' }}>
                                         {editingExpenseType ? 'Edit Expense Type' : 'Add Expense Type'}
                                     </h3>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                         <div>
-                                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
                                                 Name *
                                             </label>
                                             <input
@@ -3553,19 +3491,11 @@ const Settings = () => {
                                                 value={expenseTypeForm.name}
                                                 onChange={(e) => setExpenseTypeForm({ ...expenseTypeForm, name: e.target.value })}
                                                 placeholder="e.g., Utilities, Supplies, Rent"
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '10px',
-                                                    borderRadius: '6px',
-                                                    border: '1px solid var(--border-secondary)',
-                                                    background: 'var(--surface-secondary)',
-                                                    color: 'var(--text-primary)',
-                                                    fontSize: '14px'
-                                                }}
+                                                className="stInput"
                                             />
                                         </div>
                                         <div>
-                                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
                                                 Description
                                             </label>
                                             <textarea
@@ -3573,16 +3503,8 @@ const Settings = () => {
                                                 onChange={(e) => setExpenseTypeForm({ ...expenseTypeForm, description: e.target.value })}
                                                 placeholder="Optional description"
                                                 rows={3}
-                                                style={{
-                                                    width: '100%',
-                                                    padding: '10px',
-                                                    borderRadius: '6px',
-                                                    border: '1px solid var(--border-secondary)',
-                                                    background: 'var(--surface-secondary)',
-                                                    color: 'var(--text-primary)',
-                                                    fontSize: '14px',
-                                                    resize: 'vertical'
-                                                }}
+                                                className="stInput"
+                                                style={{ resize: 'vertical' }}
                                             />
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -3590,11 +3512,11 @@ const Settings = () => {
                                                 type="checkbox"
                                                 checked={expenseTypeForm.is_active}
                                                 onChange={(e) => setExpenseTypeForm({ ...expenseTypeForm, is_active: e.target.checked })}
-                                                style={{ width: '16px', height: '16px' }}
+                                                style={{ width: '16px', height: '16px', accentColor: '#FF8A00' }}
                                             />
-                                            <label style={{ fontSize: '14px', color: 'var(--text-primary)' }}>Active</label>
+                                            <label style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)' }}>Active</label>
                                         </div>
-                                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                                        <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                                             <Button
                                                 onClick={() => {
                                                     setShowExpenseTypeModal(false);
@@ -3602,13 +3524,13 @@ const Settings = () => {
                                                     setExpenseTypeForm({ name: '', description: '', is_active: true });
                                                 }}
                                                 variant="secondary"
-                                                style={{ flex: 1 }}
+                                                style={{ flex: 1, height: '40px' }}
                                             >
                                                 Cancel
                                             </Button>
                                             <Button
                                                 onClick={editingExpenseType ? handleUpdateExpenseType : handleCreateExpenseType}
-                                                style={{ flex: 1 }}
+                                                style={{ flex: 1, height: '40px' }}
                                             >
                                                 {editingExpenseType ? 'Update' : 'Create'}
                                             </Button>
@@ -3619,39 +3541,41 @@ const Settings = () => {
                         )}
 
                         {activeTab === 'cloud' && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '48px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
                                 {/* Cloud Sync Section */}
                                 <div>
-                                    <div style={{ marginBottom: '24px' }}>
-                                        <h2 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 8px 0' }}>Cloud Sync</h2>
-                                        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>View cloud connection status and manually synchronize backups.</p>
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px 0' }}>Cloud Sync</h2>
+                                        <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', margin: 0 }}>View cloud connection status and manually synchronize backups.</p>
                                     </div>
 
-                                    <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '32px' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
                                         {/* Status Card */}
                                         <div style={{
                                             padding: '24px',
-                                            background: 'var(--surface-primary)',
-                                            border: '1px solid var(--border-secondary)',
-                                            borderRadius: '12px',
+                                            background: isDark ? 'var(--surface-primary)' : '#FFFFFF',
+                                            border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1',
+                                            borderRadius: '16px',
+                                            boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)',
                                             display: 'flex',
                                             flexDirection: 'column',
                                             gap: '16px'
                                         }}>
                                             <div style={{
-                                                width: '48px',
-                                                height: '48px',
-                                                borderRadius: '12px',
-                                                background: cloudStatus.loggedIn && cloudStatus.subscriptionStatus === 'active' ? 'var(--success-500)' : 'var(--primary-500)',
+                                                width: '52px',
+                                                height: '52px',
+                                                borderRadius: '14px',
+                                                background: cloudStatus.loggedIn && cloudStatus.subscriptionStatus === 'active' ? 'linear-gradient(135deg, #10B981, #059669)' : 'linear-gradient(135deg, #FF8A00, #FF6500)',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                color: 'white'
+                                                color: 'white',
+                                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                                             }}>
-                                                <IoCloudUploadOutline size={24} />
+                                                <IoCloudUploadOutline size={26} />
                                             </div>
                                             <div>
-                                                <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                                <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
                                                     {cloudStatus.loggedIn ? 'Connected' : 'Not Connected'}
                                                 </div>
                                                 <div style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginTop: '4px' }}>
@@ -3663,27 +3587,29 @@ const Settings = () => {
                                         {/* Subscription & Sync Controls */}
                                         <div style={{
                                             padding: '24px',
-                                            background: 'var(--surface-primary)',
-                                            border: '1px solid var(--border-secondary)',
-                                            borderRadius: '12px',
+                                            background: isDark ? 'var(--surface-primary)' : '#FFFFFF',
+                                            border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1',
+                                            borderRadius: '16px',
+                                            boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)',
                                             display: 'flex',
                                             flexDirection: 'column',
-                                            gap: '24px'
+                                            gap: '20px'
                                         }}>
                                             <div style={{
-                                                padding: '16px',
-                                                background: 'var(--bg-secondary)',
-                                                borderRadius: '8px',
+                                                padding: '16px 20px',
+                                                background: isDark ? 'var(--bg-secondary)' : '#F8FAFC',
+                                                border: isDark ? '1px solid var(--border-secondary)' : '1px solid #CBD5E1',
+                                                borderRadius: '14px',
                                                 display: 'flex',
                                                 flexDirection: 'column',
-                                                gap: '8px'
+                                                gap: '6px'
                                             }}>
-                                                <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Subscription</div>
-                                                <div style={{ fontSize: '14px', fontWeight: 600, color: cloudStatus.subscriptionStatus === 'active' ? 'var(--success-500)' : 'var(--text-primary)' }}>
+                                                <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Subscription</div>
+                                                <div style={{ fontSize: '15px', fontWeight: 700, color: cloudStatus.subscriptionStatus === 'active' ? '#10B981' : 'var(--text-primary)' }}>
                                                     {cloudStatus.subscriptionStatus.toUpperCase()}
                                                 </div>
                                                 {cloudStatus.expiry && (
-                                                    <div style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
+                                                    <div style={{ fontSize: '12.5px', color: 'var(--text-tertiary)' }}>
                                                         Expires: {cloudStatus.expiry}
                                                     </div>
                                                 )}
@@ -3691,14 +3617,14 @@ const Settings = () => {
 
                                             {cloudStatus.loggedIn && (
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                                    <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)' }}>Manual Backups</div>
+                                                    <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-secondary)' }}>Manual Backups</div>
                                                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                                                         <Button
                                                             variant="primary"
                                                             onClick={handleManualSync}
                                                             loading={syncingBackup}
                                                             disabled={syncingBackup || syncingMonthlyBackup}
-                                                            style={{ height: '40px' }}
+                                                            style={{ height: '40px', padding: '0 20px' }}
                                                         >
                                                             Sync Weekly
                                                         </Button>
@@ -3707,7 +3633,7 @@ const Settings = () => {
                                                             onClick={handleMonthlySync}
                                                             loading={syncingMonthlyBackup}
                                                             disabled={syncingBackup || syncingMonthlyBackup}
-                                                            style={{ height: '40px' }}
+                                                            style={{ height: '40px', padding: '0 20px' }}
                                                         >
                                                             Sync Monthly
                                                         </Button>
@@ -3720,9 +3646,9 @@ const Settings = () => {
 
                                 {/* About Section */}
                                 <div>
-                                    <div style={{ marginBottom: '24px' }}>
-                                        <h2 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 8px 0' }}>About</h2>
-                                        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>System information and version details</p>
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px 0' }}>About</h2>
+                                        <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', margin: 0 }}>System information and version details</p>
                                     </div>
 
                                     {/* Version Grid */}
@@ -3730,61 +3656,65 @@ const Settings = () => {
                                         display: 'grid',
                                         gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
                                         gap: '16px',
-                                        marginBottom: '32px'
+                                        marginBottom: '24px'
                                     }}>
                                         <div style={{
-                                            padding: '16px',
-                                            background: 'var(--surface-primary)',
-                                            border: '1px solid var(--border-secondary)',
-                                            borderRadius: '8px',
+                                            padding: '18px 20px',
+                                            background: isDark ? 'var(--surface-primary)' : '#FFFFFF',
+                                            border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1',
+                                            borderRadius: '16px',
+                                            boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)',
                                             display: 'flex',
                                             flexDirection: 'column',
                                             gap: '4px'
                                         }}>
-                                            <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>App Version</div>
-                                            <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>v{systemInfo.appVersion}</div>
+                                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>App Version</div>
+                                            <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>v{systemInfo.appVersion}</div>
                                         </div>
 
                                         <div style={{
-                                             padding: '16px',
-                                             background: 'var(--surface-primary)',
-                                             border: '1px solid var(--border-secondary)',
-                                             borderRadius: '8px',
+                                             padding: '18px 20px',
+                                             background: isDark ? 'var(--surface-primary)' : '#FFFFFF',
+                                             border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1',
+                                             borderRadius: '16px',
+                                             boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)',
                                              display: 'flex',
                                              flexDirection: 'column',
                                              gap: '4px'
                                          }}>
-                                             <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Update Status</div>
-                                            <div style={{ fontSize: '14px', fontWeight: 600, color: getStatusColor(systemInfo.updateStatus) }}>
-                                                {formatStatusText(systemInfo.updateStatus)}
-                                            </div>
-                                        </div>
+                                             <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Update Status</div>
+                                             <div style={{ fontSize: '14.5px', fontWeight: 700, color: getStatusColor(systemInfo.updateStatus) }}>
+                                                 {formatStatusText(systemInfo.updateStatus)}
+                                             </div>
+                                         </div>
 
                                         <div style={{
-                                            padding: '16px',
-                                            background: 'var(--surface-primary)',
-                                            border: '1px solid var(--border-secondary)',
-                                            borderRadius: '8px',
+                                            padding: '18px 20px',
+                                            background: isDark ? 'var(--surface-primary)' : '#FFFFFF',
+                                            border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1',
+                                            borderRadius: '16px',
+                                            boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)',
                                             display: 'flex',
                                             flexDirection: 'column',
                                             gap: '4px'
                                         }}>
-                                            <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Latest</div>
-                                            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Latest</div>
+                                            <div style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text-primary)' }}>
                                                 {systemInfo.latestVersion && systemInfo.latestVersion !== 'unknown' ? `v${systemInfo.latestVersion}` : 'No updates'}
                                             </div>
                                         </div>
 
                                         <div style={{
-                                            padding: '16px',
-                                            background: 'var(--surface-primary)',
-                                            border: '1px solid var(--border-secondary)',
-                                            borderRadius: '8px',
+                                            padding: '18px 20px',
+                                            background: isDark ? 'var(--surface-primary)' : '#FFFFFF',
+                                            border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1',
+                                            borderRadius: '16px',
+                                            boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)',
                                             display: 'flex',
                                             flexDirection: 'column',
                                             gap: '4px'
                                         }}>
-                                            <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Last Checked</div>
+                                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Last Checked</div>
                                             <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)' }}>
                                                 {systemInfo.lastChecked ? new Date(systemInfo.lastChecked).toLocaleDateString() : 'Never'}
                                             </div>
@@ -3793,16 +3723,17 @@ const Settings = () => {
 
                                     {/* Update Controls */}
                                     <div style={{
-                                        padding: '16px',
-                                        background: 'var(--surface-primary)',
-                                        border: '1px solid var(--border-secondary)',
-                                        borderRadius: '8px',
+                                        padding: '20px 24px',
+                                        background: isDark ? 'var(--surface-primary)' : '#FFFFFF',
+                                        border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1',
+                                        borderRadius: '16px',
+                                        boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)',
                                         display: 'flex',
                                         justifyContent: 'space-between',
                                         alignItems: 'center'
                                     }}>
                                         <div>
-                                            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Check for updates</div>
+                                            <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>Check for updates</div>
                                             <div style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>Query the official release repository</div>
                                         </div>
                                         <div style={{ display: 'flex', gap: '8px' }}>
@@ -3810,7 +3741,7 @@ const Settings = () => {
                                                 variant="secondary"
                                                 onClick={handleManualCheckForUpdates}
                                                 loading={checkingForUpdates}
-                                                style={{ height: '36px' }}
+                                                style={{ height: '38px' }}
                                             >
                                                 Check Now
                                             </Button>
@@ -3818,7 +3749,7 @@ const Settings = () => {
                                                 <Button
                                                     variant="primary"
                                                     onClick={() => window.electronAPI.installUpdate()}
-                                                    style={{ height: '36px', background: 'var(--success-500, #10b981)', borderColor: 'var(--success-500, #10b981)' }}
+                                                    style={{ height: '38px', background: 'var(--success-500, #10b981)', borderColor: 'var(--success-500, #10b981)' }}
                                                 >
                                                     Install Update
                                                 </Button>
@@ -3837,7 +3768,7 @@ const Settings = () => {
                                         Advanced Configuration
                                     </div>
                                     <div className="stSectionContent" style={{ paddingTop: '20px' }}>
-                                        <div className="stFormGroup" style={{ borderBottom: devModeEnabled ? '1px solid var(--border-secondary)' : 'none' }}>
+                                        <div className="stFormGroup" style={{ borderBottom: devModeEnabled ? (isDark ? '1px solid var(--border-secondary)' : '1px solid #CBD5E1') : 'none' }}>
                                             <div className="stLabel">
                                                 <span className="stLabelTitle">Developer Mode</span>
                                                 <span className="stLabelDesc">Enable developer features, DevTools, verbose logging, and diagnostics</span>
@@ -3889,36 +3820,36 @@ const Settings = () => {
                                                 <div>
                                                     <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>System Specifications</h3>
                                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-                                                        <div style={{ padding: '16px', background: 'var(--surface-primary)', border: '1px solid var(--border-secondary)', borderRadius: '12px' }}>
-                                                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>App / Build Version</div>
+                                                        <div style={{ padding: '18px 20px', background: isDark ? 'var(--surface-primary)' : '#FFFFFF', border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1', borderRadius: '16px', boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)' }}>
+                                                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>App / Build Version</div>
                                                             <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '4px' }}>v{diagnosticInfo?.appVersion || 'Unknown'}</div>
                                                         </div>
-                                                        <div style={{ padding: '16px', background: 'var(--surface-primary)', border: '1px solid var(--border-secondary)', borderRadius: '12px' }}>
-                                                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Electron / Chrome / Node</div>
+                                                        <div style={{ padding: '18px 20px', background: isDark ? 'var(--surface-primary)' : '#FFFFFF', border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1', borderRadius: '16px', boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)' }}>
+                                                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Electron / Chrome / Node</div>
                                                             <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '4px' }}>
                                                                 e: {diagnosticInfo?.electronVersion || '-'} | c: {diagnosticInfo?.chromeVersion || '-'} | n: {diagnosticInfo?.nodeVersion || '-'}
                                                             </div>
                                                         </div>
-                                                        <div style={{ padding: '16px', background: 'var(--surface-primary)', border: '1px solid var(--border-secondary)', borderRadius: '12px' }}>
-                                                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Environment</div>
+                                                        <div style={{ padding: '18px 20px', background: isDark ? 'var(--surface-primary)' : '#FFFFFF', border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1', borderRadius: '16px', boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)' }}>
+                                                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Environment</div>
                                                             <div style={{ fontSize: '15px', fontWeight: 600, color: diagnosticInfo?.environment === 'Development' ? 'var(--warning-500, #f59e0b)' : 'var(--success-500, #10b981)', marginTop: '4px' }}>
                                                                 {diagnosticInfo?.environment || 'Unknown'}
                                                             </div>
                                                         </div>
-                                                        <div style={{ padding: '16px', background: 'var(--surface-primary)', border: '1px solid var(--border-secondary)', borderRadius: '12px' }}>
-                                                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>OS / Architecture</div>
+                                                        <div style={{ padding: '18px 20px', background: isDark ? 'var(--surface-primary)' : '#FFFFFF', border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1', borderRadius: '16px', boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)' }}>
+                                                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>OS / Architecture</div>
                                                             <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginTop: '4px' }}>
                                                                 {diagnosticInfo?.osPlatform || '-'} ({diagnosticInfo?.osArch || '-'})
                                                             </div>
                                                         </div>
-                                                        <div style={{ padding: '16px', background: 'var(--surface-primary)', border: '1px solid var(--border-secondary)', borderRadius: '12px' }}>
-                                                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Backend Connection</div>
+                                                        <div style={{ padding: '18px 20px', background: isDark ? 'var(--surface-primary)' : '#FFFFFF', border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1', borderRadius: '16px', boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)' }}>
+                                                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Backend Connection</div>
                                                             <div style={{ fontSize: '14px', fontWeight: 600, color: diagnosticInfo?.backendStatus === 'Running' ? 'var(--success-500, #10b981)' : 'var(--error-500, #ef4444)', marginTop: '4px' }}>
                                                                 {diagnosticInfo?.backendStatus || 'Stopped'} ({diagnosticInfo?.backendUrl})
                                                             </div>
                                                         </div>
-                                                        <div style={{ padding: '16px', background: 'var(--surface-primary)', border: '1px solid var(--border-secondary)', borderRadius: '12px' }}>
-                                                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Database Status</div>
+                                                        <div style={{ padding: '18px 20px', background: isDark ? 'var(--surface-primary)' : '#FFFFFF', border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1', borderRadius: '16px', boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)' }}>
+                                                            <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Database Status</div>
                                                             <div style={{ fontSize: '14px', fontWeight: 600, color: diagnosticInfo?.dbStatus === 'Connected' ? 'var(--success-500, #10b981)' : 'var(--error-500, #ef4444)', marginTop: '4px' }}>
                                                                 {diagnosticInfo?.dbStatus || 'Missing'}
                                                             </div>
@@ -3929,7 +3860,7 @@ const Settings = () => {
                                                 {/* Paths Section */}
                                                 <div>
                                                     <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>System Paths</h3>
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--surface-primary)', border: '1px solid var(--border-secondary)', borderRadius: '12px', padding: '16px', fontSize: '13px' }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: isDark ? 'var(--surface-primary)' : '#FFFFFF', border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1', borderRadius: '16px', padding: '18px 20px', fontSize: '13px', boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)' }}>
                                                         <div style={{ display: 'flex', gap: '8px' }}>
                                                             <span style={{ fontWeight: 600, width: '120px', color: 'var(--text-secondary)' }}>Database Path:</span>
                                                             <span style={{ fontFamily: 'monospace', color: 'var(--text-primary)', wordBreak: 'break-all' }}>{diagnosticInfo?.dbPath}</span>
@@ -3949,24 +3880,24 @@ const Settings = () => {
                                                 <div>
                                                     <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Performance Diagnostics</h3>
                                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                                        <div style={{ padding: '20px', background: 'var(--surface-primary)', border: '1px solid var(--border-secondary)', borderRadius: '12px' }}>
+                                                        <div style={{ padding: '20px', background: isDark ? 'var(--surface-primary)' : '#FFFFFF', border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1', borderRadius: '16px', boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)' }}>
                                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                                                                 <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)' }}>CPU Usage</span>
                                                                 <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{diagnosticInfo?.cpuUsage !== undefined ? diagnosticInfo.cpuUsage.toFixed(1) : '0.0'}%</span>
                                                             </div>
-                                                            <div style={{ width: '100%', height: '8px', background: 'var(--border-tertiary)', borderRadius: '4px', overflow: 'hidden' }}>
+                                                            <div style={{ width: '100%', height: '8px', background: isDark ? 'var(--border-tertiary)' : '#E2E8F0', borderRadius: '4px', overflow: 'hidden' }}>
                                                                 <div style={{ width: `${Math.min(diagnosticInfo?.cpuUsage || 0, 100)}%`, height: '100%', backgroundImage: 'var(--primary-gradient)', transition: 'width 1s ease' }} />
                                                             </div>
                                                         </div>
 
-                                                        <div style={{ padding: '20px', background: 'var(--surface-primary)', border: '1px solid var(--border-secondary)', borderRadius: '12px' }}>
+                                                        <div style={{ padding: '20px', background: isDark ? 'var(--surface-primary)' : '#FFFFFF', border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1', borderRadius: '16px', boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.05)' }}>
                                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                                                                 <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)' }}>Process Memory (Heap)</span>
                                                                 <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
                                                                     {diagnosticInfo?.memoryProcess ? (diagnosticInfo.memoryProcess / 1024 / 1024).toFixed(1) : '0'} MB
                                                                 </span>
                                                             </div>
-                                                            <div style={{ width: '100%', height: '8px', background: 'var(--border-tertiary)', borderRadius: '4px', overflow: 'hidden' }}>
+                                                            <div style={{ width: '100%', height: '8px', background: isDark ? 'var(--border-tertiary)' : '#E2E8F0', borderRadius: '4px', overflow: 'hidden' }}>
                                                                 <div style={{ 
                                                                     width: `${Math.min((diagnosticInfo?.memoryProcess || 0) / (diagnosticInfo?.memoryTotal || 1) * 100 * 20, 100)}%`, 
                                                                     height: '100%', 
@@ -3974,7 +3905,7 @@ const Settings = () => {
                                                                     transition: 'width 1s ease' 
                                                                 }} />
                                                             </div>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '6px' }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', color: 'var(--text-tertiary)', marginTop: '6px' }}>
                                                                 <span>Free RAM: {diagnosticInfo?.memoryFree ? (diagnosticInfo.memoryFree / 1024 / 1024 / 1024).toFixed(1) : '0'} GB</span>
                                                                 <span>Total RAM: {diagnosticInfo?.memoryTotal ? (diagnosticInfo.memoryTotal / 1024 / 1024 / 1024).toFixed(1) : '0'} GB</span>
                                                             </div>
@@ -3988,10 +3919,10 @@ const Settings = () => {
                                                     <div style={{ 
                                                         maxHeight: '220px', 
                                                         overflowY: 'auto', 
-                                                        border: '1px solid var(--border-secondary)', 
-                                                        borderRadius: '12px',
-                                                        background: '#1e1e1e',
-                                                        padding: '12px',
+                                                        border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1', 
+                                                        borderRadius: '14px',
+                                                        background: '#15161A',
+                                                        padding: '14px',
                                                         fontFamily: 'monospace',
                                                         fontSize: '12px'
                                                     }}>
@@ -4003,7 +3934,7 @@ const Settings = () => {
                                                                     display: 'flex', 
                                                                     justifyContent: 'space-between', 
                                                                     padding: '4px 0', 
-                                                                    borderBottom: '1px solid #2d2d2d', 
+                                                                    borderBottom: '1px solid #242731', 
                                                                     color: log.error ? '#ff4d4d' : '#85e89d'
                                                                 }}>
                                                                     <span>
@@ -4024,10 +3955,10 @@ const Settings = () => {
                                                     <div style={{ 
                                                         maxHeight: '220px', 
                                                         overflowY: 'auto', 
-                                                        border: '1px solid var(--border-secondary)', 
-                                                        borderRadius: '12px',
-                                                        background: '#1e1e1e',
-                                                        padding: '12px',
+                                                        border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1', 
+                                                        borderRadius: '14px',
+                                                        background: '#15161A',
+                                                        padding: '14px',
                                                         fontFamily: 'monospace',
                                                         fontSize: '12px'
                                                     }}>
@@ -4039,7 +3970,7 @@ const Settings = () => {
                                                                     display: 'flex', 
                                                                     justifyContent: 'space-between', 
                                                                     padding: '4px 0', 
-                                                                    borderBottom: '1px solid #2d2d2d', 
+                                                                    borderBottom: '1px solid #242731', 
                                                                     color: log.status === 'error' ? '#ff4d4d' : '#79b8ff'
                                                                 }}>
                                                                     <span>
@@ -4060,12 +3991,12 @@ const Settings = () => {
                                                     <div style={{ 
                                                         maxHeight: '350px', 
                                                         overflowY: 'auto', 
-                                                        border: '1px solid var(--border-secondary)', 
-                                                        borderRadius: '12px',
-                                                        background: '#0c0c0c',
+                                                        border: isDark ? '1px solid #2C2F36' : '1px solid #CBD5E1', 
+                                                        borderRadius: '14px',
+                                                        background: '#0D0E11',
                                                         padding: '16px',
                                                         fontFamily: 'monospace',
-                                                        fontSize: '11px',
+                                                        fontSize: '11.5px',
                                                         whiteSpace: 'pre-wrap',
                                                         color: '#d4d4d4',
                                                         lineHeight: '1.5'

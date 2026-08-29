@@ -116,38 +116,39 @@ const NotificationCenterDrawer = () => {
   } = useNotifications();
 
   const { dismissReminder, fetchReminders } = useReminders();
-  const { theme, isDarkMode } = useTheme();
+  const { isDark } = useTheme();
   const navigate = useNavigate();
   const drawerRef = useRef(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [clearedFeedback, setClearedFeedback] = useState(false);
   const [hoveredCardId, setHoveredCardId] = useState(null);
 
-  const isDark = isDarkMode !== false && theme !== 'light';
-
   // Dynamic Theme Colors
   const colors = useMemo(() => ({
     drawerBg: isDark ? '#111215' : '#FFFFFF',
-    drawerBorder: isDark ? '1.5px solid rgba(255, 255, 255, 0.10)' : '1.5px solid rgba(0, 0, 0, 0.08)',
+    drawerBorder: isDark ? '1.5px solid rgba(255, 255, 255, 0.10)' : '1.5px solid #CBD5E1',
     drawerShadow: isDark
       ? '0 24px 64px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,0.06) inset'
-      : '0 20px 50px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04) inset',
-    headerBorder: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
-    textPrimary: isDark ? '#F9FAFB' : '#111827',
-    textSecondary: isDark ? '#9CA3AF' : '#4B5563',
-    textMuted: isDark ? '#6B7280' : '#9CA3AF',
-    searchBg: isDark ? '#18191E' : '#F3F4F6',
-    searchBorder: isDark ? '1px solid rgba(255, 255, 255, 0.09)' : '1px solid rgba(0, 0, 0, 0.08)',
-    searchColor: isDark ? '#FFFFFF' : '#111827',
-    sectionHeaderColor: isDark ? '#9CA3AF' : '#6B7280',
-    cardBgUnread: isDark ? '#18191E' : '#FFF9F5',
+      : '0 20px 50px rgba(15,23,42,0.18), 0 1px 3px rgba(15,23,42,0.08)',
+    headerBorder: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #E2E8F0',
+    textPrimary: isDark ? '#F9FAFB' : '#0F172A',
+    textSecondary: isDark ? '#9CA3AF' : '#475569',
+    textMuted: isDark ? '#6B7280' : '#64748B',
+    searchBg: isDark ? '#18191E' : '#F8FAFC',
+    searchBorder: isDark ? '1px solid rgba(255, 255, 255, 0.09)' : '1.5px solid #CBD5E1',
+    searchColor: isDark ? '#FFFFFF' : '#0F172A',
+    sectionHeaderColor: isDark ? '#9CA3AF' : '#475569',
+    cardBgUnread: isDark ? '#18191E' : '#FFF7ED',
     cardBgRead: isDark ? '#131418' : '#FFFFFF',
-    cardBorderUnread: isDark ? '1.5px solid rgba(255, 122, 0, 0.38)' : '1.5px solid rgba(255, 122, 0, 0.45)',
-    cardBorderRead: isDark ? '1px solid rgba(255, 255, 255, 0.07)' : '1px solid rgba(0, 0, 0, 0.08)',
-    cardHoverBg: isDark ? '#1E1F26' : '#F9FAFB',
-    cardHoverBorder: isDark ? 'rgba(255, 122, 0, 0.55)' : 'rgba(255, 122, 0, 0.65)',
-    btnHoverBg: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
-    emptyBg: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+    cardBorderUnread: isDark ? '1.5px solid rgba(255, 122, 0, 0.38)' : '1.5px solid #FDBA74',
+    cardBorderRead: isDark ? '1px solid rgba(255, 255, 255, 0.07)' : '1.5px solid #E2E8F0',
+    cardHoverBg: isDark ? '#1E1F26' : '#F8FAFC',
+    cardHoverBorder: isDark ? 'rgba(255, 122, 0, 0.55)' : '#FF8A00',
+    btnBg: isDark ? 'rgba(255, 255, 255, 0.04)' : '#FFFFFF',
+    btnBorder: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid #CBD5E1',
+    btnColor: isDark ? '#9CA3AF' : '#334155',
+    btnHoverBg: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9',
+    emptyBg: isDark ? 'rgba(255, 255, 255, 0.03)' : '#F1F5F9',
   }), [isDark]);
 
   // Close drawer on click outside
@@ -338,27 +339,34 @@ const NotificationCenterDrawer = () => {
                 </div>
 
                 {/* Right: Actions (Refresh, Clear All, Close) */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                   {/* Refresh Button */}
                   <button
                     onClick={handleManualRefresh}
                     disabled={loading || isRefreshing}
                     style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: colors.textSecondary,
+                      background: colors.btnBg,
+                      border: colors.btnBorder,
+                      color: colors.btnColor,
                       fontSize: '12px',
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      width: '28px',
-                      height: '28px',
-                      borderRadius: '6px',
+                      width: '30px',
+                      height: '30px',
+                      borderRadius: '8px',
+                      boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
                       transition: 'all 0.15s ease',
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = colors.btnHoverBg}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = colors.btnHoverBg;
+                      e.currentTarget.style.color = colors.textPrimary;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = colors.btnBg;
+                      e.currentTarget.style.color = colors.btnColor;
+                    }}
                     title="Refresh notifications"
                   >
                     <IoRefreshOutline
@@ -374,37 +382,40 @@ const NotificationCenterDrawer = () => {
                     <button
                       onClick={handleClearAllClick}
                       style={{
-                        background: clearedFeedback ? 'rgba(34, 197, 94, 0.12)' : 'transparent',
-                        border: 'none',
-                        color: clearedFeedback ? '#22C55E' : colors.textSecondary,
-                        fontSize: '11.5px',
+                        background: clearedFeedback ? (isDark ? 'rgba(34, 197, 94, 0.16)' : '#DCFCE7') : colors.btnBg,
+                        border: clearedFeedback ? '1px solid #86EFAC' : colors.btnBorder,
+                        color: clearedFeedback ? '#16A34A' : colors.btnColor,
+                        fontSize: '12px',
                         fontWeight: 600,
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '4px',
-                        padding: '4px 7px',
-                        borderRadius: '6px',
+                        gap: '5px',
+                        padding: '5px 9px',
+                        borderRadius: '8px',
                         whiteSpace: 'nowrap',
+                        boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
                         transition: 'all 0.18s ease',
                       }}
                       onMouseEnter={(e) => {
                         if (!clearedFeedback) {
-                          e.currentTarget.style.background = 'rgba(239, 68, 68, 0.10)';
-                          e.currentTarget.style.color = '#EF4444';
+                          e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.14)' : '#FEE2E2';
+                          e.currentTarget.style.borderColor = isDark ? 'rgba(239, 68, 68, 0.3)' : '#FCA5A5';
+                          e.currentTarget.style.color = '#DC2626';
                         }
                       }}
                       onMouseLeave={(e) => {
                         if (!clearedFeedback) {
-                          e.currentTarget.style.background = 'transparent';
-                          e.currentTarget.style.color = colors.textSecondary;
+                          e.currentTarget.style.background = colors.btnBg;
+                          e.currentTarget.style.borderColor = colors.btnBorder.replace(/^1px solid /, '');
+                          e.currentTarget.style.color = colors.btnColor;
                         }
                       }}
                       title="Clear all notifications"
                     >
                       {clearedFeedback ? (
                         <>
-                          <IoCheckmarkCircle size={14} color="#22C55E" />
+                          <IoCheckmarkCircle size={14} color="#16A34A" />
                           <span>Cleared!</span>
                         </>
                       ) : (
@@ -420,20 +431,29 @@ const NotificationCenterDrawer = () => {
                   <button
                     onClick={() => setIsCenterOpen(false)}
                     style={{
-                      background: colors.btnHoverBg,
-                      border: 'none',
-                      color: colors.textSecondary,
-                      borderRadius: '7px',
-                      width: '28px',
-                      height: '28px',
+                      background: colors.btnBg,
+                      border: colors.btnBorder,
+                      color: colors.btnColor,
+                      borderRadius: '8px',
+                      width: '30px',
+                      height: '30px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       cursor: 'pointer',
+                      boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
                       transition: 'all 0.15s ease',
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = colors.textPrimary}
-                    onMouseLeave={(e) => e.currentTarget.style.color = colors.textSecondary}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.14)' : '#FEE2E2';
+                      e.currentTarget.style.borderColor = isDark ? 'rgba(239, 68, 68, 0.3)' : '#FCA5A5';
+                      e.currentTarget.style.color = '#DC2626';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = colors.btnBg;
+                      e.currentTarget.style.borderColor = colors.btnBorder.replace(/^1px solid /, '');
+                      e.currentTarget.style.color = colors.btnColor;
+                    }}
                     title="Close"
                   >
                     <IoClose size={16} />

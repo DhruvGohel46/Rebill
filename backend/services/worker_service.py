@@ -144,12 +144,30 @@ class WorkerService:
 
     @staticmethod
     def soft_delete_worker(worker_id):
+        return WorkerService.delete_worker(worker_id, permanent=False)
+
+    @staticmethod
+    def delete_worker(worker_id, permanent=False):
         worker = Worker.query.get(worker_id)
-        if worker:
+        if not worker:
+            return False
+
+        if permanent:
+            # Unlink worker from historical expenses to preserve finances without FK constraint error
+            Expense.query.filter_by(worker_id=worker_id).update({"worker_id": None})
+            
+            # Remove associated worker-specific tables
+            Advance.query.filter_by(worker_id=worker_id).delete()
+            Attendance.query.filter_by(worker_id=worker_id).delete()
+            SalaryPayment.query.filter_by(worker_id=worker_id).delete()
+            
+            # Delete worker record
+            db.session.delete(worker)
+        else:
             worker.status = "inactive"
-            db.session.commit()
-            return True
-        return False
+
+        db.session.commit()
+        return True
 
     # ADVANCE MANAGEMENT
     @staticmethod

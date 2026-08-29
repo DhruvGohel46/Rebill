@@ -224,11 +224,18 @@ const Analytics = () => {
     // ─── Reports / Download ───
     const [downloading, setDownloading] = useState({});
     const [dailyReportDate, setDailyReportDate] = useState(getLocalDateString());
+    const [exportWeekDate, setExportWeekDate] = useState(getLocalDateString());
     const [exportMonth, setExportMonth] = useState(() => {
         const now = new Date();
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     });
-    const [exportWeekDate, setExportWeekDate] = useState(getLocalDateString());
+    const [exportExpenseWeekDate, setExportExpenseWeekDate] = useState(getLocalDateString());
+    const [exportExpenseMonth, setExportExpenseMonth] = useState(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    });
+    const [exportExpenseYear, setExportExpenseYear] = useState(() => new Date().getFullYear());
+    const [exportMasterYear, setExportMasterYear] = useState(() => new Date().getFullYear());
 
     // ─── Bills / Transactions ───
     const [bills, setBills] = useState([]);
@@ -562,65 +569,118 @@ const Analytics = () => {
         }
     };
 
-    const handleDownload = async (reportType, reportName, filename, date = null) => {
+    // ─── 7 Standardized Report Download Handlers ───
+    const handleDailySalesExport = async () => {
         try {
-            setDownloading(prev => ({ ...prev, [reportType]: true }));
+            setDownloading(prev => ({ ...prev, daily_sales: true }));
             setError('');
-            let response;
-            if (reportType === 'excel') {
-                response = await reportsAPI.exportTodayExcel('detailed', date);
-            } else if (reportType === 'csv') {
-                response = await reportsAPI.exportTodayCSV();
-            } else if (reportType === 'expense_excel') {
-                // Here 'date' is used as the range (today/week/month/year)
-                response = await reportsAPI.exportExpensesExcel(date);
+            const response = await reportsAPI.exportDailySalesExcel(dailyReportDate);
+            if (response && response.data) {
+                downloadFile(response.data, `InfoOS_DailySales_${dailyReportDate}.xlsx`);
             }
-            if (response && response.data) downloadFile(response.data, filename);
         } catch (err) {
             const apiError = handleAPIError(err);
             setError(apiError.message);
         } finally {
-            setDownloading(prev => ({ ...prev, [reportType]: false }));
+            setDownloading(prev => ({ ...prev, daily_sales: false }));
         }
     };
 
-    const handleMonthlyExport = async () => {
+    const handleWeeklySalesExport = async () => {
         try {
-            setDownloading(prev => ({ ...prev, monthly: true }));
+            setDownloading(prev => ({ ...prev, weekly_sales: true }));
+            setError('');
+            const response = await reportsAPI.exportWeeklySalesExcel(exportWeekDate);
+            if (response && response.data) {
+                downloadFile(response.data, `InfoOS_WeeklySales_${exportWeekDate}.xlsx`);
+            }
+        } catch (err) {
+            const apiError = handleAPIError(err);
+            setError(apiError.message);
+        } finally {
+            setDownloading(prev => ({ ...prev, weekly_sales: false }));
+        }
+    };
+
+    const handleMonthlySalesExport = async () => {
+        try {
+            setDownloading(prev => ({ ...prev, monthly_sales: true }));
             setError('');
             const [yearStr, monthStr] = String(exportMonth).split('-');
-            const response = await reportsAPI.exportMonthlyExcel(Number(monthStr), Number(yearStr));
+            const response = await reportsAPI.exportMonthlySalesExcel(Number(monthStr), Number(yearStr));
             if (response && response.data) {
-                downloadFile(response.data, `Monthly_Sales_Report_${monthStr}_${yearStr}.xlsx`);
+                downloadFile(response.data, `InfoOS_MonthlySales_${yearStr}_${monthStr}.xlsx`);
             }
         } catch (err) {
             const apiError = handleAPIError(err);
             setError(apiError.message);
         } finally {
-            setDownloading(prev => ({ ...prev, monthly: false }));
+            setDownloading(prev => ({ ...prev, monthly_sales: false }));
         }
     };
 
-    const handleWeeklyExport = async () => {
+    const handleWeeklyExpenseExport = async () => {
         try {
-            setDownloading(prev => ({ ...prev, weekly: true }));
+            setDownloading(prev => ({ ...prev, weekly_expenses: true }));
             setError('');
-            const response = await reportsAPI.exportWeeklyExcel(exportWeekDate);
-            const d = new Date(exportWeekDate);
-            const day = d.getDay() || 7;
-            if (day !== 1) d.setHours(-24 * (day - 1));
-            const start = new Date(d);
-            const end = new Date(d);
-            end.setDate(end.getDate() + 6);
-            const sStr = `${String(start.getDate()).padStart(2, '0')}${String(start.getMonth() + 1).padStart(2, '0')}${start.getFullYear()}`;
-            const eStr = `${String(end.getDate()).padStart(2, '0')}${String(end.getMonth() + 1).padStart(2, '0')}${end.getFullYear()}`;
-            const filename = `Weekly_Sales_Report_${sStr}_to_${eStr}.xlsx`;
-            if (response && response.data) downloadFile(response.data, filename);
+            const response = await reportsAPI.exportWeeklyExpensesExcel(exportExpenseWeekDate);
+            if (response && response.data) {
+                downloadFile(response.data, `InfoOS_WeeklyExpenses_${exportExpenseWeekDate}.xlsx`);
+            }
         } catch (err) {
             const apiError = handleAPIError(err);
             setError(apiError.message);
         } finally {
-            setDownloading(prev => ({ ...prev, weekly: false }));
+            setDownloading(prev => ({ ...prev, weekly_expenses: false }));
+        }
+    };
+
+    const handleMonthlyExpenseExport = async () => {
+        try {
+            setDownloading(prev => ({ ...prev, monthly_expenses: true }));
+            setError('');
+            const [yearStr, monthStr] = String(exportExpenseMonth).split('-');
+            const response = await reportsAPI.exportMonthlyExpensesExcel(Number(monthStr), Number(yearStr));
+            if (response && response.data) {
+                downloadFile(response.data, `InfoOS_MonthlyExpenses_${yearStr}_${monthStr}.xlsx`);
+            }
+        } catch (err) {
+            const apiError = handleAPIError(err);
+            setError(apiError.message);
+        } finally {
+            setDownloading(prev => ({ ...prev, monthly_expenses: false }));
+        }
+    };
+
+    const handleYearlyExpenseExport = async () => {
+        try {
+            setDownloading(prev => ({ ...prev, yearly_expenses: true }));
+            setError('');
+            const response = await reportsAPI.exportYearlyExpensesExcel(Number(exportExpenseYear));
+            if (response && response.data) {
+                downloadFile(response.data, `InfoOS_YearlyExpenseAudit_${exportExpenseYear}.xlsx`);
+            }
+        } catch (err) {
+            const apiError = handleAPIError(err);
+            setError(apiError.message);
+        } finally {
+            setDownloading(prev => ({ ...prev, yearly_expenses: false }));
+        }
+    };
+
+    const handleMasterFinancialExport = async () => {
+        try {
+            setDownloading(prev => ({ ...prev, master_financial: true }));
+            setError('');
+            const response = await reportsAPI.exportMasterFinancialExcel(Number(exportMasterYear));
+            if (response && response.data) {
+                downloadFile(response.data, `InfoOS_MasterFinancial_${exportMasterYear}.xlsx`);
+            }
+        } catch (err) {
+            const apiError = handleAPIError(err);
+            setError(apiError.message);
+        } finally {
+            setDownloading(prev => ({ ...prev, master_financial: false }));
         }
     };
 
@@ -999,7 +1059,7 @@ const Analytics = () => {
                                                 <h3 className="chart-card-title" style={{ margin: 0 }}>Product Sales</h3>
                                                 <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Top selling products this {viewRange}</span>
                                             </div>
-                                            <ResponsiveContainer width="100%" height={290}>
+                                            <ResponsiveContainer width="100%" height={290} minWidth={0} minHeight={0}>
                                                 <BarChart
                                                     data={chartProductSales.slice(0, 10)}
                                                     margin={{ top: 8, right: 16, left: 0, bottom: 20 }}
@@ -1053,8 +1113,8 @@ const Analytics = () => {
                                             </div>
                                             <div style={{ width: '100%', height: '290px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 {Object.keys(displayCategoryTotals).length > 0 ? (
-                                                    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-                                                        <ResponsiveContainer width="100%" height="100%">
+                                                    <div style={{ width: '100%', height: '290px', minWidth: 0, minHeight: 0, position: 'relative' }}>
+                                                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                                                             <PieChart>
                                                                 <Pie
                                                                     activeIndex={activePieIndex}
@@ -1454,8 +1514,8 @@ const Analytics = () => {
                                     {filteredRangeExpenses.length > 0 ? (
                                         <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', gap: '40px', marginTop: '20px', flexWrap: 'wrap' }}>
                                             {/* Left: Doughnut Chart */}
-                                            <div style={{ width: '320px', height: '320px', position: 'relative' }}>
-                                                <ResponsiveContainer width="100%" height="100%">
+                                            <div style={{ width: '320px', height: '320px', minWidth: 0, minHeight: 0, position: 'relative' }}>
+                                                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                                                     <PieChart>
                                                         <Pie
                                                             activeIndex={activePieIndex}
@@ -1595,289 +1655,475 @@ const Analytics = () => {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             transition={{ duration: 0.25, ease: 'easeOut' }}
-                            style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
+                            style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}
                         >
                             {/* Premium Header */}
                             <div style={{
                                 display: 'flex',
                                 justifyContent: 'space-between',
                                 alignItems: 'center',
-                                borderBottom: '1px solid var(--border-secondary)',
+                                borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #E2E8F0',
                                 paddingBottom: '16px',
-                                marginBottom: '4px'
+                                flexWrap: 'wrap',
+                                gap: '12px'
                             }}>
                                 <div>
-                                    <h2 style={{ fontSize: '1.45rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, tracking: '-0.02em' }}>
+                                    <h2 style={{
+                                        fontSize: '1.45rem',
+                                        fontWeight: 800,
+                                        color: isDark ? '#FFFFFF' : '#0F172A',
+                                        margin: 0,
+                                        letterSpacing: '-0.02em'
+                                    }}>
                                         Reports Download Center
                                     </h2>
-                                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>
+                                    <p style={{
+                                        fontSize: '0.86rem',
+                                        color: isDark ? '#94A3B8' : '#64748B',
+                                        margin: '4px 0 0 0',
+                                        fontWeight: 500
+                                    }}>
                                         Generate and export sales, expense, and financial reports.
                                     </p>
                                 </div>
                                 <button
                                     onClick={() => setShowClearConfirm(true)}
                                     style={{
-                                        background: 'transparent',
-                                        border: '1px solid rgba(239, 68, 68, 0.4)',
+                                        background: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2',
+                                        border: isDark ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid #FECACA',
                                         color: '#EF4444',
-                                        borderRadius: '8px',
-                                        padding: '8px 16px',
-                                        fontSize: '0.8rem',
-                                        fontWeight: 600,
+                                        borderRadius: '12px',
+                                        padding: '9px 18px',
+                                        fontSize: '0.82rem',
+                                        fontWeight: 700,
                                         cursor: 'pointer',
                                         transition: 'all 200ms ease',
+                                        display: 'inline-flex',
                                         alignItems: 'center',
                                         gap: '6px'
                                     }}
                                     onMouseEnter={(e) => {
                                         e.currentTarget.style.background = '#EF4444';
-                                        e.currentTarget.style.color = '#ffffff';
+                                        e.currentTarget.style.color = '#FFFFFF';
                                         e.currentTarget.style.borderColor = '#EF4444';
                                     }}
                                     onMouseLeave={(e) => {
-                                        e.currentTarget.style.background = 'transparent';
+                                        e.currentTarget.style.background = isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2';
                                         e.currentTarget.style.color = '#EF4444';
-                                        e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                                        e.currentTarget.style.borderColor = isDark ? 'rgba(239, 68, 68, 0.3)' : '1px solid #FECACA';
                                     }}
                                 >
-                                    <IoTrashOutline size={14} /> Clear All Data
+                                    <IoTrashOutline size={15} /> Clear All Data
                                 </button>
                             </div>
 
-                            {/* Full-width Responsive Grid Layout */}
+                            {/* Standard 6-Card Responsive Grid */}
                             <div style={{
                                 display: 'grid',
-                                gridTemplateColumns: 'repeat(auto-fit, minmax(540px, 1fr))',
-                                gap: '16px',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+                                gap: '18px',
                                 width: '100%'
                             }}>
                                 {[
                                     {
-                                        id: 'excel',
+                                        id: 'daily_sales',
                                         title: 'Daily Sales Report',
-                                        badge: 'Sales',
+                                        badge: 'SALES',
+                                        badgeColor: '#3B82F6',
                                         desc: 'Detailed breakdown of items sold, summaries, and profits for a specific date.',
                                         color: '#3B82F6',
-                                        icon: <IoTodayOutline size={16} />,
-                                        control: <GlobalDatePicker value={dailyReportDate} onChange={setDailyReportDate} />,
-                                        actionText: downloading.excel ? 'Generating...' : 'Download Excel',
-                                        action: () => handleDownload('excel', '', `Daily_Sales_${dailyReportDate}.xlsx`, dailyReportDate),
-                                        disabled: downloading.excel
+                                        icon: <IoTodayOutline size={20} />,
+                                        control: (
+                                            <GlobalDatePicker
+                                                value={dailyReportDate}
+                                                onChange={setDailyReportDate}
+                                            />
+                                        ),
+                                        actionText: downloading.daily_sales ? 'Generating...' : 'Download Excel',
+                                        action: handleDailySalesExport,
+                                        disabled: downloading.daily_sales
                                     },
                                     {
-                                        id: 'weekly',
+                                        id: 'weekly_sales',
                                         title: 'Weekly Sales Summary',
-                                        badge: 'Sales',
+                                        badge: 'SALES',
+                                        badgeColor: '#F59E0B',
                                         desc: 'Aggregated product overview and revenues from Monday to Sunday.',
                                         color: '#F59E0B',
-                                        icon: <IoCalendarOutline size={16} />,
-                                        control: <GlobalDatePicker value={exportWeekDate} onChange={setExportWeekDate} />,
-                                        actionText: downloading.weekly ? 'Generating...' : 'Download Excel',
-                                        action: handleWeeklyExport,
-                                        disabled: downloading.weekly
+                                        icon: <IoCalendarOutline size={20} />,
+                                        control: (
+                                            <GlobalDatePicker
+                                                value={exportWeekDate}
+                                                onChange={setExportWeekDate}
+                                            />
+                                        ),
+                                        actionText: downloading.weekly_sales ? 'Generating...' : 'Download Excel',
+                                        action: handleWeeklySalesExport,
+                                        disabled: downloading.weekly_sales
                                     },
                                     {
-                                        id: 'monthly',
+                                        id: 'monthly_sales',
                                         title: 'Monthly Sales Summary',
-                                        badge: 'Sales',
+                                        badge: 'SALES',
+                                        badgeColor: '#10B981',
                                         desc: 'Monthly product-wise totals and overall gross sales report.',
                                         color: '#10B981',
-                                        icon: <IoBarChartOutline size={16} />,
-                                        control: <input type="month" className="transactions-date-input" value={exportMonth} onChange={(e) => setExportMonth(e.target.value)} style={{ width: '130px', padding: '6px 10px', height: '34px', background: 'var(--bg-primary)', border: '1px solid var(--border-secondary)', borderRadius: '6px', color: 'var(--text-primary)', outline: 'none' }} />,
-                                        actionText: downloading.monthly ? 'Generating...' : 'Download Excel',
-                                        action: handleMonthlyExport,
-                                        disabled: downloading.monthly
+                                        icon: <IoBarChartOutline size={20} />,
+                                        control: (
+                                            <input
+                                                type="month"
+                                                value={exportMonth}
+                                                onChange={(e) => setExportMonth(e.target.value)}
+                                                style={{
+                                                    padding: '7px 12px',
+                                                    height: '38px',
+                                                    background: isDark ? '#10131D' : '#F8FAFC',
+                                                    border: isDark ? '1px solid #283046' : '1.5px solid #CBD5E1',
+                                                    borderRadius: '10px',
+                                                    color: isDark ? '#FFFFFF' : '#0F172A',
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: 600,
+                                                    outline: 'none'
+                                                }}
+                                            />
+                                        ),
+                                        actionText: downloading.monthly_sales ? 'Generating...' : 'Download Excel',
+                                        action: handleMonthlySalesExport,
+                                        disabled: downloading.monthly_sales
                                     },
                                     {
-                                        id: 'expense_weekly',
+                                        id: 'weekly_expenses',
                                         title: 'Weekly Expense Report',
-                                        badge: 'Expenses',
+                                        badge: 'EXPENSES',
+                                        badgeColor: '#FF8C42',
                                         desc: 'Categorized business outflows and details recorded for the current week.',
                                         color: '#FF8C42',
-                                        icon: <IoWalletOutline size={16} />,
-                                        actionText: 'Download',
-                                        action: () => handleDownload('expense_excel', '', 'Weekly_Expenses.xlsx', 'week')
+                                        icon: <IoWalletOutline size={20} />,
+                                        control: (
+                                            <GlobalDatePicker
+                                                value={exportExpenseWeekDate}
+                                                onChange={setExportExpenseWeekDate}
+                                            />
+                                        ),
+                                        actionText: downloading.weekly_expenses ? 'Generating...' : 'Download Excel',
+                                        action: handleWeeklyExpenseExport,
+                                        disabled: downloading.weekly_expenses
                                     },
                                     {
-                                        id: 'expense_monthly',
+                                        id: 'monthly_expenses',
                                         title: 'Monthly Expense Report',
-                                        badge: 'Expenses',
+                                        badge: 'EXPENSES',
+                                        badgeColor: '#06B6D4',
                                         desc: 'Detailed monthly accounting report for utility, supplier and operational costs.',
                                         color: '#06B6D4',
-                                        icon: <IoStatsChartOutline size={16} />,
-                                        actionText: 'Download',
-                                        action: () => handleDownload('expense_excel', '', 'Monthly_Expenses.xlsx', 'month')
+                                        icon: <IoStatsChartOutline size={20} />,
+                                        control: (
+                                            <input
+                                                type="month"
+                                                value={exportExpenseMonth}
+                                                onChange={(e) => setExportExpenseMonth(e.target.value)}
+                                                style={{
+                                                    padding: '7px 12px',
+                                                    height: '38px',
+                                                    background: isDark ? '#10131D' : '#F8FAFC',
+                                                    border: isDark ? '1px solid #283046' : '1.5px solid #CBD5E1',
+                                                    borderRadius: '10px',
+                                                    color: isDark ? '#FFFFFF' : '#0F172A',
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: 600,
+                                                    outline: 'none'
+                                                }}
+                                            />
+                                        ),
+                                        actionText: downloading.monthly_expenses ? 'Generating...' : 'Download Excel',
+                                        action: handleMonthlyExpenseExport,
+                                        disabled: downloading.monthly_expenses
                                     },
                                     {
-                                        id: 'expense_yearly',
+                                        id: 'yearly_expenses',
                                         title: 'Yearly Expense Audit',
-                                        badge: 'Audit',
+                                        badge: 'AUDIT',
+                                        badgeColor: '#8B5CF6',
                                         desc: 'Year-to-date business expenses breakdown and category summaries.',
                                         color: '#8B5CF6',
-                                        icon: <IoBusinessOutline size={16} />,
-                                        actionText: 'Download',
-                                        action: () => handleDownload('expense_excel', '', 'Yearly_Expenses.xlsx', 'year')
+                                        icon: <IoBusinessOutline size={20} />,
+                                        control: (
+                                            <select
+                                                value={exportExpenseYear}
+                                                onChange={(e) => setExportExpenseYear(Number(e.target.value))}
+                                                style={{
+                                                    padding: '7px 12px',
+                                                    height: '38px',
+                                                    background: isDark ? '#10131D' : '#F8FAFC',
+                                                    border: isDark ? '1px solid #283046' : '1.5px solid #CBD5E1',
+                                                    borderRadius: '10px',
+                                                    color: isDark ? '#FFFFFF' : '#0F172A',
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: 600,
+                                                    outline: 'none',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                {[2024, 2025, 2026, 2027].map(y => (
+                                                    <option key={y} value={y}>{y}</option>
+                                                ))}
+                                            </select>
+                                        ),
+                                        actionText: downloading.yearly_expenses ? 'Generating...' : 'Download Excel',
+                                        action: handleYearlyExpenseExport,
+                                        disabled: downloading.yearly_expenses
                                     }
                                 ].map((report) => (
                                     <div
                                         key={report.id}
                                         style={{
-                                            background: 'var(--surface-primary)',
-                                            border: '1px solid var(--border-secondary)',
-                                            borderRadius: '12px',
-                                            padding: '12px 16px',
+                                            background: isDark ? 'linear-gradient(165deg, #181C28 0%, #10131D 100%)' : '#FFFFFF',
+                                            border: isDark ? '1px solid rgba(255, 255, 255, 0.07)' : '1.5px solid #E2E8F0',
+                                            borderRadius: '24px',
+                                            padding: '20px 22px',
                                             display: 'flex',
-                                            alignItems: 'center',
+                                            flexDirection: 'column',
                                             justifyContent: 'space-between',
-                                            gap: '16px',
-                                            flexWrap: 'wrap',
+                                            gap: '18px',
+                                            boxShadow: isDark
+                                                ? '0 10px 30px -8px rgba(0, 0, 0, 0.5)'
+                                                : '0 4px 20px -2px rgba(15, 23, 42, 0.05), 0 0 1px 1px rgba(0, 0, 0, 0.02)',
                                             transition: 'all 200ms ease'
                                         }}
-                                        className="report-item-hover-border"
                                     >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '240px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
                                             <div style={{
-                                                width: '34px',
-                                                height: '34px',
-                                                borderRadius: '8px',
-                                                background: `${report.color}15`,
+                                                width: '44px',
+                                                height: '44px',
+                                                borderRadius: '14px',
+                                                background: isDark ? `${report.color}20` : `${report.color}14`,
+                                                border: isDark ? `1px solid ${report.color}35` : `1.5px solid ${report.color}30`,
                                                 color: report.color,
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
-                                                flexShrink: 0
+                                                flexShrink: 0,
+                                                boxShadow: `0 4px 14px ${report.color}20`
                                             }}>
                                                 {report.icon}
                                             </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <span style={{ fontWeight: 650, fontSize: '0.92rem', color: 'var(--text-primary)' }}>{report.title}</span>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                                                     <span style={{
-                                                        fontSize: '0.68rem',
-                                                        fontWeight: 700,
-                                                        padding: '2px 6px',
-                                                        borderRadius: '4px',
-                                                        background: 'rgba(255,255,255,0.05)',
-                                                        border: '1px solid var(--border-secondary)',
-                                                        color: 'var(--text-secondary)',
-                                                        textTransform: 'uppercase',
-                                                        letterSpacing: '0.02em'
-                                                    }}>{report.badge}</span>
+                                                        fontWeight: 800,
+                                                        fontSize: '0.98rem',
+                                                        color: isDark ? '#FFFFFF' : '#0F172A',
+                                                        letterSpacing: '-0.01em'
+                                                    }}>
+                                                        {report.title}
+                                                    </span>
+                                                    <span style={{
+                                                        fontSize: '0.66rem',
+                                                        fontWeight: 800,
+                                                        padding: '2px 8px',
+                                                        borderRadius: '999px',
+                                                        background: isDark ? `${report.badgeColor}20` : `${report.badgeColor}12`,
+                                                        border: `1px solid ${report.badgeColor}35`,
+                                                        color: report.badgeColor,
+                                                        letterSpacing: '0.04em'
+                                                    }}>
+                                                        {report.badge}
+                                                    </span>
                                                 </div>
-                                                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.3, maxWidth: '340px' }}>{report.desc}</p>
+                                                <p style={{
+                                                    fontSize: '0.80rem',
+                                                    color: isDark ? '#94A3B8' : '#64748B',
+                                                    margin: 0,
+                                                    lineHeight: 1.4,
+                                                    fontWeight: 500
+                                                }}>
+                                                    {report.desc}
+                                                </p>
                                             </div>
                                         </div>
 
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
-                                            {report.control && <div style={{ transform: 'scale(0.9)', transformOrigin: 'right' }}>{report.control}</div>}
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'flex-end',
+                                            gap: '12px',
+                                            paddingTop: '10px',
+                                            borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #F1F5F9'
+                                        }}>
+                                            {report.control && (
+                                                <div style={{ flexShrink: 0 }}>
+                                                    {report.control}
+                                                </div>
+                                            )}
                                             <button
                                                 onClick={report.action}
                                                 disabled={report.disabled}
                                                 style={{
-                                                    height: '32px',
-                                                    padding: '0 14px',
-                                                    borderRadius: '6px',
-                                                    background: 'transparent',
-                                                    border: '1px solid var(--primary-500)',
-                                                    color: 'var(--primary-500)',
-                                                    fontSize: '0.8rem',
-                                                    fontWeight: 650,
-                                                    cursor: 'pointer',
-                                                    transition: 'all 200ms ease',
-                                                    display: 'flex',
+                                                    height: '38px',
+                                                    padding: '0 16px',
+                                                    borderRadius: '12px',
+                                                    background: isDark ? 'rgba(255, 107, 26, 0.1)' : '#FFF7ED',
+                                                    border: isDark ? '1px solid rgba(255, 107, 26, 0.35)' : '1.5px solid #FDBA74',
+                                                    color: isDark ? '#FF8C42' : '#EA580C',
+                                                    fontSize: '0.84rem',
+                                                    fontWeight: 750,
+                                                    cursor: report.disabled ? 'not-allowed' : 'pointer',
+                                                    opacity: report.disabled ? 0.6 : 1,
+                                                    transition: 'all 180ms ease',
+                                                    display: 'inline-flex',
                                                     alignItems: 'center',
-                                                    gap: '6px'
+                                                    gap: '7px'
                                                 }}
                                                 onMouseEnter={(e) => {
-                                                    e.currentTarget.style.background = 'var(--primary-500)';
-                                                    e.currentTarget.style.color = '#ffffff';
+                                                    if (!report.disabled) {
+                                                        e.currentTarget.style.background = '#EA580C';
+                                                        e.currentTarget.style.color = '#FFFFFF';
+                                                        e.currentTarget.style.borderColor = '#EA580C';
+                                                        e.currentTarget.style.boxShadow = '0 4px 14px rgba(234, 88, 12, 0.3)';
+                                                    }
                                                 }}
                                                 onMouseLeave={(e) => {
-                                                    e.currentTarget.style.background = 'transparent';
-                                                    e.currentTarget.style.color = 'var(--primary-500)';
+                                                    if (!report.disabled) {
+                                                        e.currentTarget.style.background = isDark ? 'rgba(255, 107, 26, 0.1)' : '#FFF7ED';
+                                                        e.currentTarget.style.color = isDark ? '#FF8C42' : '#EA580C';
+                                                        e.currentTarget.style.borderColor = isDark ? '1px solid rgba(255, 107, 26, 0.35)' : '1.5px solid #FDBA74';
+                                                        e.currentTarget.style.boxShadow = 'none';
+                                                    }
                                                 }}
                                             >
-                                                <IoDownloadOutline size={13} />
+                                                <IoDownloadOutline size={16} />
                                                 {report.actionText}
                                             </button>
                                         </div>
                                     </div>
                                 ))}
 
-                                {/* MASTER FINANCIAL SHEET FEATURED CARD */}
+                                {/* 7. MASTER FINANCIAL SHEET FEATURED CARD */}
                                 <div style={{ gridColumn: '1 / -1' }}>
                                     <div style={{
-                                        background: 'rgba(255, 140, 66, 0.04)',
-                                        border: '1.5px solid var(--primary-500)',
-                                        borderRadius: '12px',
-                                        padding: '16px',
+                                        background: isDark
+                                            ? 'linear-gradient(135deg, rgba(255, 107, 26, 0.12) 0%, #151824 100%)'
+                                            : 'linear-gradient(135deg, #FFF7ED 0%, #FFFFFF 100%)',
+                                        border: isDark ? '1.5px solid rgba(255, 107, 26, 0.4)' : '1.5px solid #FDBA74',
+                                        borderRadius: '24px',
+                                        padding: '22px 26px',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'space-between',
-                                        gap: '16px',
-                                        boxShadow: '0 4px 20px -8px rgba(255, 140, 66, 0.2)'
+                                        gap: '20px',
+                                        flexWrap: 'wrap',
+                                        boxShadow: isDark
+                                            ? '0 12px 36px -10px rgba(255, 107, 26, 0.2)'
+                                            : '0 10px 30px -8px rgba(255, 107, 26, 0.15), 0 0 1px 1px rgba(253, 186, 116, 0.4)'
                                     }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1, minWidth: '280px' }}>
                                             <div style={{
-                                                width: '40px',
-                                                height: '40px',
-                                                borderRadius: '8px',
-                                                background: 'var(--primary-500)',
-                                                color: '#ffffff',
+                                                width: '48px',
+                                                height: '48px',
+                                                borderRadius: '16px',
+                                                background: 'linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%)',
+                                                color: '#FFFFFF',
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 flexShrink: 0,
-                                                boxShadow: '0 4px 12px rgba(255, 140, 66, 0.3)'
+                                                boxShadow: '0 6px 18px rgba(255, 107, 26, 0.4)'
                                             }}>
-                                                <IoBarChartOutline size={20} />
+                                                <IoBarChartOutline size={24} />
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                    <span style={{ fontWeight: 750, fontSize: '1.05rem', color: 'var(--text-primary)' }}>Master Financial Sheet</span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                     <span style={{
-                                                        fontSize: '0.65rem',
+                                                        fontWeight: 850,
+                                                        fontSize: '1.12rem',
+                                                        color: isDark ? '#FFFFFF' : '#0F172A',
+                                                        letterSpacing: '-0.02em'
+                                                    }}>
+                                                        Master Financial Sheet
+                                                    </span>
+                                                    <span style={{
+                                                        fontSize: '0.68rem',
                                                         fontWeight: 800,
-                                                        padding: '2px 8px',
-                                                        borderRadius: '4px',
-                                                        background: 'var(--primary-500)',
-                                                        color: '#ffffff',
+                                                        padding: '3px 10px',
+                                                        borderRadius: '999px',
+                                                        background: 'linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%)',
+                                                        color: '#FFFFFF',
                                                         textTransform: 'uppercase',
-                                                        letterSpacing: '0.04em'
-                                                    }}>Most Used</span>
+                                                        letterSpacing: '0.05em',
+                                                        boxShadow: '0 2px 8px rgba(255, 107, 26, 0.3)'
+                                                    }}>
+                                                        MOST USED
+                                                    </span>
                                                 </div>
-                                                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.35 }}>Combined Sales & Expense Audit (Yearly summary format).</p>
+                                                <p style={{
+                                                    fontSize: '0.86rem',
+                                                    color: isDark ? '#94A3B8' : '#64748B',
+                                                    margin: 0,
+                                                    lineHeight: 1.4,
+                                                    fontWeight: 500
+                                                }}>
+                                                    Combined Sales & Expense Audit (Yearly summary format).
+                                                </p>
                                             </div>
                                         </div>
-                                        <button
-                                            style={{
-                                                height: '38px',
-                                                padding: '0 18px',
-                                                borderRadius: '8px',
-                                                background: 'var(--primary-500)',
-                                                border: 'none',
-                                                color: '#ffffff',
-                                                fontSize: '0.85rem',
-                                                fontWeight: 700,
-                                                cursor: 'pointer',
-                                                boxShadow: '0 4px 12px rgba(255, 140, 66, 0.25)',
-                                                transition: 'all 200ms ease',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '6px'
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                e.currentTarget.style.transform = 'translateY(-1px)';
-                                                e.currentTarget.style.boxShadow = '0 6px 16px rgba(255, 140, 66, 0.35)';
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.currentTarget.style.transform = 'none';
-                                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 140, 66, 0.25)';
-                                            }}
-                                        >
-                                            <IoDownloadOutline size={15} />
-                                            Generate Report
-                                        </button>
+
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                            <select
+                                                value={exportMasterYear}
+                                                onChange={(e) => setExportMasterYear(Number(e.target.value))}
+                                                style={{
+                                                    padding: '8px 14px',
+                                                    height: '42px',
+                                                    background: isDark ? '#10131D' : '#FFFFFF',
+                                                    border: isDark ? '1px solid #283046' : '1.5px solid #FDBA74',
+                                                    borderRadius: '12px',
+                                                    color: isDark ? '#FFFFFF' : '#0F172A',
+                                                    fontSize: '0.88rem',
+                                                    fontWeight: 700,
+                                                    outline: 'none',
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                {[2024, 2025, 2026, 2027].map(y => (
+                                                    <option key={y} value={y}>{y}</option>
+                                                ))}
+                                            </select>
+                                            <button
+                                                onClick={handleMasterFinancialExport}
+                                                disabled={downloading.master_financial}
+                                                style={{
+                                                    height: '42px',
+                                                    padding: '0 22px',
+                                                    borderRadius: '14px',
+                                                    background: 'linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%)',
+                                                    border: 'none',
+                                                    color: '#FFFFFF',
+                                                    fontSize: '0.88rem',
+                                                    fontWeight: 800,
+                                                    cursor: downloading.master_financial ? 'not-allowed' : 'pointer',
+                                                    boxShadow: '0 6px 20px rgba(255, 107, 26, 0.35)',
+                                                    transition: 'all 200ms ease',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px'
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    if (!downloading.master_financial) {
+                                                        e.currentTarget.style.transform = 'translateY(-1px)';
+                                                        e.currentTarget.style.boxShadow = '0 8px 24px rgba(255, 107, 26, 0.5)';
+                                                    }
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    if (!downloading.master_financial) {
+                                                        e.currentTarget.style.transform = 'none';
+                                                        e.currentTarget.style.boxShadow = '0 6px 20px rgba(255, 107, 26, 0.35)';
+                                                    }
+                                                }}
+                                            >
+                                                <IoFlashOutline size={17} />
+                                                {downloading.master_financial ? 'Generating...' : 'Generate Report'}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

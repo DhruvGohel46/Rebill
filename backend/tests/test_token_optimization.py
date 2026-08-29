@@ -61,6 +61,10 @@ class TokenOptimizationTestSuite(unittest.TestCase):
             classify_intent_deterministic("Remind me to call supplier at 4 PM"), "reminder"
         )
         self.assertEqual(classify_intent_deterministic("Create a bill for table 5"), "billing")
+        self.assertEqual(classify_intent_deterministic("give Priya a 2000 advance"), "worker")
+        self.assertEqual(
+            classify_intent_deterministic("give raju bhai 1000 for coldrink bill"), "expense"
+        )
 
     def test_03_zero_cost_fast_path(self):
         """Test zero-token fast-path short circuit for common business questions."""

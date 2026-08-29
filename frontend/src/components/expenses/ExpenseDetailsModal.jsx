@@ -1,163 +1,156 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import Button from '../ui/Button';
 import { formatCurrency } from '../../utils/api';
+import { useTheme } from '../../context/ThemeContext';
 import { FiX, FiCalendar, FiCreditCard, FiAlignLeft, FiEdit2, FiTrash2, FiUser, FiTag, FiDollarSign } from 'react-icons/fi';
 
 export default function ExpenseDetailsModal({ expense, onClose, onEdit, onDelete }) {
+  const { isDark } = useTheme();
   if (!expense) return null;
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'N/A';
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-  };
-
-  // eslint-disable-next-line no-unused-vars
-  const formatTime = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-GB', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
+    return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 1000,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)',
-      WebkitBackdropFilter: 'blur(10px)', padding: 'var(--spacing-4)'
+      backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(10px)',
+      WebkitBackdropFilter: 'blur(10px)', padding: '16px'
     }}>
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-        className="liquid-glass-card"
+        exit={{ opacity: 0, scale: 0.95, y: 15 }}
         style={{
-          width: '100%', maxWidth: '550px', maxHeight: '90vh',
+          width: '100%', maxWidth: '520px', maxHeight: '90vh',
           display: 'flex', flexDirection: 'column',
-          borderRadius: 'var(--radius-3xl)',
-          backgroundColor: 'rgba(24, 24, 27, 0.95)',
-          border: '1px solid var(--glass-border)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          borderRadius: '24px',
+          background: isDark ? 'linear-gradient(165deg, #18191D 0%, #111215 100%)' : '#FFFFFF',
+          border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #E2E8F0',
+          boxShadow: isDark ? '0 25px 50px -12px rgba(0, 0, 0, 0.7)' : '0 20px 40px -10px rgba(15, 23, 42, 0.12)',
           overflow: 'hidden',
           zIndex: 1001,
-          fontFamily: 'Inter, system-ui, sans-serif'
         }}
       >
         {/* Header */}
         <div style={{
-          padding: 'var(--spacing-8) var(--spacing-8) var(--spacing-6) var(--spacing-8)',
-          borderBottom: '1px solid var(--glass-border)',
+          padding: '20px 24px',
+          borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #F1F5F9',
           display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-          background: 'linear-gradient(to right, rgba(249, 115, 22, 0.05), transparent)'
+          background: isDark ? 'linear-gradient(to right, rgba(255, 107, 26, 0.08), transparent)' : 'linear-gradient(to right, #FFF7ED, #FFFFFF)'
         }}>
           <div>
             <div style={{ 
               display: 'inline-flex', alignItems: 'center', gap: '6px',
-              padding: '4px 12px', borderRadius: 'var(--radius-full)',
-              background: 'rgba(255, 255, 255, 0.05)', color: 'var(--primary-400)',
-              fontSize: 'var(--text-xs)', fontWeight: '700', textTransform: 'uppercase',
-              letterSpacing: '0.05em', marginBottom: 'var(--spacing-3)'
+              padding: '4px 12px', borderRadius: '999px',
+              background: 'rgba(255, 107, 26, 0.15)', color: '#FF6B1A',
+              fontSize: '0.75rem', fontWeight: '800', textTransform: 'uppercase',
+              letterSpacing: '0.05em', marginBottom: '8px'
             }}>
               <FiTag size={12} /> {expense.category}
             </div>
-            <h2 style={{ margin: 0, fontSize: 'var(--text-2xl)', fontWeight: '800', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+            <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: '850', color: isDark ? '#FFFFFF' : '#0F172A', letterSpacing: '-0.02em' }}>
               {expense.title}
             </h2>
           </div>
           <button 
             onClick={onClose} 
-            className="icon-button"
             style={{ 
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              background: isDark ? 'rgba(255, 255, 255, 0.06)' : '#F1F5F9',
+              border: 'none',
               borderRadius: '50%',
-              padding: '8px'
+              width: '34px',
+              height: '34px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: isDark ? '#94A3B8' : '#64748B',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
             }}
           >
-            <FiX size={20} />
+            <FiX size={18} />
           </button>
         </div>
 
-        <div style={{ padding: 'var(--spacing-8)', overflowY: 'auto', flex: 1 }}>
+        <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
           {/* Main Info Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-8)', marginBottom: 'var(--spacing-8)' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--spacing-3)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
               <div style={{ 
-                width: '32px', height: '32px', borderRadius: '8px', 
-                background: 'rgba(255, 255, 255, 0.03)', display: 'flex', 
-                alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' 
+                width: '36px', height: '36px', borderRadius: '10px', 
+                background: isDark ? '#16171B' : '#F1F5F9', display: 'flex', 
+                alignItems: 'center', justifyContent: 'center', color: isDark ? '#94A3B8' : '#64748B' 
               }}>
-                <FiCalendar />
+                <FiCalendar size={16} />
               </div>
               <div>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', fontWeight: '600', textTransform: 'uppercase', marginBottom: '2px' }}>Date</div>
-                <div style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{formatDate(expense.date)}</div>
+                <div style={{ fontSize: '0.72rem', color: isDark ? '#64748B' : '#94A3B8', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>Date</div>
+                <div style={{ color: isDark ? '#FFFFFF' : '#0F172A', fontWeight: '700', fontSize: '0.92rem' }}>{formatDate(expense.date)}</div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--spacing-3)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
               <div style={{ 
-                width: '32px', height: '32px', borderRadius: '8px', 
-                background: 'rgba(255, 255, 255, 0.03)', display: 'flex', 
-                alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' 
+                width: '36px', height: '36px', borderRadius: '10px', 
+                background: isDark ? '#16171B' : '#F1F5F9', display: 'flex', 
+                alignItems: 'center', justifyContent: 'center', color: isDark ? '#94A3B8' : '#64748B' 
               }}>
-                <FiCreditCard />
+                <FiCreditCard size={16} />
               </div>
               <div>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', fontWeight: '600', textTransform: 'uppercase', marginBottom: '2px' }}>Payment Method</div>
-                <div style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{expense.payment_method}</div>
+                <div style={{ fontSize: '0.72rem', color: isDark ? '#64748B' : '#94A3B8', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>Payment Method</div>
+                <div style={{ color: isDark ? '#FFFFFF' : '#0F172A', fontWeight: '700', fontSize: '0.92rem' }}>{expense.payment_method || 'Cash'}</div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--spacing-3)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
               <div style={{ 
-                width: '32px', height: '32px', borderRadius: '8px', 
-                background: 'rgba(255, 255, 255, 0.03)', display: 'flex', 
-                alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' 
+                width: '36px', height: '36px', borderRadius: '10px', 
+                background: isDark ? '#16171B' : '#F1F5F9', display: 'flex', 
+                alignItems: 'center', justifyContent: 'center', color: isDark ? '#94A3B8' : '#64748B' 
               }}>
-                <FiUser />
+                <FiUser size={16} />
               </div>
               <div>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', fontWeight: '600', textTransform: 'uppercase', marginBottom: '2px' }}>Recipient / Worker</div>
-                <div style={{ color: expense.worker_name ? 'var(--text-primary)' : 'var(--text-tertiary)', fontWeight: '600' }}>
+                <div style={{ fontSize: '0.72rem', color: isDark ? '#64748B' : '#94A3B8', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>Linked Worker</div>
+                <div style={{ color: expense.worker_name ? '#FF6B1A' : isDark ? '#64748B' : '#94A3B8', fontWeight: '700', fontSize: '0.92rem' }}>
                   {expense.worker_name || 'None linked'}
                 </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--spacing-3)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
               <div style={{ 
-                width: '32px', height: '32px', borderRadius: '8px', 
-                background: 'rgba(255, 255, 255, 0.03)', display: 'flex', 
-                alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' 
+                width: '36px', height: '36px', borderRadius: '10px', 
+                background: 'rgba(255, 107, 26, 0.1)', display: 'flex', 
+                alignItems: 'center', justifyContent: 'center', color: '#FF6B1A' 
               }}>
-                <FiDollarSign />
+                <FiDollarSign size={16} />
               </div>
               <div>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', fontWeight: '600', textTransform: 'uppercase', marginBottom: '2px' }}>Total Amount</div>
-                <div style={{ color: 'var(--primary-400)', fontSize: 'var(--text-xl)', fontWeight: '800' }}>{formatCurrency(expense.amount)}</div>
+                <div style={{ fontSize: '0.72rem', color: isDark ? '#64748B' : '#94A3B8', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '2px' }}>Total Amount</div>
+                <div style={{ color: '#FF6B1A', fontSize: '1.2rem', fontWeight: '900' }}>{formatCurrency(expense.amount)}</div>
               </div>
             </div>
           </div>
 
           {/* Notes Section */}
           <div style={{ 
-            padding: 'var(--spacing-6)',
-            background: 'rgba(255, 255, 255, 0.02)',
-            borderRadius: 'var(--radius-2xl)',
-            border: '1px solid var(--glass-border)'
+            padding: '16px',
+            background: isDark ? '#16171B' : '#F8FAFC',
+            borderRadius: '16px',
+            border: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #E2E8F0'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 'var(--spacing-3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', color: isDark ? '#94A3B8' : '#64748B', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '8px' }}>
               <FiAlignLeft /> Notes & Remarks
             </div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+            <div style={{ color: isDark ? '#E2E8F0' : '#334155', fontSize: '0.88rem', lineHeight: '1.6', whiteSpace: 'pre-wrap', fontWeight: 500 }}>
               {expense.notes || 'No notes provided for this expense.'}
             </div>
           </div>
@@ -165,48 +158,52 @@ export default function ExpenseDetailsModal({ expense, onClose, onEdit, onDelete
 
         {/* Footer Actions */}
         <div style={{
-          padding: 'var(--spacing-6) var(--spacing-8)',
-          borderTop: '1px solid var(--glass-border)',
-          background: 'rgba(255, 255, 255, 0.02)',
+          padding: '16px 24px',
+          borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1.5px solid #F1F5F9',
+          background: isDark ? 'rgba(0, 0, 0, 0.2)' : '#F8FAFC',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center'
         }}>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '10px' }}>
             <button
               onClick={onEdit}
               style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '10px 20px', borderRadius: 'var(--radius-xl)',
-                background: 'rgba(249, 115, 22, 0.1)', color: 'var(--primary-400)',
-                border: '1px solid rgba(249, 115, 22, 0.2)', fontWeight: '600',
-                cursor: 'pointer', transition: 'all 0.2s'
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 16px', borderRadius: '10px',
+                background: 'rgba(59, 130, 246, 0.1)', color: '#3B82F6',
+                border: '1px solid rgba(59, 130, 246, 0.2)', fontWeight: '750',
+                fontSize: '0.84rem', cursor: 'pointer', transition: 'all 0.2s'
               }}
-              onMouseEnter={(e) => e.target.style.background = 'rgba(249, 115, 22, 0.15)'}
-              onMouseLeave={(e) => e.target.style.background = 'rgba(249, 115, 22, 0.1)'}
             >
-              <FiEdit2 size={16} /> Edit Record
+              <FiEdit2 size={14} /> Edit
             </button>
             <button
               onClick={onDelete}
               style={{
-                display: 'flex', alignItems: 'center', gap: '8px',
-                padding: '10px 20px', borderRadius: 'var(--radius-xl)',
-                background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444',
-                border: '1px solid rgba(239, 68, 68, 0.2)', fontWeight: '600',
-                cursor: 'pointer', transition: 'all 0.2s'
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '8px 16px', borderRadius: '10px',
+                background: 'rgba(239, 68, 68, 0.1)', color: '#EF4444',
+                border: '1px solid rgba(239, 68, 68, 0.2)', fontWeight: '750',
+                fontSize: '0.84rem', cursor: 'pointer', transition: 'all 0.2s'
               }}
-              onMouseEnter={(e) => e.target.style.background = 'rgba(239, 68, 68, 0.15)'}
-              onMouseLeave={(e) => e.target.style.background = 'rgba(239, 68, 68, 0.1)'}
             >
-              <FiTrash2 size={16} /> Delete
+              <FiTrash2 size={14} /> Delete
             </button>
           </div>
-          <Button 
-            variant="ghost" 
+          <button 
             onClick={onClose}
-            style={{ borderRadius: 'var(--radius-xl)' }}
+            style={{
+              padding: '8px 18px',
+              borderRadius: '10px',
+              border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1.5px solid #CBD5E1',
+              background: 'transparent',
+              color: isDark ? '#94A3B8' : '#64748B',
+              fontWeight: 700,
+              fontSize: '0.84rem',
+              cursor: 'pointer'
+            }}
           >
             Close
-          </Button>
+          </button>
         </div>
       </motion.div>
     </div>

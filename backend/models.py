@@ -111,6 +111,12 @@ class Bill(db.Model):
     status = db.Column(db.String(50), default="CONFIRMED")
     order_type = db.Column(db.String(50), default="dine-in")
     table_no = db.Column(db.String(50), nullable=True)
+    payment_status = db.Column(db.String(20), default="paid")  # "paid" | "pending" | "partial"
+    amount_paid = db.Column(db.Float, default=0.0)
+    amount_pending = db.Column(db.Float, default=0.0)
+    merge_group_id = db.Column(
+        db.String(36), db.ForeignKey("merge_groups.id"), nullable=True
+    )
     created_at = db.Column(db.DateTime, default=func.now())
     updated_at = db.Column(db.DateTime, default=func.now(), onupdate=func.now())
 
@@ -118,7 +124,53 @@ class Bill(db.Model):
         db.UniqueConstraint("bill_no", "created_at", name="idx_daily_bill_unique"),
         db.Index("idx_bills_created_at_no", "created_at", "bill_no"),
         db.Index("idx_bills_status", "status"),
+        db.Index("idx_bills_payment_status", "payment_status"),
     )
+
+
+class MergeGroup(db.Model):
+    """Represents a merge event that combines two or more bills.
+
+    Original Bill rows keep their own data intact — they just gain a
+    merge_group_id FK.  The group stores aggregated totals and an
+    ordered list of member bill IDs for receipt rendering and
+    audit trail.
+    """
+
+    __tablename__ = "merge_groups"
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    created_at = db.Column(db.DateTime, default=func.now())
+    created_by = db.Column(db.String(100))
+    member_bill_ids = db.Column(db.Text)  # JSON array of bill IDs, in merge order
+    total_amount = db.Column(db.Float, default=0.0)
+    amount_paid = db.Column(db.Float, default=0.0)
+    amount_pending = db.Column(db.Float, default=0.0)
+    status = db.Column(db.String(20), default="open")  # "open" | "settled" | "reverted"
+    settled_at = db.Column(db.DateTime, nullable=True)
+
+    bills = db.relationship("Bill", backref="merge_group_ref", lazy=True)
+
+    __table_args__ = (
+        db.Index("idx_merge_groups_status", "status"),
+    )
+
+    def to_dict(self):
+        import json as _json
+
+        return {
+            "id": self.id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_by": self.created_by,
+            "member_bill_ids": (
+                _json.loads(self.member_bill_ids) if self.member_bill_ids else []
+            ),
+            "total_amount": self.total_amount,
+            "amount_paid": self.amount_paid,
+            "amount_pending": self.amount_pending,
+            "status": self.status,
+            "settled_at": self.settled_at.isoformat() if self.settled_at else None,
+        }
 
 
 # ==========================================
@@ -451,6 +503,7 @@ class DailySalesSummary(db.Model):
     total_expenses = db.Column(db.Float, default=0.0)
     net_profit = db.Column(db.Float, default=0.0)
     average_bill_value = db.Column(db.Float, default=0.0)
+    pending_revenue = db.Column(db.Float, default=0.0)  # Sum of amount_pending for pending/partial bills
     top_products_json = db.Column(db.Text, default="[]")  # JSON of top 10 products
     updated_at = db.Column(db.DateTime, default=func.now(), onupdate=func.now())
 
@@ -466,6 +519,7 @@ class DailySalesSummary(db.Model):
             "total_expenses": self.total_expenses,
             "net_profit": self.net_profit,
             "average_bill_value": self.average_bill_value,
+            "pending_revenue": getattr(self, "pending_revenue", 0.0) or 0.0,
             "top_products": (_json.loads(self.top_products_json) if self.top_products_json else []),
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
@@ -591,6 +645,9 @@ class AgentActionLog(db.Model):
     )  # 'proposed', 'approved', 'rejected', 'executed', 'failed'
     result_summary = db.Column(db.Text, nullable=True)
     error_message = db.Column(db.Text, nullable=True)
+    user_message = db.Column(db.Text, nullable=True)  # Original user prompt
+    affected_entity_id = db.Column(db.String(100), nullable=True)  # Created/modified DB record ID
+    execution_timestamp = db.Column(db.DateTime, nullable=True)  # Verified execution commit time
     performed_by = db.Column(db.String(100), default="admin")
     input_tokens = db.Column(db.Integer, default=0)
     output_tokens = db.Column(db.Integer, default=0)
@@ -619,6 +676,9 @@ class AgentActionLog(db.Model):
             "status": self.status,
             "result_summary": self.result_summary,
             "error_message": self.error_message,
+            "user_message": self.user_message,
+            "affected_entity_id": self.affected_entity_id,
+            "execution_timestamp": self.execution_timestamp.isoformat() if self.execution_timestamp else None,
             "performed_by": self.performed_by,
             "input_tokens": self.input_tokens or 0,
             "output_tokens": self.output_tokens or 0,
@@ -626,3 +686,92 @@ class AgentActionLog(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+
+class AgentInteractionAudit(db.Model):
+    __tablename__ = "agent_interaction_audits"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    session_id = db.Column(db.String(100), nullable=True, index=True)
+    user_message = db.Column(db.Text, nullable=False)
+    routed_agent = db.Column(db.String(50), nullable=False)
+    tools_called = db.Column(db.Text, default="[]")  # JSON list of tools & arguments
+    tool_results = db.Column(db.Text, default="[]")  # JSON list of tool outcomes
+    status = db.Column(db.String(30), default="completed")  # completed, proposal_generated, executed, failed
+    has_mutation = db.Column(db.Boolean, default=False)
+    affected_entities = db.Column(db.Text, nullable=True)
+    assistant_response = db.Column(db.Text, nullable=True)
+    performed_by = db.Column(db.String(100), default="admin")
+    created_at = db.Column(db.DateTime, default=func.now(), index=True)
+
+    __table_args__ = (
+        db.Index("idx_agent_interaction_agent", "routed_agent"),
+        db.Index("idx_agent_interaction_created", "created_at"),
+    )
+
+    def to_dict(self):
+        try:
+            tools = json.loads(self.tools_called) if self.tools_called else []
+        except Exception:
+            tools = []
+        try:
+            results = json.loads(self.tool_results) if self.tool_results else []
+        except Exception:
+            results = []
+
+        return {
+            "id": self.id,
+            "session_id": self.session_id,
+            "user_message": self.user_message,
+            "routed_agent": self.routed_agent,
+            "tools_called": tools,
+            "tool_results": results,
+            "status": self.status,
+            "has_mutation": bool(self.has_mutation),
+            "affected_entities": self.affected_entities,
+            "assistant_response": self.assistant_response,
+            "performed_by": self.performed_by,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
+
+
+# ==========================================
+# AGENT GRAPH CHECKPOINT
+# ==========================================
+
+
+class AgentCheckpoint(db.Model):
+    """
+    Persists full AgentState JSON for a paused graph execution.
+
+    Keying strategy: conversation_id == str(AgentActionLog.id) of the first
+    pending action proposed in this turn. This reuses the existing action_id
+    round-trip so no frontend changes are needed.
+
+    One row per in-flight conversation — UPSERT on conversation_id, never
+    one row per turn. Rows with status='done' are cleaned up after 24 h by the
+    scheduled cleanup job; status='waiting_approval' rows older than 7 days are
+    marked 'expired'.
+    """
+
+    __tablename__ = "agent_checkpoints"
+
+    conversation_id = db.Column(db.String(100), primary_key=True)
+    state_json = db.Column(db.Text, nullable=False)       # json.dumps(AgentState)
+    status = db.Column(db.String(30), nullable=False)     # mirrors state["status"]
+    created_at = db.Column(db.DateTime, default=func.now())
+    updated_at = db.Column(db.DateTime, default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        db.Index("idx_agent_checkpoints_status", "status"),
+        db.Index("idx_agent_checkpoints_updated_at", "updated_at"),
+    )
+
+    def to_dict(self):
+        return {
+            "conversation_id": self.conversation_id,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+

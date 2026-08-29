@@ -109,6 +109,7 @@ def create_bill():
         "total_amount": total,
         "items": validated_products,
         "payment_method": validated.get("payment_method", "CASH"),
+        "payment_status": validated.get("payment_status", "paid"),
         "order_type": validated.get("order_type", "dine-in"),
         "table_no": validated.get("table_no", ""),
     }
@@ -536,3 +537,81 @@ def clear_all_bills():
     cache.clear()  # Invalidate Flask-Caching for summary endpoints
 
     return jsonify({"success": True, "message": "All bills cleared successfully"}), 200
+
+
+# ==========================================================================
+# LIVE ORDER BOARD ENDPOINTS
+# ==========================================================================
+
+
+@billing_bp.route("/live", methods=["GET"])
+@safe_route
+def get_live_orders():
+    """Get all live/open orders for the board with version-hash polling."""
+    from services.live_order_service import get_live_orders as _get_live_orders
+
+    client_version = request.args.get("version", "")
+    result = _get_live_orders()
+
+    # If client already has this version, return 304
+    if client_version and client_version == result.get("version_hash"):
+        return "", 304
+
+    return jsonify({"success": True, **result}), 200
+
+
+@billing_bp.route("/merge", methods=["POST"])
+@safe_route
+def merge_orders():
+    """Merge 2+ bills into a single merge group."""
+    from validators import MergeRequestSchema, MarshmallowValidationError
+    from services.live_order_service import merge_bills
+
+    data = request.get_json()
+    try:
+        validated = MergeRequestSchema().load(data or {})
+    except MarshmallowValidationError as e:
+        raise ValidationError(f"Invalid merge request: {e.messages}", code="MERGE_VALIDATION_FAILED")
+
+    actor = request.headers.get("X-User-Sub", "admin")
+    group = merge_bills(validated["bill_ids"], actor=actor)
+
+    cache.clear()
+
+    return jsonify({"success": True, "merge_group": group}), 200
+
+
+@billing_bp.route("/merge/<string:group_id>/settle", methods=["POST"])
+@safe_route
+def settle_merge_group(group_id):
+    """Settle an open merge group by applying payments."""
+    from validators import SettleRequestSchema, MarshmallowValidationError
+    from services.live_order_service import settle_group
+
+    data = request.get_json()
+    try:
+        validated = SettleRequestSchema().load(data or {})
+    except MarshmallowValidationError as e:
+        raise ValidationError(f"Invalid settle request: {e.messages}", code="SETTLE_VALIDATION_FAILED")
+
+    actor = request.headers.get("X-User-Sub", "admin")
+    group = settle_group(group_id, validated["payments"], actor=actor)
+
+    cache.clear()
+
+    return jsonify({"success": True, "merge_group": group}), 200
+
+
+@billing_bp.route("/merge/<string:group_id>/split", methods=["POST"])
+@require_admin
+@safe_route
+def split_merge_group(group_id):
+    """Un-merge a merge group. Admin-only, only open groups."""
+    from services.live_order_service import split_group
+
+    actor = request.headers.get("X-User-Sub", "admin")
+    group = split_group(group_id, actor=actor)
+
+    cache.clear()
+
+    return jsonify({"success": True, "merge_group": group}), 200

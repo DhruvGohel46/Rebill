@@ -42,7 +42,7 @@ def update_daily_summary(target_date=None):
         target_date = target_date.date()
 
     try:
-        # --- Sales aggregation ---
+        # --- Sales aggregation (only PAID bills count as collected revenue) ---
         sales_result = (
             db.session.query(
                 func.count(Bill.id).label("total_orders"),
@@ -51,6 +51,7 @@ def update_daily_summary(target_date=None):
             .filter(
                 func.date(Bill.created_at) == target_date,
                 ~func.upper(func.trim(Bill.status)).in_(_EXCLUDED_BILL_STATUSES),
+                Bill.payment_status == "paid",
             )
             .first()
         )
@@ -58,6 +59,20 @@ def update_daily_summary(target_date=None):
         total_orders = sales_result.total_orders or 0
         total_sales = float(sales_result.total_sales or 0)
         avg_bill = total_sales / total_orders if total_orders > 0 else 0.0
+
+        # --- Pending revenue (pending + partial bills) ---
+        pending_result = (
+            db.session.query(
+                func.coalesce(func.sum(Bill.amount_pending), 0).label("pending_revenue"),
+            )
+            .filter(
+                func.date(Bill.created_at) == target_date,
+                ~func.upper(func.trim(Bill.status)).in_(_EXCLUDED_BILL_STATUSES),
+                Bill.payment_status.in_(["pending", "partial"]),
+            )
+            .first()
+        )
+        pending_revenue = float(pending_result.pending_revenue or 0)
 
         # --- Top products (lightweight JSON snapshot) ---
         top_products_json = _compute_top_products(target_date)
@@ -83,13 +98,15 @@ def update_daily_summary(target_date=None):
         summary.total_expenses = total_expenses
         summary.net_profit = net_profit
         summary.average_bill_value = avg_bill
+        summary.pending_revenue = pending_revenue
         summary.top_products_json = top_products_json
 
         db.session.commit()
         logger.debug(
             f"Daily summary updated for {target_date}: "
             f"sales={total_sales}, orders={total_orders}, "
-            f"expenses={total_expenses}, profit={net_profit}"
+            f"expenses={total_expenses}, profit={net_profit}, "
+            f"pending={pending_revenue}"
         )
 
     except Exception as e:

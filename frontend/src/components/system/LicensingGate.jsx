@@ -12,6 +12,7 @@ import {
 import { cloudAuthAPI, cloudLicenseAPI, setCloudAuthToken } from '../../api/cloudApi';
 import '../../styles/Licensing.css';
 import infoosDevice3d from '../../assets/infoos_device_3d.png';
+import infoosLogo from '../../assets/logo.png';
 
 const OFFLINE_LIMIT_DAYS = 14;
 const OFFLINE_WARNING_DAYS = 7;
@@ -362,7 +363,11 @@ export default function LicensingGate({ children }) {
     return (
       <div className="licensing-container">
         <div className="licensing-card" style={{ alignItems: 'center', justifyContent: 'center', minHeight: '260px' }}>
-          <div className="licensing-logo">InfoOS</div>
+          <div className="licensing-logo-area" style={{ marginBottom: '16px' }}>
+            <img src={infoosLogo} alt="InfoOS Logo" className="licensing-logo-img" />
+            <div className="licensing-logo">InfoOS</div>
+            <div className="licensing-eyebrow">POINT OF SALE OS</div>
+          </div>
           <div style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <IoRefreshOutline className="spinning" size={18} />
             <span>Validating subscription license...</span>
@@ -399,7 +404,7 @@ export default function LicensingGate({ children }) {
             <div className="licensing-form-container">
               {/* Logo & Eyebrow */}
               <div className="licensing-logo-area">
-                <img src="/logo.png" alt="InfoOS Logo" className="licensing-logo-img" />
+                <img src={infoosLogo} alt="InfoOS Logo" className="licensing-logo-img" />
                 <div className="licensing-logo">InfoOS</div>
                 <div className="licensing-eyebrow">POINT OF SALE OS</div>
               </div>
@@ -488,7 +493,10 @@ export default function LicensingGate({ children }) {
       <div className="licensing-container">
         <div className="licensing-card">
           <div className="licensing-header">
-            <div className="licensing-logo">InfoOS</div>
+            <div className="licensing-logo-area" style={{ marginBottom: '8px' }}>
+              <img src={infoosLogo} alt="InfoOS Logo" className="licensing-logo-img" />
+              <div className="licensing-logo">InfoOS</div>
+            </div>
             <div style={{ color: '#f87171', fontSize: '48px', margin: '8px 0' }}>
               <IoWarningOutline />
             </div>
@@ -577,8 +585,11 @@ export default function LicensingGate({ children }) {
 
         <div className="licensing-card">
           <div className="licensing-header">
-            <div className="licensing-logo">InfoOS</div>
-            <div className="licensing-logo-sub">Business Operating System</div>
+            <div className="licensing-logo-area" style={{ marginBottom: '8px' }}>
+              <img src={infoosLogo} alt="InfoOS Logo" className="licensing-logo-img" />
+              <div className="licensing-logo">InfoOS</div>
+              <div className="licensing-logo-sub">Business Operating System</div>
+            </div>
             <div className="licensing-divider"></div>
             <div style={{ color: 'var(--primary-500)', fontSize: '48px', margin: '8px 0' }}>
               <IoLaptopOutline />

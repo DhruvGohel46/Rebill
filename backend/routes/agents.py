@@ -3,12 +3,13 @@ import logging
 from flask import Blueprint, request, jsonify, current_app, Response, stream_with_context
 from functools import wraps
 from datetime import datetime, timedelta
-from models import db, AgentConfig, AgentPermission, AgentActionLog
+from models import db, AgentConfig, AgentPermission, AgentActionLog, AgentCheckpoint, AgentInteractionAudit
 from agents.crypto_utils import encrypt_api_key, decrypt_api_key
 from agents.llm_adapter import get_adapter
 from agents.domain_agents import OrchestratorAgent
 from agents.tools import execute_mutating_tool
 from agents.permission_gate import HARDCODED_CONFIRMATION_AGENTS
+from agents.graph_runner import GRAPH
 
 _log = logging.getLogger(__name__)
 agents_bp = Blueprint("agents", __name__, url_prefix="/api/agents")
@@ -146,7 +147,14 @@ def agent_chat():
 @agents_bp.route("/actions/<int:action_id>/approve", methods=["POST"])
 @admin_only_agent_access
 def approve_action(action_id):
-    """Execute a previously proposed action directly without re-invoking the LLM."""
+    """Execute a previously proposed action directly without re-invoking the LLM.
+
+    If the action was proposed via the state graph (AgentCheckpoint exists),
+    the graph is resumed with approved=True so a fresh synthesis LLM call
+    produces an updated structured response.  Falls back to the legacy
+    direct-execute path for actions created before the graph was introduced
+    or for full-autonomy direct executions.
+    """
     action_log = AgentActionLog.query.get(action_id)
     if not action_log:
         return jsonify({"success": False, "error": f"Action #{action_id} not found."}), 404
@@ -162,6 +170,54 @@ def approve_action(action_id):
             400,
         )
 
+    # ── Graph resume path ────────────────────────────────────────────────────
+    conversation_id = str(action_id)
+    checkpoint = AgentCheckpoint.query.filter_by(
+        conversation_id=conversation_id, status="waiting_approval"
+    ).first()
+
+    if checkpoint:
+        try:
+            config = AgentConfig.query.first()
+            if config and config.encrypted_api_key and config.enabled:
+                raw_key = decrypt_api_key(config.encrypted_api_key)
+                if raw_key:
+                    adapter = get_adapter(
+                        provider=config.provider, api_key=raw_key, base_url=config.base_url
+                    )
+                    final_state = GRAPH.resume(
+                        conversation_id=conversation_id,
+                        approved=True,
+                        adapter=adapter,
+                    )
+                    return (
+                        jsonify(
+                            {
+                                "success": True,
+                                "action_id": action_id,
+                                "status": "executed",
+                                "diff_summary": action_log.diff_summary,
+                                "affected_entity_id": action_log.affected_entity_id,
+                                "execution_timestamp": (
+                                    action_log.execution_timestamp.isoformat()
+                                    if action_log.execution_timestamp
+                                    else datetime.now().isoformat()
+                                ),
+                                "message": f"Action approved and executed: {action_log.diff_summary}",
+                                # additive fields from graph resume
+                                "response": final_state.get("final_response") or "",
+                                "executed_actions": final_state.get("executed_actions", []),
+                                "conversation_id": conversation_id,
+                            }
+                        ),
+                        200,
+                    )
+        except ValueError as ve:
+            _log.warning("Graph resume failed for action %s: %s — falling back", action_id, ve)
+        except Exception as e:
+            _log.error("Graph resume error for action %s: %s — falling back", action_id, e)
+
+    # ── Legacy / fallback direct-execute path (unchanged) ───────────────────
     try:
         args = json.loads(action_log.args_json) if action_log.args_json else {}
     except Exception:
@@ -172,7 +228,22 @@ def approve_action(action_id):
     if exec_res.get("success", False):
         action_log.status = "executed"
         action_log.result_summary = json.dumps(exec_res)
+        action_log.execution_timestamp = datetime.now()
         action_log.updated_at = datetime.now()
+
+        # Extract affected entity id if present
+        entity_id = (
+            exec_res.get("expense_id")
+            or exec_res.get("product_id")
+            or exec_res.get("worker_id")
+            or exec_res.get("bill_no")
+            or exec_res.get("reminder_id")
+            or exec_res.get("category_id")
+            or exec_res.get("group_id")
+        )
+        if entity_id:
+            action_log.affected_entity_id = str(entity_id)
+
         db.session.commit()
         return (
             jsonify(
@@ -180,6 +251,9 @@ def approve_action(action_id):
                     "success": True,
                     "action_id": action_log.id,
                     "status": "executed",
+                    "diff_summary": action_log.diff_summary,
+                    "affected_entity_id": action_log.affected_entity_id,
+                    "execution_timestamp": action_log.execution_timestamp.isoformat(),
                     "message": f"Action approved and executed: {action_log.diff_summary}",
                     "result": exec_res,
                 }
@@ -207,7 +281,12 @@ def approve_action(action_id):
 @agents_bp.route("/actions/<int:action_id>/reject", methods=["POST"])
 @admin_only_agent_access
 def reject_action(action_id):
-    """Discard a proposed action."""
+    """Discard a proposed action.
+
+    If a graph checkpoint exists, the graph is resumed with approved=False so
+    the conversation can continue (e.g. the LLM acknowledges the rejection).
+    Falls back to the legacy mark-rejected path for pre-graph actions.
+    """
     action_log = AgentActionLog.query.get(action_id)
     if not action_log:
         return jsonify({"success": False, "error": f"Action #{action_id} not found."}), 404
@@ -223,6 +302,46 @@ def reject_action(action_id):
             400,
         )
 
+    # ── Graph resume path ────────────────────────────────────────────────────
+    conversation_id = str(action_id)
+    checkpoint = AgentCheckpoint.query.filter_by(
+        conversation_id=conversation_id, status="waiting_approval"
+    ).first()
+
+    if checkpoint:
+        try:
+            config = AgentConfig.query.first()
+            if config and config.encrypted_api_key and config.enabled:
+                raw_key = decrypt_api_key(config.encrypted_api_key)
+                if raw_key:
+                    adapter = get_adapter(
+                        provider=config.provider, api_key=raw_key, base_url=config.base_url
+                    )
+                    final_state = GRAPH.resume(
+                        conversation_id=conversation_id,
+                        approved=False,
+                        adapter=adapter,
+                    )
+                    return (
+                        jsonify(
+                            {
+                                "success": True,
+                                "action_id": action_id,
+                                "status": "rejected",
+                                "message": f"Action proposal rejected: {action_log.diff_summary}",
+                                # additive fields from graph resume
+                                "response": final_state.get("final_response") or "",
+                                "conversation_id": conversation_id,
+                            }
+                        ),
+                        200,
+                    )
+        except ValueError as ve:
+            _log.warning("Graph resume (reject) failed for action %s: %s — falling back", action_id, ve)
+        except Exception as e:
+            _log.error("Graph resume (reject) error for action %s: %s — falling back", action_id, e)
+
+    # ── Legacy / fallback path (unchanged) ──────────────────────────────────
     action_log.status = "rejected"
     action_log.updated_at = datetime.now()
     db.session.commit()
@@ -548,18 +667,138 @@ def update_permissions():
 @agents_bp.route("/logs", methods=["GET"])
 @admin_only_agent_access
 def get_audit_logs():
-    """Get searchable, filterable agent audit action logs including token metrics."""
-    limit = int(request.args.get("limit", 50))
+    """Get searchable, filterable agent audit action logs with date range and search filters."""
+    limit = int(request.args.get("limit", 100))
+    offset = int(request.args.get("offset", 0))
     agent_filter = request.args.get("agent")
     status_filter = request.args.get("status")
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    search_query = request.args.get("search")
 
     query = AgentActionLog.query
 
-    if agent_filter:
-        query = query.filter_by(agent_name=agent_filter)
-    if status_filter:
-        query = query.filter_by(status=status_filter)
+    if agent_filter and agent_filter != "all":
+        query = query.filter(AgentActionLog.agent_name == agent_filter)
+    if status_filter and status_filter != "all":
+        query = query.filter(AgentActionLog.status == status_filter)
+    if start_date:
+        try:
+            st = datetime.strptime(start_date, "%Y-%m-%d")
+            query = query.filter(AgentActionLog.created_at >= st)
+        except Exception:
+            pass
+    if end_date:
+        try:
+            et = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            query = query.filter(AgentActionLog.created_at <= et)
+        except Exception:
+            pass
+    if search_query:
+        search_pattern = f"%{search_query}%"
+        query = query.filter(
+            db.or_(
+                AgentActionLog.diff_summary.ilike(search_pattern),
+                AgentActionLog.user_message.ilike(search_pattern),
+                AgentActionLog.tool_name.ilike(search_pattern),
+                AgentActionLog.affected_entity_id.ilike(search_pattern),
+            )
+        )
 
-    logs = query.order_by(AgentActionLog.created_at.desc()).limit(limit).all()
+    total_count = query.count()
+    logs = query.order_by(AgentActionLog.created_at.desc()).offset(offset).limit(limit).all()
 
-    return jsonify({"success": True, "count": len(logs), "logs": [l.to_dict() for l in logs]}), 200
+    return jsonify({"success": True, "total_count": total_count, "count": len(logs), "logs": [l.to_dict() for l in logs]}), 200
+
+
+@agents_bp.route("/logs/export", methods=["GET"])
+@admin_only_agent_access
+def export_audit_logs():
+    """Export audit action ledger to CSV or JSON for month-end accountant reconciliation."""
+    format_type = request.args.get("format", "csv").lower()
+    agent_filter = request.args.get("agent")
+    status_filter = request.args.get("status")
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+
+    query = AgentActionLog.query
+    if agent_filter and agent_filter != "all":
+        query = query.filter(AgentActionLog.agent_name == agent_filter)
+    if status_filter and status_filter != "all":
+        query = query.filter(AgentActionLog.status == status_filter)
+    if start_date:
+        try:
+            st = datetime.strptime(start_date, "%Y-%m-%d")
+            query = query.filter(AgentActionLog.created_at >= st)
+        except Exception:
+            pass
+    if end_date:
+        try:
+            et = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            query = query.filter(AgentActionLog.created_at <= et)
+        except Exception:
+            pass
+
+    logs = query.order_by(AgentActionLog.created_at.desc()).all()
+
+    if format_type == "json":
+        return jsonify({"success": True, "count": len(logs), "export_date": datetime.now().isoformat(), "logs": [l.to_dict() for l in logs]}), 200
+
+    # CSV Generation
+    import io
+    import csv
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Action ID",
+        "Timestamp",
+        "Agent",
+        "Action Type",
+        "Tool Name",
+        "Diff Summary",
+        "User Prompt",
+        "Status",
+        "Affected Entity ID",
+        "Execution Timestamp",
+        "Performed By",
+        "Error Message",
+    ])
+
+    for l in logs:
+        writer.writerow([
+            l.id,
+            l.created_at.strftime("%Y-%m-%d %H:%M:%S") if l.created_at else "",
+            l.agent_name,
+            l.action_type,
+            l.tool_name,
+            l.diff_summary or "",
+            l.user_message or "",
+            l.status,
+            l.affected_entity_id or "",
+            l.execution_timestamp.strftime("%Y-%m-%d %H:%M:%S") if l.execution_timestamp else "",
+            l.performed_by or "",
+            l.error_message or "",
+        ])
+
+    csv_data = output.getvalue()
+    return Response(
+        csv_data,
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment;filename=ai_activity_audit_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"},
+    )
+
+
+@agents_bp.route("/interactions", methods=["GET"])
+@admin_only_agent_access
+def get_interaction_audits():
+    """Get chronological conversation interactions audit trail."""
+    limit = int(request.args.get("limit", 50))
+    offset = int(request.args.get("offset", 0))
+
+    query = AgentInteractionAudit.query
+    total_count = query.count()
+    interactions = query.order_by(AgentInteractionAudit.created_at.desc()).offset(offset).limit(limit).all()
+
+    return jsonify({"success": True, "total_count": total_count, "count": len(interactions), "interactions": [i.to_dict() for i in interactions]}), 200
+
