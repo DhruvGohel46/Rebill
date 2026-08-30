@@ -715,7 +715,13 @@ class DatabaseService:
             if "description" in data:
                 c.description = data["description"]
             if "active" in data:
-                c.active = bool(data["active"])
+                new_active = bool(data["active"])
+                c.active = new_active
+                # Cascade to products under this category
+                Product.query.filter(Product.category_id == category_id).update(
+                    {Product.active: new_active, Product.updated_at: datetime.now()},
+                    synchronize_session=False,
+                )
             if "group_id" in data:
                 c.group_id = data["group_id"]
 
@@ -829,7 +835,21 @@ class DatabaseService:
             if "icon" in data:
                 g.icon = data["icon"]
             if "is_active" in data:
-                g.is_active = bool(data["is_active"])
+                new_active = bool(data["is_active"])
+                g.is_active = new_active
+
+                # Cascade to all categories in this group and their associated products
+                categories = Category.query.filter(Category.group_id == group_id).all()
+                cat_ids = [c.id for c in categories]
+                for c in categories:
+                    c.active = new_active
+                    c.updated_at = datetime.now()
+
+                if cat_ids:
+                    Product.query.filter(Product.category_id.in_(cat_ids)).update(
+                        {Product.active: new_active, Product.updated_at: datetime.now()},
+                        synchronize_session=False,
+                    )
 
             g.updated_at = datetime.now()
             db.session.commit()
@@ -846,6 +866,20 @@ class DatabaseService:
             if g:
                 g.deleted_at = datetime.now()
                 g.is_active = False
+
+                # Cascade disable to member categories and products
+                categories = Category.query.filter(Category.group_id == group_id).all()
+                cat_ids = [c.id for c in categories]
+                for c in categories:
+                    c.active = False
+                    c.updated_at = datetime.now()
+
+                if cat_ids:
+                    Product.query.filter(Product.category_id.in_(cat_ids)).update(
+                        {Product.active: False, Product.updated_at: datetime.now()},
+                        synchronize_session=False,
+                    )
+
                 db.session.commit()
                 return True
             return False

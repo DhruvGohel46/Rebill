@@ -27,12 +27,12 @@ class ExcelReportBuilder:
     COLOR_MUTED_TEXT = "6B7280"
 
     # Number Formats
-    FMT_CURRENCY = '₹#,##0.00'
-    FMT_INTEGER = '#,##0'
-    FMT_DECIMAL = '#,##0.00'
-    FMT_PERCENT = '0.0%'
-    FMT_DATE = 'DD-MMM-YYYY'
-    FMT_DATETIME = 'DD-MMM-YYYY HH:MM'
+    FMT_CURRENCY = "₹#,##0.00"
+    FMT_INTEGER = "#,##0"
+    FMT_DECIMAL = "#,##0.00"
+    FMT_PERCENT = "0.0%"
+    FMT_DATE = "DD-MMM-YYYY"
+    FMT_DATETIME = "DD-MMM-YYYY HH:MM"
 
     def __init__(self):
         self._load_shop_profile()
@@ -44,6 +44,7 @@ class ExcelReportBuilder:
         self.gst_number = ""
         try:
             from services.db_service import DatabaseService
+
             db_service = DatabaseService()
             settings = db_service.get_all_settings()
             if settings.get("shop_name"):
@@ -66,9 +67,9 @@ class ExcelReportBuilder:
         Generate standardized filename: InfoOS_{ReportType}_{DateOrRange}_{ShopName}.xlsx
         Guarantees safe alphanumeric characters and no spaces.
         """
-        safe_report = re.sub(r'[^a-zA-Z0-9]', '', report_type)
-        safe_date = re.sub(r'[^a-zA-Z0-9\-_]', '', str(date_or_range))
-        safe_shop = re.sub(r'[^a-zA-Z0-9]', '', self.shop_name) or "Store"
+        safe_report = re.sub(r"[^a-zA-Z0-9]", "", report_type)
+        safe_date = re.sub(r"[^a-zA-Z0-9\-_]", "", str(date_or_range))
+        safe_shop = re.sub(r"[^a-zA-Z0-9]", "", self.shop_name) or "Store"
         return f"InfoOS_{safe_report}_{safe_date}_{safe_shop}.xlsx"
 
     def write_branded_header(
@@ -76,7 +77,7 @@ class ExcelReportBuilder:
         ws: openpyxl.worksheet.worksheet.Worksheet,
         report_title: str,
         date_range_label: str,
-        num_columns: int = 6
+        num_columns: int = 6,
     ):
         """
         Write standard 5-row branded header block merged across used columns:
@@ -104,7 +105,9 @@ class ExcelReportBuilder:
             sub_info_parts.append(self.shop_address)
         if self.gst_number:
             sub_info_parts.append(f"GST/Tax: {self.gst_number}")
-        cell_r2.value = " | ".join(sub_info_parts) if sub_info_parts else "Point of Sale & Business Operations"
+        cell_r2.value = (
+            " | ".join(sub_info_parts) if sub_info_parts else "Point of Sale & Business Operations"
+        )
         cell_r2.font = Font(name="Calibri", size=10, color=self.COLOR_MUTED_TEXT)
         cell_r2.alignment = Alignment(horizontal="left", vertical="center")
         ws.row_dimensions[2].height = 16
@@ -134,7 +137,7 @@ class ExcelReportBuilder:
         ws: openpyxl.worksheet.worksheet.Worksheet,
         start_row: int,
         metrics: List[Dict[str, Any]],
-        cols_per_card: int = 2
+        cols_per_card: int = 2,
     ) -> int:
         """
         Write a grid of polished executive KPI metric cards.
@@ -165,7 +168,9 @@ class ExcelReportBuilder:
             label_cell = ws[f"{col_start_letter}{current_row}"]
             label_cell.value = str(item.get("label", "")).upper()
             label_cell.font = Font(name="Calibri", size=8.5, bold=True, color=self.COLOR_MUTED_TEXT)
-            label_cell.fill = PatternFill(start_color=self.COLOR_METRIC_BG, end_color=self.COLOR_METRIC_BG, fill_type="solid")
+            label_cell.fill = PatternFill(
+                start_color=self.COLOR_METRIC_BG, end_color=self.COLOR_METRIC_BG, fill_type="solid"
+            )
             label_cell.alignment = Alignment(horizontal="center", vertical="center")
 
             # Merge Value cells
@@ -207,7 +212,7 @@ class ExcelReportBuilder:
         col_alignments: Optional[List[str]] = None,
         totals_row: Optional[List[Any]] = None,
         section_title: Optional[str] = None,
-        freeze_header: bool = True
+        freeze_header: bool = True,
     ) -> int:
         """
         Write a publication-quality data table with:
@@ -235,7 +240,9 @@ class ExcelReportBuilder:
 
         # Write Column Headers
         ws.row_dimensions[header_row_idx].height = 26
-        header_fill = PatternFill(start_color=self.COLOR_DARK_HEADER, end_color=self.COLOR_DARK_HEADER, fill_type="solid")
+        header_fill = PatternFill(
+            start_color=self.COLOR_DARK_HEADER, end_color=self.COLOR_DARK_HEADER, fill_type="solid"
+        )
         header_font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
         header_border = Border(
             left=Side(style="thin", color="374151"),
@@ -248,7 +255,11 @@ class ExcelReportBuilder:
             cell = ws.cell(row=header_row_idx, column=col_idx, value=header)
             cell.font = header_font
             cell.fill = header_fill
-            align = (col_alignments[col_idx - 1] if col_alignments and len(col_alignments) >= col_idx else "left")
+            align = (
+                col_alignments[col_idx - 1]
+                if col_alignments and len(col_alignments) >= col_idx
+                else "left"
+            )
             cell.alignment = Alignment(horizontal=align, vertical="center")
             cell.border = header_border
 
@@ -262,8 +273,12 @@ class ExcelReportBuilder:
             bottom=Side(style="thin", color=self.COLOR_BORDER),
         )
 
-        fill_odd = PatternFill(start_color=self.COLOR_ZEBRA_ODD, end_color=self.COLOR_ZEBRA_ODD, fill_type="solid")
-        fill_even = PatternFill(start_color=self.COLOR_ZEBRA_EVEN, end_color=self.COLOR_ZEBRA_EVEN, fill_type="solid")
+        fill_odd = PatternFill(
+            start_color=self.COLOR_ZEBRA_ODD, end_color=self.COLOR_ZEBRA_ODD, fill_type="solid"
+        )
+        fill_even = PatternFill(
+            start_color=self.COLOR_ZEBRA_EVEN, end_color=self.COLOR_ZEBRA_EVEN, fill_type="solid"
+        )
         data_font = Font(name="Calibri", size=10, color="1F2937")
 
         for row_idx, row_data in enumerate(data_rows):
@@ -276,11 +291,19 @@ class ExcelReportBuilder:
                 cell.fill = row_fill
                 cell.border = thin_border
 
-                align = (col_alignments[col_idx - 1] if col_alignments and len(col_alignments) >= col_idx else "left")
+                align = (
+                    col_alignments[col_idx - 1]
+                    if col_alignments and len(col_alignments) >= col_idx
+                    else "left"
+                )
                 cell.alignment = Alignment(horizontal=align, vertical="center")
 
                 # Apply Number Format
-                fmt = (col_formats[col_idx - 1] if col_formats and len(col_formats) >= col_idx else None)
+                fmt = (
+                    col_formats[col_idx - 1]
+                    if col_formats and len(col_formats) >= col_idx
+                    else None
+                )
                 if fmt:
                     cell.number_format = fmt
 
@@ -289,7 +312,11 @@ class ExcelReportBuilder:
         # Write Totals Row if provided
         if totals_row:
             ws.row_dimensions[current_row].height = 24
-            totals_fill = PatternFill(start_color=self.COLOR_TOTALS_FILL, end_color=self.COLOR_TOTALS_FILL, fill_type="solid")
+            totals_fill = PatternFill(
+                start_color=self.COLOR_TOTALS_FILL,
+                end_color=self.COLOR_TOTALS_FILL,
+                fill_type="solid",
+            )
             totals_font = Font(name="Calibri", size=10.5, bold=True, color="0F172A")
             totals_border = Border(
                 left=Side(style="thin", color=self.COLOR_BORDER_DARK),
@@ -304,10 +331,18 @@ class ExcelReportBuilder:
                 cell.fill = totals_fill
                 cell.border = totals_border
 
-                align = (col_alignments[col_idx - 1] if col_alignments and len(col_alignments) >= col_idx else "left")
+                align = (
+                    col_alignments[col_idx - 1]
+                    if col_alignments and len(col_alignments) >= col_idx
+                    else "left"
+                )
                 cell.alignment = Alignment(horizontal=align, vertical="center")
 
-                fmt = (col_formats[col_idx - 1] if col_formats and len(col_formats) >= col_idx else None)
+                fmt = (
+                    col_formats[col_idx - 1]
+                    if col_formats and len(col_formats) >= col_idx
+                    else None
+                )
                 if fmt:
                     cell.number_format = fmt
 
@@ -317,7 +352,9 @@ class ExcelReportBuilder:
         ws.row_dimensions[current_row].height = 14
         return current_row + 1
 
-    def autofit_column_widths(self, ws: openpyxl.worksheet.worksheet.Worksheet, min_width: int = 12, max_width: int = 48):
+    def autofit_column_widths(
+        self, ws: openpyxl.worksheet.worksheet.Worksheet, min_width: int = 12, max_width: int = 48
+    ):
         """
         Auto-fit column widths according to content length with a safe minimum.
         Handles merged cells and multi-line strings gracefully.
@@ -341,7 +378,7 @@ class ExcelReportBuilder:
         ws: openpyxl.worksheet.worksheet.Worksheet,
         report_title: str,
         date_range_label: str,
-        message: str = "No transactions or records found for the selected period."
+        message: str = "No transactions or records found for the selected period.",
     ):
         """Standardized empty state for non-operating dates/periods."""
         self.write_branded_header(ws, report_title, date_range_label, num_columns=5)

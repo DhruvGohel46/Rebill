@@ -147,3 +147,63 @@ def test_delete_group_with_categories_move(client, init_database, app):
         deleted_group = ItemGroup.query.get(src_id)
         assert deleted_group.deleted_at is not None
         assert deleted_group.is_active is False
+
+
+def test_group_disable_enable_cascades_to_products(client, init_database, app):
+    """Disabling/Enabling a group should cascade active status to its categories and products in sync."""
+    from models import Product
+
+    # 1. Create a group
+    group_res = client.post(
+        "/api/groups",
+        data=json.dumps({"name": "Beverages Group", "is_active": True}),
+        content_type="application/json",
+    )
+    group_id = json.loads(group_res.data)["group_id"]
+
+    # 2. Add category & product under this group
+    with app.app_context():
+        category = Category(name="Cold Drinks", group_id=group_id, active=True)
+        db.session.add(category)
+        db.session.commit()
+        cat_id = category.id
+
+        prod = Product(
+            product_id="cold_drink_1",
+            name="Iced Lemon Tea",
+            price=50.0,
+            category_id=cat_id,
+            active=True,
+        )
+        db.session.add(prod)
+        db.session.commit()
+
+    # 3. Disable the group
+    disable_res = client.put(
+        f"/api/groups/{group_id}",
+        data=json.dumps({"is_active": False}),
+        content_type="application/json",
+    )
+    assert disable_res.status_code == 200
+
+    # 4. Verify category and product are now inactive
+    with app.app_context():
+        cat = Category.query.get(cat_id)
+        assert cat.active is False
+        product = Product.query.get("cold_drink_1")
+        assert product.active is False
+
+    # 5. Enable the group back
+    enable_res = client.put(
+        f"/api/groups/{group_id}",
+        data=json.dumps({"is_active": True}),
+        content_type="application/json",
+    )
+    assert enable_res.status_code == 200
+
+    # 6. Verify category and product are now active in sync
+    with app.app_context():
+        cat = Category.query.get(cat_id)
+        assert cat.active is True
+        product = Product.query.get("cold_drink_1")
+        assert product.active is True

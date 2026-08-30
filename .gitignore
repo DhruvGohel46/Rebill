@@ -22,8 +22,14 @@ wheels/
 
 # Virtual Environment
 venv/
+.venv/
 env/
 ENV/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
 
 # IDE
 .vscode/

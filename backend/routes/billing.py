@@ -571,7 +571,9 @@ def merge_orders():
     try:
         validated = MergeRequestSchema().load(data or {})
     except MarshmallowValidationError as e:
-        raise ValidationError(f"Invalid merge request: {e.messages}", code="MERGE_VALIDATION_FAILED")
+        raise ValidationError(
+            f"Invalid merge request: {e.messages}", code="MERGE_VALIDATION_FAILED"
+        )
 
     actor = request.headers.get("X-User-Sub", "admin")
     group = merge_bills(validated["bill_ids"], actor=actor)
@@ -592,7 +594,9 @@ def settle_merge_group(group_id):
     try:
         validated = SettleRequestSchema().load(data or {})
     except MarshmallowValidationError as e:
-        raise ValidationError(f"Invalid settle request: {e.messages}", code="SETTLE_VALIDATION_FAILED")
+        raise ValidationError(
+            f"Invalid settle request: {e.messages}", code="SETTLE_VALIDATION_FAILED"
+        )
 
     actor = request.headers.get("X-User-Sub", "admin")
     group = settle_group(group_id, validated["payments"], actor=actor)
@@ -615,3 +619,26 @@ def split_merge_group(group_id):
     cache.clear()
 
     return jsonify({"success": True, "merge_group": group}), 200
+
+
+@billing_bp.route("/<int:bill_id>/settle", methods=["POST"])
+@safe_route
+def settle_standalone_bill(bill_id):
+    """Settle a standalone pending bill by applying payment."""
+    from validators import SettleRequestSchema, MarshmallowValidationError
+    from services.live_order_service import settle_bill
+
+    data = request.get_json()
+    try:
+        validated = SettleRequestSchema().load(data or {})
+    except MarshmallowValidationError as e:
+        raise ValidationError(
+            f"Invalid settle request: {e.messages}", code="SETTLE_VALIDATION_FAILED"
+        )
+
+    actor = request.headers.get("X-User-Sub", "admin")
+    settled = settle_bill(bill_id, validated["payments"], actor=actor)
+
+    cache.clear()
+
+    return jsonify({"success": True, "bill": settled}), 200

@@ -155,12 +155,12 @@ class WorkerService:
         if permanent:
             # Unlink worker from historical expenses to preserve finances without FK constraint error
             Expense.query.filter_by(worker_id=worker_id).update({"worker_id": None})
-            
+
             # Remove associated worker-specific tables
             Advance.query.filter_by(worker_id=worker_id).delete()
             Attendance.query.filter_by(worker_id=worker_id).delete()
             SalaryPayment.query.filter_by(worker_id=worker_id).delete()
-            
+
             # Delete worker record
             db.session.delete(worker)
         else:

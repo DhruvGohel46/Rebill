@@ -27,7 +27,9 @@ from typing import List, Optional, Dict, Any
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 os.environ.setdefault("POS_DATA_DIR", tempfile.mkdtemp())
-os.environ.setdefault("DATABASE_URL", f"sqlite:///{os.path.join(tempfile.mkdtemp(), 'parity_test.db')}")
+os.environ.setdefault(
+    "DATABASE_URL", f"sqlite:///{os.path.join(tempfile.mkdtemp(), 'parity_test.db')}"
+)
 os.environ.setdefault("TESTING", "True")
 
 from app import create_app
@@ -36,10 +38,10 @@ from agents.llm_adapter import AgentResponse, ToolCall
 from agents.graph_state import AgentState
 from agents.graph_runner import GRAPH
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(scope="module")
 def app_ctx():
@@ -54,9 +56,13 @@ def _make_mock_tool_response(input_tokens=50, output_tokens=30):
     """LLM response that proposes exactly one tool call."""
     res = MagicMock(spec=AgentResponse)
     res.content = None
-    res.tool_calls = [ToolCall(id="call_1", name="propose_log_expense", args={
-        "title": "Milk Supply", "amount": 500, "category": "Raw Material"
-    })]
+    res.tool_calls = [
+        ToolCall(
+            id="call_1",
+            name="propose_log_expense",
+            args={"title": "Milk Supply", "amount": 500, "category": "Raw Material"},
+        )
+    ]
     res.input_tokens = input_tokens
     res.output_tokens = output_tokens
     res.estimated_cost = 0.001
@@ -77,6 +83,7 @@ def _make_mock_final_response(input_tokens=60, output_tokens=40):
 # ---------------------------------------------------------------------------
 # Test: JSON-serializability of AgentState
 # ---------------------------------------------------------------------------
+
 
 def test_agent_state_is_json_serializable(app_ctx):
     """All fields of AgentState must survive a json.dumps/loads round-trip."""
@@ -105,6 +112,7 @@ def test_agent_state_is_json_serializable(app_ctx):
 # ---------------------------------------------------------------------------
 # Test: Token parity
 # ---------------------------------------------------------------------------
+
 
 def test_token_parity(app_ctx):
     """
@@ -157,7 +165,7 @@ def test_token_parity(app_ctx):
                 legacy_final = data
 
     assert legacy_final is not None
-    legacy_total_in = legacy_final["input_tokens"]    # INIT_IN + SYNTH_IN
+    legacy_total_in = legacy_final["input_tokens"]  # INIT_IN + SYNTH_IN
     legacy_total_out = legacy_final["output_tokens"]  # INIT_OUT + SYNTH_OUT
     assert legacy_total_in == INIT_IN + SYNTH_IN
     assert legacy_total_out == INIT_OUT + SYNTH_OUT
@@ -176,16 +184,18 @@ def test_token_parity(app_ctx):
         conversation_id="9991",
     )
 
-    with patch("agents.graph_nodes.PermissionGate.dispatch_tool", return_value=dispatch_result), \
-         patch("agents.graph_runner.AgentCheckpoint") as mock_cp:
+    with (
+        patch("agents.graph_nodes.PermissionGate.dispatch_tool", return_value=dispatch_result),
+        patch("agents.graph_runner.AgentCheckpoint") as mock_cp,
+    ):
         mock_cp.query.filter_by.return_value.first.return_value = None
         paused_state = GRAPH.run(state, graph_adapter_run)
 
     # Graph pauses at waiting_approval — only the initial LLM call was made
     assert paused_state["status"] == "waiting_approval"
-    assert paused_state["total_input_tokens"] == INIT_IN, (
-        f"Expected only initial call tokens {INIT_IN}, got {paused_state['total_input_tokens']}"
-    )
+    assert (
+        paused_state["total_input_tokens"] == INIT_IN
+    ), f"Expected only initial call tokens {INIT_IN}, got {paused_state['total_input_tokens']}"
     assert paused_state["total_output_tokens"] == INIT_OUT
 
     # ── GRAPH.resume() — accumulates synthesis tokens ───────────────────────
@@ -197,10 +207,12 @@ def test_token_parity(app_ctx):
     paused_json = json.dumps(paused_state)
     execute_result = {"success": True, "expense_id": 888}
 
-    with patch("agents.graph_runner.execute_mutating_tool", return_value=execute_result), \
-         patch("agents.graph_runner.AgentCheckpoint") as mock_cp2, \
-         patch("agents.graph_runner.AgentActionLog") as mock_log_cls, \
-         patch("agents.graph_nodes.PermissionGate.dispatch_tool", return_value=dispatch_result):
+    with (
+        patch("agents.graph_runner.execute_mutating_tool", return_value=execute_result),
+        patch("agents.graph_runner.AgentCheckpoint") as mock_cp2,
+        patch("agents.graph_runner.AgentActionLog") as mock_log_cls,
+        patch("agents.graph_nodes.PermissionGate.dispatch_tool", return_value=dispatch_result),
+    ):
         mock_row = MagicMock()
         mock_row.state_json = paused_json
         mock_cp2.query.filter_by.return_value.first.return_value = mock_row
@@ -219,17 +231,18 @@ def test_token_parity(app_ctx):
     graph_total_out = final_state["total_output_tokens"]
 
     # run() + resume() combined must equal legacy run_stream() totals
-    assert graph_total_in == legacy_total_in, (
-        f"Combined input token mismatch: graph={graph_total_in} legacy={legacy_total_in}"
-    )
-    assert graph_total_out == legacy_total_out, (
-        f"Combined output token mismatch: graph={graph_total_out} legacy={legacy_total_out}"
-    )
+    assert (
+        graph_total_in == legacy_total_in
+    ), f"Combined input token mismatch: graph={graph_total_in} legacy={legacy_total_in}"
+    assert (
+        graph_total_out == legacy_total_out
+    ), f"Combined output token mismatch: graph={graph_total_out} legacy={legacy_total_out}"
 
 
 # ---------------------------------------------------------------------------
 # Test: max_tool_rounds ceiling
 # ---------------------------------------------------------------------------
+
 
 def test_max_rounds_ceiling(app_ctx):
     """
@@ -283,25 +296,28 @@ def test_max_rounds_ceiling(app_ctx):
         conversation_id="9992",
     )
 
-    with patch("agents.graph_nodes.PermissionGate.dispatch_tool", return_value=dispatch_executed), \
-         patch("agents.graph_runner.AgentCheckpoint") as mock_cp:
+    with (
+        patch("agents.graph_nodes.PermissionGate.dispatch_tool", return_value=dispatch_executed),
+        patch("agents.graph_runner.AgentCheckpoint") as mock_cp,
+    ):
         mock_cp.query.filter_by.return_value.first.return_value = None
         final_state = GRAPH.run(state, graph_adapter)
 
     graph_call_count = graph_adapter.chat.call_count
 
-    assert final_state["status"] == "done", (
-        f"Graph must reach 'done' after max_tool_rounds: got {final_state['status']}"
-    )
+    assert (
+        final_state["status"] == "done"
+    ), f"Graph must reach 'done' after max_tool_rounds: got {final_state['status']}"
     # Both paths make the same number of LLM calls
-    assert graph_call_count == legacy_call_count, (
-        f"LLM call count mismatch: graph={graph_call_count} legacy={legacy_call_count}"
-    )
+    assert (
+        graph_call_count == legacy_call_count
+    ), f"LLM call count mismatch: graph={graph_call_count} legacy={legacy_call_count}"
 
 
 # ---------------------------------------------------------------------------
 # Test: Resumed action uses verbatim original args
 # ---------------------------------------------------------------------------
+
 
 def test_resume_uses_exact_original_args(app_ctx):
     """
@@ -342,31 +358,41 @@ def test_resume_uses_exact_original_args(app_ctx):
     )
 
     # Override the LLM tool call to match our dispatch_proposed
-    tool_res.tool_calls = [ToolCall(
-        id="call_elec",
-        name="propose_log_expense",
-        args=original_args,
-    )]
+    tool_res.tool_calls = [
+        ToolCall(
+            id="call_elec",
+            name="propose_log_expense",
+            args=original_args,
+        )
+    ]
 
     paused_state = None
-    with patch("agents.graph_nodes.PermissionGate.dispatch_tool", return_value=dispatch_proposed) as mock_dispatch, \
-         patch("agents.graph_runner.AgentCheckpoint") as mock_cp_class:
+    with (
+        patch(
+            "agents.graph_nodes.PermissionGate.dispatch_tool", return_value=dispatch_proposed
+        ) as mock_dispatch,
+        patch("agents.graph_runner.AgentCheckpoint") as mock_cp_class,
+    ):
         # Simulate checkpoint not found during run (fresh start)
         mock_cp_class.query.filter_by.return_value.first.return_value = None
         mock_instance = MagicMock()
         mock_cp_class.return_value = mock_instance
         paused_state = GRAPH.run(state, graph_adapter)
 
-    assert paused_state["status"] == "waiting_approval", (
-        f"Expected 'waiting_approval', got {paused_state['status']}"
-    )
+    assert (
+        paused_state["status"] == "waiting_approval"
+    ), f"Expected 'waiting_approval', got {paused_state['status']}"
     assert paused_state["pending_tool_call"] is not None
 
     # Now simulate resume
     execute_result = {"success": True, "expense_id": 101}
-    with patch("agents.graph_runner.execute_mutating_tool", return_value=execute_result) as mock_exec, \
-         patch("agents.graph_runner.AgentCheckpoint") as mock_cp2, \
-         patch("agents.graph_nodes.PermissionGate.dispatch_tool", return_value=dispatch_proposed):
+    with (
+        patch(
+            "agents.graph_runner.execute_mutating_tool", return_value=execute_result
+        ) as mock_exec,
+        patch("agents.graph_runner.AgentCheckpoint") as mock_cp2,
+        patch("agents.graph_nodes.PermissionGate.dispatch_tool", return_value=dispatch_proposed),
+    ):
         # Simulate checkpoint load returning the paused state
         mock_row = MagicMock()
         mock_row.state_json = json.dumps(paused_state)
@@ -393,6 +419,7 @@ def test_resume_uses_exact_original_args(app_ctx):
 # ---------------------------------------------------------------------------
 # Test: requirements.txt unchanged
 # ---------------------------------------------------------------------------
+
 
 def test_requirements_txt_unchanged():
     """
@@ -424,14 +451,15 @@ def test_requirements_txt_unchanged():
         "graphviz",
     ]
     for pkg in forbidden_packages:
-        assert pkg.lower() not in content.lower(), (
-            f"Forbidden new dependency '{pkg}' found in requirements.txt"
-        )
+        assert (
+            pkg.lower() not in content.lower()
+        ), f"Forbidden new dependency '{pkg}' found in requirements.txt"
 
 
 # ---------------------------------------------------------------------------
 # Test: AgentCheckpoint model exists and is importable
 # ---------------------------------------------------------------------------
+
 
 def test_agent_checkpoint_model(app_ctx):
     """AgentCheckpoint must be a valid SQLAlchemy model with the correct columns."""
@@ -456,6 +484,7 @@ def test_agent_checkpoint_model(app_ctx):
 # Test: build_initial_state produces valid AgentState keys
 # ---------------------------------------------------------------------------
 
+
 def test_build_initial_state_keys(app_ctx):
     """build_initial_state must return all required AgentState keys."""
     from agents.domain_agents import get_expense_agent
@@ -478,6 +507,7 @@ def test_build_initial_state_keys(app_ctx):
 # Test: Executed tool produces real summary, not status label
 # ---------------------------------------------------------------------------
 
+
 def test_executed_tool_produces_real_summary_not_status_label(app_ctx):
     """
     When an agent executes an autonomous/read-only tool (status="executed"),
@@ -498,7 +528,11 @@ def test_executed_tool_produces_real_summary_not_status_label(app_ctx):
     # First turn calls update_product_price
     tool_resp = MagicMock(spec=AgentResponse)
     tool_resp.content = None
-    tool_resp.tool_calls = [ToolCall(id="call_prod_1", name="update_product_price", args={"product_id": 1, "price": 300})]
+    tool_resp.tool_calls = [
+        ToolCall(
+            id="call_prod_1", name="update_product_price", args={"product_id": 1, "price": 300}
+        )
+    ]
     tool_resp.input_tokens = 40
     tool_resp.output_tokens = 20
     tool_resp.estimated_cost = 0.001
@@ -530,4 +564,3 @@ def test_executed_tool_produces_real_summary_not_status_label(app_ctx):
     assert "I am executing the tool" not in result["final_response"]
     assert result["final_response"] != get_status_label("update_product_price")
     assert "Price Updated" in result["final_response"]
-

@@ -270,50 +270,56 @@ def get_available_reports():
                 "name": "Daily Sales Report",
                 "endpoint": "/api/reports/excel/daily",
                 "description": "Detailed breakdown of items sold, summaries, and profits for a specific date.",
-                "sheets": ["Summary", "Item-Wise Breakdown", "Bill Log"]
+                "sheets": ["Summary", "Item-Wise Breakdown", "Bill Log"],
             },
             {
                 "id": "weekly_sales",
                 "name": "Weekly Sales Summary",
                 "endpoint": "/api/reports/excel/weekly",
                 "description": "Aggregated product overview and revenues from Monday to Sunday.",
-                "sheets": ["Week Overview", "Product Overview"]
+                "sheets": ["Week Overview", "Product Overview"],
             },
             {
                 "id": "monthly_sales",
                 "name": "Monthly Sales Summary",
                 "endpoint": "/api/reports/excel/monthly",
                 "description": "Monthly product-wise totals and overall gross sales report.",
-                "sheets": ["Month Overview", "Daily Breakdown", "Product-Wise Totals"]
+                "sheets": ["Month Overview", "Daily Breakdown", "Product-Wise Totals"],
             },
             {
                 "id": "weekly_expenses",
                 "name": "Weekly Expense Report",
                 "endpoint": "/api/reports/excel/expenses/weekly",
                 "description": "Categorized business outflows and details recorded for the current week.",
-                "sheets": ["Category Summary & Full Ledger"]
+                "sheets": ["Category Summary & Full Ledger"],
             },
             {
                 "id": "monthly_expenses",
                 "name": "Monthly Expense Report",
                 "endpoint": "/api/reports/excel/expenses/monthly",
                 "description": "Detailed monthly accounting report for utility, supplier and operational costs.",
-                "sheets": ["Category Summary", "Vendor Breakdown", "Full Ledger"]
+                "sheets": ["Category Summary", "Vendor Breakdown", "Full Ledger"],
             },
             {
                 "id": "yearly_expenses",
                 "name": "Yearly Expense Audit",
                 "endpoint": "/api/reports/excel/expenses/yearly",
                 "description": "Year-to-date business expenses breakdown and category summaries.",
-                "sheets": ["Year Overview", "Category Breakdown (Year Pivot)", "Full Ledger"]
+                "sheets": ["Year Overview", "Category Breakdown (Year Pivot)", "Full Ledger"],
             },
             {
                 "id": "master_financial",
                 "name": "Master Financial Sheet",
                 "endpoint": "/api/reports/excel/master-financial",
                 "description": "Combined Sales & Expense yearly audit with payroll and unified transaction ledger.",
-                "sheets": ["Executive Summary", "Sales Detail (Year)", "Expense Detail (Year)", "Payroll Summary", "Transaction Log"]
-            }
+                "sheets": [
+                    "Executive Summary",
+                    "Sales Detail (Year)",
+                    "Expense Detail (Year)",
+                    "Payroll Summary",
+                    "Transaction Log",
+                ],
+            },
         ]
     }
     return jsonify({"success": True, "reports": reports_info}), 200

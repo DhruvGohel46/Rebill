@@ -133,9 +133,7 @@ class AgentGraph:
 
         pending = state["pending_tool_call"]
         if not pending:
-            raise ValueError(
-                f"Checkpoint {conversation_id!r} has no pending_tool_call to resume."
-            )
+            raise ValueError(f"Checkpoint {conversation_id!r} has no pending_tool_call to resume.")
 
         original_tc = pending.get("_tc", {})
         tool_name = original_tc.get("name") or pending.get("tool_name", "unknown_tool")
@@ -193,10 +191,12 @@ class AgentGraph:
                     _log.error("Failed to mark AgentActionLog rejected on resume: %s", log_err)
 
             diff_summary = pending.get("diff_summary", "action")
-            tool_result_content = _json.dumps({
-                "status": "rejected",
-                "message": f"[Action rejected by owner: {diff_summary}]",
-            })
+            tool_result_content = _json.dumps(
+                {
+                    "status": "rejected",
+                    "message": f"[Action rejected by owner: {diff_summary}]",
+                }
+            )
 
         # Flush the pending tool message into _pending_tool_messages so
         # append_tool_result can construct follow_up_messages correctly.
@@ -269,9 +269,7 @@ class AgentGraph:
     def _load_checkpoint(self, conversation_id: str) -> AgentState:
         """Load an AgentCheckpoint row and deserialize to AgentState."""
         try:
-            row = AgentCheckpoint.query.filter_by(
-                conversation_id=conversation_id
-            ).first()
+            row = AgentCheckpoint.query.filter_by(conversation_id=conversation_id).first()
             if not row:
                 raise ValueError(
                     f"No AgentCheckpoint found for conversation_id={conversation_id!r}"
@@ -280,9 +278,7 @@ class AgentGraph:
         except ValueError:
             raise
         except Exception as e:
-            raise ValueError(
-                f"Failed to load AgentCheckpoint {conversation_id!r}: {e}"
-            ) from e
+            raise ValueError(f"Failed to load AgentCheckpoint {conversation_id!r}: {e}") from e
 
 
 # ---------------------------------------------------------------------------

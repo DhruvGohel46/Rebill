@@ -120,7 +120,6 @@ def test_suggest_and_confirm_flow(app_client):
         assert approve_res.get_json()["affected_entity_id"] is not None
 
 
-
 def test_audit_logs_endpoint(app_client):
     """Test retrieving audit logs with search, filtering, and export."""
     res = app_client.get("/api/agents/logs")
@@ -149,4 +148,3 @@ def test_interaction_audits_endpoint(app_client):
     data = res.get_json()
     assert "interactions" in data
     assert "total_count" in data
-

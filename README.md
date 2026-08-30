@@ -15,15 +15,15 @@
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                                     INFOOS AT A GLANCE                                  │
 ├──────────────────────────┬───────────────────────────┬──────────────────────────────────┤
-│ 🛒 High-Speed POS        │ 👥 Worker & Payroll       │ 📊 Analytics & BI                │
-│ • Sub-second checkout    │ • Attendance tracking     │ • Pre-aggregated instant stats   │
-│ • ESC/POS 58/80mm print  │ • Advances & salary calc  │ • Real-time revenue & net profit │
-│ • KOT kitchen routing    │ • Role-Based PIN Lock     │ • Excel (.xlsx) & CSV export     │
+│ 🛒 High-Speed POS        │ ⚡ Live Orders & Merging  │ 📊 Analytics & BI                │
+│ • Sub-second checkout    │ • Drag-to-Merge billing   │ • Pre-aggregated instant stats   │
+│ • ESC/POS 58/80mm print  │ • Split / Settle payments │ • Real-time revenue & net profit │
+│ • KOT kitchen routing    │ • Un-merge audit trail    │ • Pending revenue separation     │
 ├──────────────────────────┼───────────────────────────┼──────────────────────────────────┤
-│ 📦 Inventory & Menu      │ 💸 Expense Accounting     │ 🤖 AI & Ergonomics               │
-│ • Direct sale & raw mats │ • Categorized spend logs  │ • AI image background remover    │
-│ • Variations & modifiers │ • Direct payroll linking  │ • Alt popup scratchpad calc      │
-│ • Live <1s group sync    │ • Net profit deduction    │ • Ctrl group cycle hotkeys       │
+│ 📦 Inventory & Menu      │ 👥 Worker & Payroll       │ 🤖 Autonomous AI Agents          │
+│ • Direct sale & raw mats │ • Attendance tracking     │ • Multi-agent state graph runner │
+│ • Variations & modifiers │ • Advances & salary calc  │ • 0-token deterministic router   │
+│ • Live <1s group sync    │ • Role-Based PIN Lock     │ • Human-in-the-loop approvals    │
 └──────────────────────────┴───────────────────────────┴──────────────────────────────────┘
 ```
 
@@ -32,8 +32,8 @@
 ## 🏛️ System Architecture Topology
 
 InfoOS Desktop follows a **three-tier offline local hybrid architecture**:
-1. **Frontend Presentation**: React 18 inside an Electron container with GPU-accelerated glassmorphic UI, load-once context state caching, and responsive typography scaling.
-2. **Local Middleware API**: An embedded Python 3 Flask REST service providing business logic, SQLite ORM models, background aggregation workers, and AI ONNX models.
+1. **Frontend Presentation**: React 18 inside an Electron container with GPU-accelerated glassmorphic UI, `@dnd-kit/core` drag-and-drop order canvas, load-once context state caching, and responsive typography scaling.
+2. **Local Middleware API**: An embedded Python 3 Flask REST service providing business logic, SQLite ORM models, background aggregation workers, state graph agent orchestration, and AI ONNX models.
 3. **Device & Persistence Layer**: Zero-dependency local SQLite database (`products.db`), direct ESC/POS hardware printer spoolers, and secure IPC bridges.
 
 ```mermaid
@@ -45,6 +45,7 @@ flowchart TB
         
         subgraph UI_Screens [Active Screen Nodes]
             POS_Screen["POS Billing (/ - Bill.jsx)"]
+            Live_Screen["Live Orders & Merge (/live - LiveOrders.jsx)"]
             Analytics_Screen["Analytics and Reports (/analytics)"]
             Inventory_Screen["Inventory Management (/inventory)"]
             Product_Screen["Catalog and Groups (/management)"]
@@ -66,7 +67,8 @@ flowchart TB
         Flask["Flask REST API Gateway (app.py : 5050)"]
         
         subgraph Route_Handlers [REST Route Handlers]
-            R_Billing["/api/billing (Transactions)"]
+            R_Billing["/api/billing (Transactions & Merge)"]
+            R_Agents["/api/agents (Agentic State Graph)"]
             R_Products["/api/products and /groups"]
             R_Inventory["/api/inventory (Stock)"]
             R_Workers["/api/workers and /worker_types"]
@@ -76,6 +78,8 @@ flowchart TB
         end
 
         subgraph Core_Services [Background and Processing Services]
+            LiveService["Live Order Service (Merge / Settle / Split)"]
+            AgentGraphRunner["AgentGraph State Machine (Checkpoints)"]
             AggService["Aggregation Service (Daily Summary)"]
             PrintService["ESC/POS Formatter (printer_service.py)"]
             ExcelService["Excel and XLSX Service"]
@@ -112,14 +116,15 @@ For developers, maintainers, and LLMs parsing this system, here is the complete 
 
 | Node Identifier | Route Path | Access Role | Primary Responsibilities | Key Child Components |
 | :--- | :--- | :--- | :--- | :--- |
-| **`WorkingPOSInterface`** | `/` | All (Worker / Admin) | High-speed item search, Category tabs, Group switching, Cart modifier rules, Split payment, Direct Receipt/KOT printing, Token numbers | `CartSummary`, `ReceiptPreviewModal`, `QuickPay`, `HoldBills` |
-| **`Analytics`** | `/analytics` | All (Worker / Admin) | Real-time KPI summaries, Revenue vs Cost, Group share charts, Hourly footfall heatmaps, Payment mode shares, Excel/CSV export | `MetricCard`, `SalesTrendChart`, `TopProductsList`, `DateRangeFilter` |
+| **`WorkingPOSInterface`** | `/` | All (Worker / Admin) | High-speed item search, Category tabs, Group switching, Cart modifier rules, Mark as Pending toggle, Direct Receipt/KOT printing, Token numbers | `CartSummary`, `ReceiptPreviewModal`, `QuickPay`, `HoldBills`, `VariationPickerModal` |
+| **`LiveOrders`** | `/live` | All (Worker / Admin) | Real-time live order board, `@dnd-kit/core` drag-to-merge orders, Multi-order selection, Split-method settlement, Un-merge with audit recovery, 2.5s conditional 304 polling | `DraggableOrderCard`, `MergeConfirmModal`, `SettleModal`, `SplitConfirmModal` |
+| **`Analytics`** | `/analytics` | All (Worker / Admin) | Real-time KPI summaries, Revenue vs Cost, Group share charts, Hourly footfall heatmaps, Payment mode shares, Pending revenue separation, Excel/CSV export | `MetricCard`, `SalesTrendChart`, `TopProductsList`, `DateRangeFilter` |
 | **`Inventory`** | `/inventory` | **Admin Only** | Stock levels, Raw materials vs Direct sale stock, Cost per unit tracking, Low stock alert thresholds, Manual stock adjustments | `StockTable`, `StockAdjustmentModal`, `ThresholdBadge` |
 | **`ProductManagement`** | `/management` | **Admin Only** | Product CRUD, Variation matrix (S/M/L), Image upload with AI background eraser, Category & Group association, Display sorting | `ProductModal`, `GroupManagement`, `CategoryManager`, `AIImageUploader` |
 | **`WorkersDashboard`** | `/workers` | **Admin Only** | Staff directory, Role definitions, Daily attendance check-in/out, Salary advance approvals, Monthly payroll disbursement | `WorkerList`, `WorkerProfile`, `Attendance`, `SalaryManager` |
 | **`Expenses`** | `/expenses` | **Admin Only** | Multi-item operational expense vouchers, Vendor bills, Salary linking, Payment method selection, Expense category manager | `ExpenseModal`, `ExpenseTypeManager`, `ReceiptItemRow` |
 | **`Reminders`** | `/reminders` | All (Worker / Admin) | Scheduled business alerts (once, daily, weekly, monthly), Task snooze/complete, Notification center synchronization | `ReminderCard`, `NewReminderModal`, `NotificationCenterDrawer` |
-| **`Settings`** | `/settings` | **Admin / PIN** | Shop metadata (GST/Tax, Address), Thermal printer setup (58/80mm, USB/LAN), Keyboard billing locks, Developer diagnostics, Log streamer | `PrinterConfig`, `DisplayZoomControls`, `DiagnosticsPanel`, `BackupManager` |
+| **`Settings`** | `/settings` | **Admin / PIN** | Shop metadata, AI Agent API configuration & model parameters, Thermal printer setup (58/80mm, USB/LAN), Diagnostics & Log streamer | `PrinterConfig`, `AIAgentSettings`, `DisplayZoomControls`, `DiagnosticsPanel`, `BackupManager` |
 
 ---
 
@@ -150,17 +155,22 @@ flowchart LR
 
 | Endpoint Prefix | Source File | HTTP Methods | Node Function |
 | :--- | :--- | :--- | :--- |
-| **`/api/billing`** | `billing.py` | `POST`, `GET`, `DELETE` | Processes bills, assigns daily token numbers, records line items, and updates pre-aggregated sales stats. |
+| **`/api/billing`** | `billing.py` | `POST`, `GET`, `PUT`, `DELETE` | Processes bills, assigns daily token numbers, records line items, and updates pre-aggregated sales stats. |
+| **`/api/billing/live`** | `billing.py` | `GET` | Conditional 304 version-hash polling for open/pending bills and active merge groups. |
+| **`/api/billing/merge`** | `billing.py` | `POST` | Merges 2+ bills into unified `MergeGroup` with combined totals and member tracking. |
+| **`/api/billing/merge/<id>/settle`** | `billing.py` | `POST` | Settles pending merge group with split payments and marks member bills paid. |
+| **`/api/billing/merge/<id>/split`** | `billing.py` | `POST` | Admin-only un-merge that restores standalone bills while preserving audit history. |
+| **`/api/agents`** | `agents.py` | `POST`, `GET`, `PUT` | Orchestrates multi-agent state graph (`/chat`), fast-path short circuit, and human-in-the-loop action approvals (`/actions/<id>/approve`). |
 | **`/api/products`** | `products.py` | `GET`, `POST`, `PUT`, `DELETE` | Product inventory CRUD, variation models, image uploads, category links, and catalog version bumps. |
 | **`/api/groups`** | `groups.py` | `GET`, `POST`, `PUT`, `DELETE` | Item group management, display order sorting, and instant enable/disable toggles. |
 | **`/api/inventory`** | `inventory.py` | `GET`, `POST`, `PUT` | Tracks stock count, cost valuation, direct sales, raw materials, and threshold alerts. |
 | **`/api/workers`** | `workers.py` | `GET`, `POST`, `PUT`, `DELETE` | Worker profiles, daily attendance logging, advances recording, and payroll calculations. |
 | **`/api/expenses`** | `expenses.py` | `GET`, `POST`, `PUT`, `DELETE` | Operational vouchers, itemized purchase bills, worker salary deductions. |
-| **`/api/summary`** | `summary.py` | `GET` | High-speed aggregated metrics reading directly from `DailySalesSummary` table. |
+| **`/api/summary`** | `summary.py` | `GET` | High-speed aggregated metrics reading directly from `DailySalesSummary` table (separates paid sales from pending revenue). |
 | **`/api/reports`** | `reports.py` | `GET` | Generates professional Excel sheets (`.xlsx`) and raw `.csv` reports with branded headers. |
-| **`/api/reminders`** | `reminders.py` | `GET`, `POST`, `PUT`, `DELETE` | Crud & lifecycle management for scheduled operational tasks. |
+| **`/api/reminders`** | `reminders.py` | `GET`, `POST`, `PUT`, `DELETE` | CRUD & lifecycle management for scheduled operational tasks. |
 | **`/api/notifications`**| `notifications.py`| `GET`, `POST`, `PUT` | System notifications, priority queue, read/dismiss status. |
-| **`/api/settings`** | `settings.py` | `GET`, `POST` | Persistent key-value application preferences stored in SQLite. |
+| **`/api/settings`** | `settings.py` | `GET`, `POST` | Persistent key-value application preferences and AI Agent config stored in SQLite. |
 
 ---
 
@@ -172,6 +182,8 @@ erDiagram
     CATEGORY ||--o{ PRODUCT : categorizes
     PRODUCT ||--o| INVENTORY : tracks
     
+    MERGE_GROUP ||--o{ BILL : groups
+    
     WORKER_TYPE ||--o{ WORKER : classifies
     WORKER ||--o{ ATTENDANCE : logs
     WORKER ||--o{ ADVANCE : receives
@@ -181,6 +193,33 @@ erDiagram
     EXPENSE_TYPE ||--o{ EXPENSE : categorizes
     EXPENSE ||--o{ EXPENSE_ITEM : details
     
+    AGENT_CONFIG ||--o{ AGENT_PERMISSION : configures
+    AGENT_ACTION_LOG ||--o| AGENT_CHECKPOINT : checkpoints
+    
+    MERGE_GROUP {
+        string id PK
+        string member_bill_ids
+        float total_amount
+        float amount_paid
+        float amount_pending
+        string status
+        datetime settled_at
+    }
+    BILL {
+        int id PK
+        int bill_no
+        float total_amount
+        float amount_paid
+        float amount_pending
+        string payment_status
+        string merge_group_id FK
+        int today_token
+        string payment_method
+        string order_type
+        string items
+        string status
+        datetime created_at
+    }
     ITEM_GROUP {
         int id PK
         string name
@@ -210,17 +249,6 @@ erDiagram
         float unit_price
         float alert_threshold
     }
-    BILL {
-        int id PK
-        int bill_no
-        float total_amount
-        int today_token
-        string payment_method
-        string order_type
-        string items
-        string status
-        datetime created_at
-    }
     WORKER {
         string worker_id PK
         string name
@@ -249,11 +277,18 @@ erDiagram
     DAILY_SALES_SUMMARY {
         date summary_date PK
         float total_sales
+        float pending_revenue
         int total_orders
         float total_expenses
         float net_profit
         float average_bill_value
         string top_products_json
+    }
+    AGENT_CHECKPOINT {
+        string conversation_id PK
+        string state_json
+        string status
+        datetime updated_at
     }
 ```
 
@@ -293,9 +328,74 @@ sequenceDiagram
     UI->>UI: Show success toast and reset cart for next customer
 ```
 
+### 2. Live Order Drag-to-Merge & Settlement Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Cashier as Cashier / Operator
+    participant LiveUI as LiveOrders.jsx (@dnd-kit)
+    participant API as Flask API (/api/billing)
+    participant Service as LiveOrderService
+    participant DB as SQLite DB
+    participant Agg as AggregationService
+
+    Note over LiveUI: Cashier drags Table 3 card onto Table 4 card
+    LiveUI->>LiveUI: Open MergeConfirmModal with combined preview
+    Cashier->>LiveUI: Click "Confirm & Merge"
+    LiveUI->>API: POST /api/billing/merge {bill_ids: [101, 102]}
+    API->>Service: merge_bills([101, 102])
+    Service->>DB: Create/Extend MergeGroup & update bills.merge_group_id
+    Service-->>API: Return unified MergeGroup
+    API-->>LiveUI: 200 OK (Unified Order Card)
+
+    Note over LiveUI: Customer pays bill at counter
+    Cashier->>LiveUI: Click "Settle" -> Select Cash/UPI split
+    LiveUI->>API: POST /api/billing/merge/{id}/settle {payments}
+    API->>Service: settle_group(id, payments)
+    Service->>DB: Mark MergeGroup 'settled' & member bills 'paid'
+    Service->>Agg: update_daily_summary() (re-allocate collected sales)
+    API-->>LiveUI: 200 OK -> Card removed/marked settled
+```
+
 ---
 
-### 2. Real-Time Catalog Versioning & Live Group Toggle
+### 3. Autonomous AI Agent State Graph & Human-in-the-Loop Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Owner as Store Owner
+    participant ChatUI as AgentChatPanel.jsx
+    participant FastPath as Intent Classifier (0 tokens)
+    participant Graph as AgentGraph Runner
+    participant LLM as LLM Adapter (OpenAI / Claude / Gemini)
+    participant Gate as PermissionGate
+    participant DB as SQLite DB (AgentCheckpoint)
+
+    Owner->>ChatUI: "give Priya a 2000 advance"
+    ChatUI->>FastPath: classify_intent_deterministic()
+    Note over FastPath: Matches ADVANCE_SALARY_KEYWORDS -> worker agent (0 tokens)
+    FastPath->>Graph: GRAPH.run(initial_state)
+    Graph->>LLM: call_llm (system prompt + tools)
+    LLM-->>Graph: tool_calls: propose_salary_advance(worker_id, 2000)
+    Graph->>Gate: dispatch_tool (tier: suggest_confirm)
+    Gate->>DB: Insert AgentActionLog (status: proposed)
+    Gate-->>Graph: status: proposed
+    Graph->>DB: Save AgentCheckpoint (status: waiting_approval)
+    Graph-->>ChatUI: Stream proposed action card with "Approve & Apply" button
+
+    Owner->>ChatUI: Click "Approve & Apply"
+    ChatUI->>Graph: POST /api/agents/actions/{id}/approve
+    Graph->>DB: Load AgentCheckpoint & mark action executed
+    Graph->>LLM: node_append_tool_result -> call_llm (synthesis)
+    LLM-->>Graph: Structured response ("Recorded ₹2,000 advance for Priya")
+    Graph-->>ChatUI: 200 OK (Render finalized response)
+```
+
+---
+
+### 4. Real-Time Catalog Versioning & Live Group Toggle
 
 ```mermaid
 sequenceDiagram
@@ -324,7 +424,7 @@ sequenceDiagram
 
 ---
 
-### 3. Role-Based Access Control (RBAC) Flow
+### 5. Role-Based Access Control (RBAC) Flow
 
 ```mermaid
 stateDiagram-v2
@@ -333,7 +433,9 @@ stateDiagram-v2
     state WorkerMode {
         [*] --> POS_Active
         POS_Active: POS Billing Screen Enabled
-        POS_Active --> Analytics_View: Switch Tab
+        POS_Active --> Live_Orders: Switch Tab
+        Live_Orders: Live Orders & Merging Enabled
+        Live_Orders --> Analytics_View: Switch Tab
         Analytics_View: Analytics Read-Only Enabled
         Analytics_View --> POS_Active: Switch Tab
     }
@@ -352,7 +454,7 @@ stateDiagram-v2
 
 ---
 
-### 4. Monthly Staff Payroll Calculation Flow
+### 6. Monthly Staff Payroll Calculation Flow
 
 ```mermaid
 flowchart TD
@@ -374,6 +476,115 @@ flowchart TD
     SavePending --> NextWorker
     NextWorker --> LoopWorker
 ```
+
+---
+
+## 🤖 InfoOS Autonomous Multi-Agent AI System Architecture
+
+InfoOS Desktop incorporates an enterprise-grade, offline-first **Agentic AI Assistant** designed to help store owners manage their operations, query analytics, adjust menus, disburse payroll, and record expenses in natural language.
+
+```mermaid
+flowchart TB
+    UserMsg["User Message / Voice Query"] --> FastPathCheck{"Zero-Cost Fast Path?<br/>(Sales, Attendance, Stock)"}
+    
+    FastPathCheck -->|Yes - Match| LocalSQLite["Local SQLite Query<br/>(0 Tokens • $0.00 Cost • <10ms)"]
+    LocalSQLite --> FastResponse["Structured Response<br/>(Metric List + Insights)"]
+    
+    FastPathCheck -->|No - Complex| IntentRouter{"Deterministic Pre-LLM Router<br/>(classify_intent_deterministic)"}
+    
+    IntentRouter -->|Match| DomainAgent["Specialized Domain Agent"]
+    IntentRouter -->|Ambiguous| LLMOrchestrator["LLM Orchestrator Fallback<br/>(Few-Shot Intent Classifier)"] --> DomainAgent
+    
+    subgraph AgentGraph_Engine [AgentGraph State Machine Runner]
+        StateInit["Build Initial AgentState<br/>(Pruned History + System Prompt + Tools)"] --> NodeCallLLM["node_call_llm<br/>(Multi-Provider Adapter)"]
+        NodeCallLLM --> NodeCheckTools{"node_check_tool_calls<br/>(Tool calls present?)"}
+        
+        NodeCheckTools -->|No Tools / Max Rounds| Finalize["node_check_tool_calls<br/>(status='done')"]
+        NodeCheckTools -->|Tools Present| NodeDispatch["node_dispatch_tool<br/>(PermissionGate)"]
+        
+        NodeDispatch --> GateDecision{"Permission Tier?"}
+        
+        GateDecision -->|full_autonomy| ExecDirect["Execute Tool Directly"] --> NodeAppend["node_append_tool_result<br/>(Synthesis Turn)"] --> NodeCheckTools
+        GateDecision -->|suggest_confirm| PauseProposal["Pause: status='waiting_approval'<br/>(Save AgentCheckpoint)"] --> UIApprovalCard["Render 'Approve & Apply' Card in UI"]
+    end
+    
+    DomainAgent --> StateInit
+    
+    UIApprovalCard -->|User Clicks Approve| ResumeGraph["GRAPH.resume(approved=True)<br/>(Execute verbatim with exact args)"] --> NodeAppend
+    UIApprovalCard -->|User Clicks Reject| RejectGraph["GRAPH.resume(approved=False)<br/>(Append rejection notice)"] --> NodeAppend
+    
+    Finalize --> SSEStream["SSE Stream /chat -> AgentChatPanel.jsx"]
+    FastResponse --> SSEStream
+```
+
+---
+
+### 1. Specialized Domain Agents & Responsibilities
+
+The agent system partitions business capabilities into **7 specialized domain agents**, each equipped with dedicated system prompts, strict boundary rules, and isolated tool registries:
+
+| Domain Agent | Responsibilities & Coverage | Key Tools (`backend/agents/tools.py`) | Autonomy Tier |
+| :--- | :--- | :--- | :--- |
+| **`BillingAgent`** | POS bills, tokens, customer receipts, KOT kitchen routing, table orders, voiding/canceling transactions. | `lookup_bill`, `list_recent_bills`, `get_table_bill`, `propose_void_bill`, `reprint_bill_receipt` | `suggest_confirm` (mutating), `full_autonomy` (read) |
+| **`InventoryAgent`** | Stock levels, raw materials, direct-sale goods, threshold warnings, stock deduction, and inventory restock logging. | `get_inventory_status`, `check_low_stock_items`, `propose_adjust_stock`, `propose_restock_item` | `suggest_confirm` (mutating), `full_autonomy` (read) |
+| **`ProductAgent`** | Menu catalog, item names, prices, variations (S/M/L), categories, item groups, and recipes. | `lookup_product`, `list_categories`, `list_item_groups`, `propose_update_product_price`, `propose_create_product` | `suggest_confirm` (mutating), `full_autonomy` (read) |
+| **`WorkerAgent`** | Employee directory, daily attendance check-ins, advance salary vouchers, monthly salary calculations, and payroll disbursement. | `list_workers`, `get_worker_attendance`, `propose_mark_attendance`, `propose_salary_advance`, `propose_disburse_salary` | `suggest_confirm` (mutating), `full_autonomy` (read) |
+| **`ExpenseAgent`** | Operational spend vouchers, vendor/supplier invoices, utilities, petty cash, and maintenance expenses. | `list_expenses`, `list_expense_types`, `propose_log_expense`, `propose_create_expense_type`, `propose_delete_expense` | `suggest_confirm` (mutating), `full_autonomy` (read) |
+| **`AnalyticsAgent`** | Store performance metrics, sales totals, net profit, average bill values, payment mode breakdowns, and top items. | `get_sales_kpi_summary`, `get_top_selling_products`, `get_revenue_trend`, `compare_sales_periods` | `full_autonomy` (100% read-only) |
+| **`ReminderAgent`** | Scheduled business reminders, owner tasks, recurring alarms, task completion, and notification drawer sync. | `list_active_reminders`, `propose_create_reminder`, `propose_complete_reminder`, `propose_snooze_reminder` | `suggest_confirm` (mutating), `full_autonomy` (read) |
+
+---
+
+### 2. State Graph Engine (`AgentGraph`) & Checkpoint Persistence
+
+Unlike naive linear loops that re-prompt the LLM on user confirmation, InfoOS implements an **event-driven state graph** (`backend/agents/graph_runner.py` and `graph_nodes.py`):
+- **Deterministic Checkpoint Table (`agent_checkpoints`)**: Saves in-flight `AgentState` as JSON keyed by conversation ID.
+- **Discrete Node Machine**:
+  - `node_call_llm`: Executes model turn with token and cost tracking.
+  - `node_check_tool_calls`: Evaluates tool requests and round limits (`max_tool_rounds`).
+  - `node_dispatch_tool`: Routes tool calls through `PermissionGate`. If mutating (`suggest_confirm`), pauses graph execution (`waiting_approval`) and stages an `AgentActionLog` proposal.
+  - `node_append_tool_result`: Appends execution output or rejection notice into message history and makes the synthesis turn.
+- **Verbatim Action Resume**: Clicking **Approve & Apply** resumes the saved checkpoint and executes the original tool call with exact stored arguments without any LLM re-invocation.
+
+---
+
+### 3. Zero-Cost Fast-Path & Deterministic Pre-LLM Routing
+
+To achieve sub-10ms response times and minimize API token costs:
+1. **0-Token Zero-Cost Fast Path (`try_zero_cost_fast_path`)**:
+   - Queries like *"What are today's sales?"*, *"Who is present today?"*, *"Check low stock items"*, and *"What reminders do I have?"* are resolved directly from SQLite without making any LLM API call (0 tokens, $0.00 cost).
+2. **Deterministic Pre-LLM Intent Router (`classify_intent_deterministic`)**:
+   - Uses optimized regex and disambiguation sets (`ADVANCE_SALARY_KEYWORDS`) to route queries directly to the target domain agent without burning an initial Orchestrator LLM call.
+   - Explicit disambiguation rules prevent confusion between vendor payments (`expense`) and employee salary advances (`worker`).
+
+---
+
+### 4. Multi-Tier Permission Gate & Safety Model
+
+Every tool registered in `backend/agents/tools.py` is governed by `PermissionGate`:
+- **`full_autonomy`**: Safe, read-only analytics and data lookups execute immediately.
+- **`suggest_confirm`**: Destructive or financial mutations (updating prices, deleting items, paying out advances, logging expenses) generate structured proposals staged in SQLite for user confirmation.
+- **Ceiling Security Locks**: Mutating tools cannot be escalated past `suggest_confirm` via configuration, ensuring strict human-in-the-loop oversight.
+- **Immutable Audit Trail (`agent_action_logs` and `agent_interaction_audits`)**: Records user prompt, target domain, tool name, arguments diff, execution timestamp, and actor ID.
+
+---
+
+### 5. Multi-Provider LLM Adapter Layer
+
+The unified `LLMAdapter` in `backend/agents/llm_adapter.py` supports:
+- **Cloud Providers**: OpenAI (`gpt-4o`, `gpt-4o-mini`), Anthropic Claude (`claude-3-5-sonnet`, `claude-3-haiku`), Google Gemini (`gemini-1.5-flash`, `gemini-1.5-pro`), Groq (`llama-3.3-70b-versatile`).
+- **Local / Self-Hosted Models**: OpenAI-compatible local endpoints (Ollama, LM Studio, vLLM, llama.cpp) for 100% offline, air-gapped operations.
+- **Security & Key Management**: API keys are AES-256 encrypted in the local SQLite database using machine-derived cryptographic keys.
+- **Token & Cost Optimization**: Rolling-window context pruning (keeps system prompt + last 6 conversation turns) and in-memory read tool caching.
+
+---
+
+### 6. Frontend AI User Interface
+
+- **`AgentChatPanel.jsx`**: Floating glassmorphism chat drawer with Server-Sent Events (SSE) live streaming, typing animations, interactive action proposal approval cards, and structured JSON rendering.
+- **`DynamicAiMascot.jsx`**: Fluid animated AI mascot trigger button with hover glowing effects.
+- **Structured Output Architecture**: Responses are synthesized in clean JSON sections (`metric_list`, `insight_block`, `action_list`, `table`) rendered into styled native React components rather than unstructured markdown text.
+- **`AIAgentSettings` (`Settings.jsx`)**: Comprehensive control panel allowing store owners to configure providers, select models, adjust token/round limits, toggle per-agent permissions, and engage the Master Kill Switch.
 
 ---
 
@@ -476,12 +687,23 @@ npm run build-all
     "engine": "SQLite 3",
     "filename": "products.db",
     "orm": "Flask-SQLAlchemy",
-    "optimization": "Pre-aggregated DailySalesSummary table with real-time row triggers"
+    "optimization": "Pre-aggregated DailySalesSummary table with real-time row triggers",
+    "features": ["MergeGroups", "AgentCheckpoints", "AuditEvents"]
   },
   "security_model": {
     "role_based_access": ["worker", "admin"],
     "admin_protected_routes": ["/inventory", "/management", "/workers", "/expenses", "/settings"],
-    "worker_allowed_routes": ["/", "/analytics", "/reminders"]
+    "worker_allowed_routes": ["/", "/live", "/analytics", "/reminders"]
+  },
+  "live_orders": {
+    "engine": "@dnd-kit/core",
+    "features": ["Drag-to-merge", "Split settlement", "Admin un-merge audit", "304 version hash polling"]
+  },
+  "agentic_ai_orchestration": {
+    "engine": "AgentGraph State Machine",
+    "routing": "Zero-Cost Deterministic Fast-Path + LLM Fallback",
+    "persistence": "SQLite AgentCheckpoint with Human-in-the-Loop Resume",
+    "supported_providers": ["OpenAI", "Anthropic", "Google Gemini", "Groq", "Custom Local OpenAI-compatible"]
   },
   "printing_subsystem": {
     "protocol": "ESC/POS Raw Stream + OS Spooler",

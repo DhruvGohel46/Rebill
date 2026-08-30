@@ -21,7 +21,8 @@ import {
   IoCloseCircleOutline,
   IoTrendingUp,
   IoAdd,
-  IoReceiptOutline
+  IoReceiptOutline,
+  IoTimeOutline
 } from 'react-icons/io5';
 import AddWorkerModal from './AddWorkerModal';
 import '../../styles/Workers.css';
@@ -948,8 +949,8 @@ export default function WorkerProfile() {
                             <span style={{ fontSize: '1rem', fontWeight: 850, color: isDark ? '#FFFFFF' : '#0F172A' }}>{group.name}</span>
                             <span style={{ fontSize: '0.78rem', color: isDark ? '#64748B' : '#94A3B8', fontWeight: 600 }}>({group.range})</span>
                             {group.isPaid && (
-                              <span style={{ padding: '2px 8px', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 800, background: 'rgba(16, 185, 129, 0.12)', color: '#10B981' }}>
-                                ✓ Settled
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '2px 8px', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 800, background: 'rgba(16, 185, 129, 0.12)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                                <IoCheckmarkCircle size={12} /> Settled
                               </span>
                             )}
                           </div>
@@ -1192,15 +1193,27 @@ export default function WorkerProfile() {
                         </span>
                         <span
                           style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
                             padding: '2px 8px',
                             borderRadius: '999px',
                             fontSize: '0.72rem',
                             fontWeight: 800,
                             background: pay.paid ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-                            color: pay.paid ? '#10B981' : '#F59E0B'
+                            color: pay.paid ? '#10B981' : '#F59E0B',
+                            border: pay.paid ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(245, 158, 11, 0.25)'
                           }}
                         >
-                          {pay.paid ? '✓ Paid' : 'Pending Payout'}
+                          {pay.paid ? (
+                            <>
+                              <IoCheckmarkCircle size={12} /> Paid
+                            </>
+                          ) : (
+                            <>
+                              <IoTimeOutline size={12} /> Pending Payout
+                            </>
+                          )}
                         </span>
                       </div>
                       <div style={{ display: 'flex', gap: '12px', fontSize: '0.82rem', color: isDark ? '#94A3B8' : '#64748B' }}>

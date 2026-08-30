@@ -94,7 +94,6 @@ import { syncService } from './api/sync';
 import { POSDataProvider, usePOSData } from './context/POSDataContext';
 
 // Import UI components
-import Button from './components/ui/Button';
 import Sidebar from './components/ui/Sidebar';
 
 // System components (production hardening)
@@ -451,17 +450,6 @@ function AppContent() {
       )
     },
     {
-      id: 'live',
-      label: 'Live',
-      path: '/live',
-      icon: (
-        <motion.svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <motion.circle cx="12" cy="12" r="2" variants={iconVariants} initial="hidden" animate="visible" transition={iconTransition} />
-          <motion.path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14" variants={iconVariants} initial="hidden" animate="visible" transition={iconTransition} />
-        </motion.svg>
-      )
-    },
-    {
       id: 'summary',
       label: 'Analytics',
       path: '/analytics',
@@ -707,115 +695,148 @@ function AppContent() {
               </button>
             )}
 
-            {/* Calculator Dropdown */}
+            {/* Calculator Dropdown (Premium 24px Glassmorphism & High-Contrast Display) */}
             {showCalculator && (
               <div
+                ref={calcRef}
                 style={{
                   position: 'absolute',
                   top: 'calc(100% + 12px)',
                   left: 0,
                   zIndex: 9999,
-                  width: '240px',
-                  borderRadius: '16px',
-                  background: 'var(--bg-primary)',
-                  border: '1px solid var(--glass-border)',
-                  boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
-                  padding: '14px',
-                  animation: 'calcSlideDown 0.18s ease',
+                  width: '272px',
+                  borderRadius: '24px',
+                  background: 'var(--bg-primary, #18191D)',
+                  border: '1.5px solid var(--glass-border, rgba(255, 255, 255, 0.12))',
+                  boxShadow: '0 24px 60px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                  backdropFilter: 'blur(24px)',
+                  WebkitBackdropFilter: 'blur(24px)',
+                  padding: '16px',
+                  animation: 'calcSlideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                 }}
               >
                 <style>{`
                   @keyframes calcSlideDown {
-                    from { opacity:0; transform: translateY(-8px) scale(0.97); }
-                    to   { opacity:1; transform: translateY(0) scale(1); }
+                    from { opacity: 0; transform: translateY(-10px) scale(0.96); }
+                    to   { opacity: 1; transform: translateY(0) scale(1); }
+                  }
+                  .calc-btn-item {
+                    transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1) !important;
+                    user-select: none;
+                  }
+                  .calc-btn-item:active {
+                    transform: scale(0.92) !important;
+                  }
+                  .calc-btn-item:hover {
+                    filter: brightness(1.18);
                   }
                 `}</style>
 
-                {/* Display */}
-                <div style={{
-                  background: 'var(--bg-secondary)',
-                  borderRadius: '10px',
-                  padding: '10px 14px',
-                  marginBottom: '10px',
-                  minHeight: '64px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-end',
-                  justifyContent: 'flex-end',
-                  gap: '2px',
-                  border: '1px solid var(--glass-border)',
-                  overflow: 'hidden',
-                }}>
-                  <div style={{
-                    fontSize: '11px',
-                    color: 'var(--text-tertiary)',
-                    minHeight: '16px',
-                    wordBreak: 'break-all',
-                    textAlign: 'right',
-                    opacity: 0.7,
-                  }}>{calcExpression}</div>
-                  <div style={{
-                    fontSize: calcDisplay.length > 10 ? '18px' : '26px',
-                    fontWeight: 700,
-                    color: calcResult !== null ? 'var(--primary-500)' : 'var(--text-primary)',
-                    wordBreak: 'break-all',
-                    textAlign: 'right',
-                    transition: 'color 0.2s ease',
-                    letterSpacing: '-0.5px',
-                  }}>{calcDisplay}</div>
+                {/* Display Screen */}
+                <div
+                  style={{
+                    background: 'var(--bg-secondary, #111215)',
+                    borderRadius: '16px',
+                    padding: '12px 16px',
+                    marginBottom: '12px',
+                    minHeight: '74px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-end',
+                    justifyContent: 'flex-end',
+                    gap: '4px',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    overflow: 'hidden',
+                    boxShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.4)'
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '12px',
+                      color: 'var(--text-tertiary, #94A3B8)',
+                      minHeight: '18px',
+                      wordBreak: 'break-all',
+                      textAlign: 'right',
+                      fontFamily: 'monospace',
+                      fontWeight: 600,
+                      opacity: 0.85,
+                    }}
+                  >
+                    {calcExpression}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: calcDisplay.length > 9 ? '22px' : '28px',
+                      fontWeight: 900,
+                      color: calcResult !== null ? '#FF6B1A' : 'var(--text-primary, #FFFFFF)',
+                      wordBreak: 'break-all',
+                      textAlign: 'right',
+                      fontFamily: 'monospace',
+                      lineHeight: 1.1,
+                      letterSpacing: '-0.03em',
+                      transition: 'color 0.2s ease',
+                    }}
+                  >
+                    {calcDisplay}
+                  </div>
                 </div>
 
                 {/* Buttons Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
                   {calcRows.map((row, ri) =>
                     row.map((btn, bi) => {
-                      const isOp = ['/', '*', '-', '+', '='].includes(btn);
+                      const isOp = ['/', '*', '-', '+'].includes(btn);
                       const isClear = btn === 'C';
                       const isEq = btn === '=';
-                      const isZero = btn === '0';
+                      const isBack = btn === '⌫';
+                      const isPercent = btn === '%';
+                      const isSign = btn === '+/-';
+
+                      let btnBg = 'var(--bg-secondary, #1E1F24)';
+                      let btnColor = 'var(--text-primary, #F1F5F9)';
+                      let btnBorder = '1px solid rgba(255, 255, 255, 0.06)';
+                      let btnShadow = '0 2px 4px rgba(0,0,0,0.15)';
+
+                      if (isEq) {
+                        btnBg = 'linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%)';
+                        btnColor = '#FFFFFF';
+                        btnBorder = 'none';
+                        btnShadow = '0 4px 14px rgba(255, 107, 26, 0.4)';
+                      } else if (isClear) {
+                        btnBg = 'rgba(239, 68, 68, 0.14)';
+                        btnColor = '#EF4444';
+                        btnBorder = '1px solid rgba(239, 68, 68, 0.28)';
+                      } else if (isOp) {
+                        btnBg = 'rgba(255, 107, 26, 0.12)';
+                        btnColor = '#FF6B1A';
+                        btnBorder = '1px solid rgba(255, 107, 26, 0.25)';
+                      } else if (isBack || isPercent || isSign) {
+                        btnBg = 'rgba(255, 255, 255, 0.05)';
+                        btnColor = 'var(--text-secondary, #CBD5E1)';
+                        btnBorder = '1px solid rgba(255, 255, 255, 0.08)';
+                      }
+
                       return (
                         <button
                           key={`${ri}-${bi}`}
+                          type="button"
+                          className="calc-btn-item"
                           onClick={() => calcHandleSpecial(btn)}
                           style={{
-                            gridColumn: isZero ? 'span 1' : undefined,
-                            height: '48px',
-                            borderRadius: '10px',
+                            height: '46px',
+                            borderRadius: '12px',
                             cursor: 'pointer',
-                            fontSize: '16px',
-                            fontWeight: isOp || isClear ? 700 : 500,
-                            background: isEq
-                              ? 'var(--primary-500)'
-                              : isClear
-                              ? 'rgba(239,68,68,0.15)'
-                              : isOp
-                              ? 'rgba(249,115,22,0.12)'
-                              : 'var(--bg-secondary)',
-                            color: isEq
-                              ? '#fff'
-                              : isClear
-                              ? '#ef4444'
-                              : isOp
-                              ? 'var(--primary-400)'
-                              : 'var(--text-primary)',
-                            border: isEq ? 'none' : '1px solid var(--glass-border)',
-                            transition: 'all 0.15s ease',
+                            fontSize: isOp || isEq ? '18px' : '15px',
+                            fontWeight: isOp || isClear || isEq ? 850 : 650,
+                            fontFamily: !isOp && !isClear && !isBack && !isSign && !isPercent ? 'monospace' : 'inherit',
+                            background: btnBg,
+                            color: btnColor,
+                            border: btnBorder,
+                            boxShadow: btnShadow,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                           }}
-                          onMouseEnter={e => {
-                            e.currentTarget.style.filter = 'brightness(1.2)';
-                            e.currentTarget.style.transform = 'scale(1.04)';
-                          }}
-                          onMouseLeave={e => {
-                            e.currentTarget.style.filter = '';
-                            e.currentTarget.style.transform = '';
-                          }}
-                          onMouseDown={e => { e.currentTarget.style.transform = 'scale(0.96)'; }}
-                          onMouseUp={e => { e.currentTarget.style.transform = 'scale(1.04)'; }}
                         >
                           {btn}
                         </button>

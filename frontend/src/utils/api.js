@@ -74,6 +74,12 @@ api.interceptors.response.use(
   (error) => {
     const isNetworkError = !error.response;
     const status = error.response?.status || 0;
+
+    // HTTP 304 Not Modified is NOT an error — do not dispatch api-error toasts
+    if (status === 304) {
+      return Promise.resolve(error.response || { status: 304, data: null });
+    }
+
     const serverMessage =
       error.response?.data?.error ||
       error.response?.data?.message ||
@@ -314,9 +320,13 @@ export const billingAPI = {
     }),
 
   // Live Order View & Drag-to-Merge
-  getLiveOrders: (version = '') => api.get(`/api/bill/live${version ? `?version=${version}` : ''}`),
+  getLiveOrders: (version = '') =>
+    api.get(`/api/bill/live${version ? `?version=${version}` : ''}`, {
+      validateStatus: (status) => (status >= 200 && status < 300) || status === 304,
+    }),
   mergeOrders: (billIds) => api.post('/api/bill/merge', { bill_ids: billIds }),
   settleMergeGroup: (groupId, payments) => api.post(`/api/bill/merge/${groupId}/settle`, { payments }),
+  settleBill: (billId, payments) => api.post(`/api/bill/${billId}/settle`, { payments }),
   splitMergeGroup: (groupId) => api.post(`/api/bill/merge/${groupId}/split`),
 };
 

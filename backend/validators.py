@@ -104,9 +104,7 @@ class BillUpdateSchema(Schema):
 class MergeRequestSchema(Schema):
     """Schema for POST /api/bill/merge."""
 
-    bill_ids = fields.List(
-        fields.Integer(), required=True, validate=validate.Length(min=2)
-    )
+    bill_ids = fields.List(fields.Integer(), required=True, validate=validate.Length(min=2))
 
     class Meta:
         unknown = EXCLUDE

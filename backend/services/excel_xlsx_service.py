@@ -58,7 +58,9 @@ class ExcelXLSXService:
         wb = self.builder.create_workbook()
 
         # Query Bills for the target day
-        bills = Bill.query.filter(func.date(Bill.created_at) == target_dt).order_by(Bill.id.asc()).all()
+        bills = (
+            Bill.query.filter(func.date(Bill.created_at) == target_dt).order_by(Bill.id.asc()).all()
+        )
         # Query Expenses for the target day to compute true Net Profit
         expenses = Expense.query.filter(func.date(Expense.date) == target_dt).all()
         total_expenses = sum(e.amount for e in expenses)
@@ -66,16 +68,19 @@ class ExcelXLSXService:
         if not bills:
             ws_empty = wb.create_sheet(title="Summary")
             self.builder.write_empty_state_sheet(
-                ws_empty,
-                "Daily Sales Report",
-                date_label,
-                f"No sales recorded on {date_label}."
+                ws_empty, "Daily Sales Report", date_label, f"No sales recorded on {date_label}."
             )
-            filepath = os.path.join(self.export_dir, self.builder.get_safe_filename("DailySales", date_str))
+            filepath = os.path.join(
+                self.export_dir, self.builder.get_safe_filename("DailySales", date_str)
+            )
             wb.save(filepath)
             return filepath
 
-        valid_bills = [b for b in bills if (b.status or "").upper() != "CANCELLED" and (b.status or "").upper() != "VOIDED"]
+        valid_bills = [
+            b
+            for b in bills
+            if (b.status or "").upper() != "CANCELLED" and (b.status or "").upper() != "VOIDED"
+        ]
         total_sales = sum(b.total_amount for b in valid_bills)
         total_orders = len(valid_bills)
         avg_bill_val = (total_sales / total_orders) if total_orders > 0 else 0.0
@@ -92,7 +97,9 @@ class ExcelXLSXService:
             {"label": "Net Profit", "value": net_profit, "format": "currency"},
             {"label": "Avg Bill Value", "value": avg_bill_val, "format": "currency"},
         ]
-        next_row = self.builder.write_metric_cards(ws_sum, start_row=7, metrics=metrics, cols_per_card=2)
+        next_row = self.builder.write_metric_cards(
+            ws_sum, start_row=7, metrics=metrics, cols_per_card=2
+        )
 
         # Payment Breakdown Table
         pay_totals = {}
@@ -115,7 +122,7 @@ class ExcelXLSXService:
             col_alignments=["left", "right", "right"],
             totals_row=pay_totals_row,
             section_title="Payment Method Breakdown",
-            freeze_header=False
+            freeze_header=False,
         )
 
         # Hourly Sales Table (full 24h breakdown)
@@ -143,13 +150,15 @@ class ExcelXLSXService:
             col_alignments=["left", "center", "right"],
             totals_row=hourly_totals_row,
             section_title="Hourly Sales Distribution",
-            freeze_header=False
+            freeze_header=False,
         )
         self.builder.autofit_column_widths(ws_sum)
 
         # ── Sheet 2: Item-Wise Breakdown ──
         ws_items = wb.create_sheet(title="Item-Wise Breakdown")
-        self.builder.write_branded_header(ws_items, "Daily Item-Wise Breakdown", date_label, num_columns=7)
+        self.builder.write_branded_header(
+            ws_items, "Daily Item-Wise Breakdown", date_label, num_columns=7
+        )
 
         # Aggregate products
         prod_agg = {}
@@ -170,7 +179,7 @@ class ExcelXLSXService:
                         "qty": 0.0,
                         "unit_price": price,
                         "revenue": 0.0,
-                        "cog": 0.0
+                        "cog": 0.0,
                     }
                 prod_agg[name]["qty"] += qty
                 prod_agg[name]["revenue"] += subtotal
@@ -184,15 +193,17 @@ class ExcelXLSXService:
 
         for itm in sorted(prod_agg.values(), key=lambda x: x["revenue"], reverse=True):
             profit = itm["revenue"] - itm["cog"]
-            item_rows.append([
-                itm["name"],
-                itm["category"],
-                itm["qty"],
-                itm["unit_price"],
-                itm["revenue"],
-                itm["cog"],
-                profit
-            ])
+            item_rows.append(
+                [
+                    itm["name"],
+                    itm["category"],
+                    itm["qty"],
+                    itm["unit_price"],
+                    itm["revenue"],
+                    itm["cog"],
+                    profit,
+                ]
+            )
             tot_qty += itm["qty"]
             tot_rev += itm["revenue"]
             tot_cog += itm["cog"]
@@ -202,46 +213,95 @@ class ExcelXLSXService:
         self.builder.write_table(
             ws_items,
             start_row=6,
-            headers=["Product Name", "Category", "Qty Sold", "Unit Price", "Total Revenue", "Cost of Goods", "Item Profit"],
+            headers=[
+                "Product Name",
+                "Category",
+                "Qty Sold",
+                "Unit Price",
+                "Total Revenue",
+                "Cost of Goods",
+                "Item Profit",
+            ],
             data_rows=item_rows,
-            col_formats=[None, None, self.builder.FMT_INTEGER, self.builder.FMT_CURRENCY, self.builder.FMT_CURRENCY, self.builder.FMT_CURRENCY, self.builder.FMT_CURRENCY],
+            col_formats=[
+                None,
+                None,
+                self.builder.FMT_INTEGER,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_CURRENCY,
+            ],
             col_alignments=["left", "left", "center", "right", "right", "right", "right"],
-            totals_row=item_totals_row
+            totals_row=item_totals_row,
         )
         self.builder.autofit_column_widths(ws_items)
 
         # ── Sheet 3: Bill Log ──
         ws_bills = wb.create_sheet(title="Bill Log")
-        self.builder.write_branded_header(ws_bills, "Daily Bill Transaction Log", date_label, num_columns=8)
+        self.builder.write_branded_header(
+            ws_bills, "Daily Bill Transaction Log", date_label, num_columns=8
+        )
 
         bill_rows = []
         for b in bills:
             b_time = b.created_at.strftime("%I:%M %p") if b.created_at else ""
             b_items = self._parse_bill_items(b.items)
-            items_summary = ", ".join([f"{i.get('name', 'Item')} (x{i.get('quantity', 1)})" for i in b_items])
+            items_summary = ", ".join(
+                [f"{i.get('name', 'Item')} (x{i.get('quantity', 1)})" for i in b_items]
+            )
             if len(items_summary) > 60:
                 items_summary = items_summary[:57] + "..."
 
-            bill_rows.append([
-                b.bill_no,
-                b.today_token or "-",
-                b_time,
-                (b.order_type or "Dine-In").title(),
-                (b.payment_method or "Cash").upper(),
-                items_summary,
-                b.total_amount,
-                (b.status or "CONFIRMED").upper()
-            ])
+            bill_rows.append(
+                [
+                    b.bill_no,
+                    b.today_token or "-",
+                    b_time,
+                    (b.order_type or "Dine-In").title(),
+                    (b.payment_method or "Cash").upper(),
+                    items_summary,
+                    b.total_amount,
+                    (b.status or "CONFIRMED").upper(),
+                ]
+            )
 
         bill_totals_row = ["TOTAL", "", "", "", "", f"{len(bills)} Bills", total_sales, ""]
         self.builder.write_table(
             ws_bills,
             start_row=6,
-            headers=["Bill No", "Token", "Time", "Order Type", "Payment Method", "Items Summary", "Total Amount", "Status"],
+            headers=[
+                "Bill No",
+                "Token",
+                "Time",
+                "Order Type",
+                "Payment Method",
+                "Items Summary",
+                "Total Amount",
+                "Status",
+            ],
             data_rows=bill_rows,
-            col_formats=[self.builder.FMT_INTEGER, None, None, None, None, None, self.builder.FMT_CURRENCY, None],
-            col_alignments=["center", "center", "center", "center", "center", "left", "right", "center"],
-            totals_row=bill_totals_row
+            col_formats=[
+                self.builder.FMT_INTEGER,
+                None,
+                None,
+                None,
+                None,
+                None,
+                self.builder.FMT_CURRENCY,
+                None,
+            ],
+            col_alignments=[
+                "center",
+                "center",
+                "center",
+                "center",
+                "center",
+                "left",
+                "right",
+                "center",
+            ],
+            totals_row=bill_totals_row,
         )
         self.builder.autofit_column_widths(ws_bills)
 
@@ -269,7 +329,7 @@ class ExcelXLSXService:
             base_dt = today_date
 
         start_week = base_dt - timedelta(days=base_dt.weekday())  # Monday
-        end_week = start_week + timedelta(days=6)                 # Sunday
+        end_week = start_week + timedelta(days=6)  # Sunday
         prev_start_week = start_week - timedelta(days=7)
         prev_end_week = start_week - timedelta(days=1)
 
@@ -282,26 +342,27 @@ class ExcelXLSXService:
         week_bills = Bill.query.filter(
             func.date(Bill.created_at) >= start_week,
             func.date(Bill.created_at) <= end_week,
-            Bill.status.notin_(["CANCELLED", "VOIDED"])
+            Bill.status.notin_(["CANCELLED", "VOIDED"]),
         ).all()
 
         # Query bills for prior week (for trend computation)
         prior_week_bills = Bill.query.filter(
             func.date(Bill.created_at) >= prev_start_week,
             func.date(Bill.created_at) <= prev_end_week,
-            Bill.status.notin_(["CANCELLED", "VOIDED"])
+            Bill.status.notin_(["CANCELLED", "VOIDED"]),
         ).all()
 
         # Query expenses for week
         week_expenses = Expense.query.filter(
-            func.date(Expense.date) >= start_week,
-            func.date(Expense.date) <= end_week
+            func.date(Expense.date) >= start_week, func.date(Expense.date) <= end_week
         ).all()
         total_exp = sum(e.amount for e in week_expenses)
 
         # ── Sheet 1: Week Overview ──
         ws_overview = wb.create_sheet(title="Week Overview")
-        self.builder.write_branded_header(ws_overview, "Weekly Sales Summary", range_label, num_columns=5)
+        self.builder.write_branded_header(
+            ws_overview, "Weekly Sales Summary", range_label, num_columns=5
+        )
 
         total_sales = sum(b.total_amount for b in week_bills)
         total_orders = len(week_bills)
@@ -309,7 +370,10 @@ class ExcelXLSXService:
         avg_daily = total_sales / 7.0
 
         # Compute Day-by-Day aggregation
-        day_map = {start_week + timedelta(days=i): {"orders": 0, "revenue": 0.0, "expenses": 0.0} for i in range(7)}
+        day_map = {
+            start_week + timedelta(days=i): {"orders": 0, "revenue": 0.0, "expenses": 0.0}
+            for i in range(7)
+        }
         for b in week_bills:
             b_date = b.created_at.date() if b.created_at else None
             if b_date in day_map:
@@ -337,21 +401,33 @@ class ExcelXLSXService:
             {"label": "Total Orders", "value": total_orders, "format": "number"},
             {"label": "Net Profit", "value": net_profit, "format": "currency"},
             {"label": "Avg Daily Sales", "value": avg_daily, "format": "currency"},
-            {"label": "Best Day", "value": f"{best_day_name} (₹{best_day_rev:,.0f})", "format": "text"},
-            {"label": "Worst Day", "value": f"{worst_day_name} (₹{worst_day_rev:,.0f})", "format": "text"},
+            {
+                "label": "Best Day",
+                "value": f"{best_day_name} (₹{best_day_rev:,.0f})",
+                "format": "text",
+            },
+            {
+                "label": "Worst Day",
+                "value": f"{worst_day_name} (₹{worst_day_rev:,.0f})",
+                "format": "text",
+            },
         ]
-        next_row = self.builder.write_metric_cards(ws_overview, start_row=7, metrics=metrics, cols_per_card=2)
+        next_row = self.builder.write_metric_cards(
+            ws_overview, start_row=7, metrics=metrics, cols_per_card=2
+        )
 
         day_rows = []
         for d_date, d_data in sorted(day_map.items()):
             d_profit = d_data["revenue"] - d_data["expenses"]
-            day_rows.append([
-                d_date.strftime("%d-%b-%Y"),
-                d_date.strftime("%A"),
-                d_data["orders"],
-                d_data["revenue"],
-                d_profit
-            ])
+            day_rows.append(
+                [
+                    d_date.strftime("%d-%b-%Y"),
+                    d_date.strftime("%A"),
+                    d_data["orders"],
+                    d_data["revenue"],
+                    d_profit,
+                ]
+            )
 
         day_totals = ["TOTAL", "", total_orders, total_sales, net_profit]
         self.builder.write_table(
@@ -359,16 +435,24 @@ class ExcelXLSXService:
             start_row=next_row,
             headers=["Date", "Day of Week", "Orders", "Revenue", "Profit"],
             data_rows=day_rows,
-            col_formats=[None, None, self.builder.FMT_INTEGER, self.builder.FMT_CURRENCY, self.builder.FMT_CURRENCY],
+            col_formats=[
+                None,
+                None,
+                self.builder.FMT_INTEGER,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_CURRENCY,
+            ],
             col_alignments=["center", "left", "center", "right", "right"],
             totals_row=day_totals,
-            section_title="Day-by-Day Revenue Breakdown"
+            section_title="Day-by-Day Revenue Breakdown",
         )
         self.builder.autofit_column_widths(ws_overview)
 
         # ── Sheet 2: Product Overview ──
         ws_prod = wb.create_sheet(title="Product Overview")
-        self.builder.write_branded_header(ws_prod, "Weekly Product Performance", range_label, num_columns=6)
+        self.builder.write_branded_header(
+            ws_prod, "Weekly Product Performance", range_label, num_columns=6
+        )
 
         # Aggregate current week products
         curr_prod = {}
@@ -394,7 +478,9 @@ class ExcelXLSXService:
 
         prod_rows = []
         tot_units = 0.0
-        for p_name, p_data in sorted(curr_prod.items(), key=lambda x: x[1]["revenue"], reverse=True):
+        for p_name, p_data in sorted(
+            curr_prod.items(), key=lambda x: x[1]["revenue"], reverse=True
+        ):
             p_rev = p_data["revenue"]
             p_units = p_data["units"]
             share = (p_rev / total_sales) if total_sales > 0 else 0.0
@@ -403,29 +489,38 @@ class ExcelXLSXService:
             prior_rev = prior_prod.get(p_name, 0.0)
             if prior_rev > 0:
                 pct_change = ((p_rev - prior_rev) / prior_rev) * 100.0
-                trend_str = f"▲ {pct_change:+.1f}%" if pct_change >= 0 else f"▼ {abs(pct_change):.1f}%"
+                trend_str = (
+                    f"▲ {pct_change:+.1f}%" if pct_change >= 0 else f"▼ {abs(pct_change):.1f}%"
+                )
             else:
                 trend_str = "NEW"
 
-            prod_rows.append([
-                p_name,
-                p_data["category"],
-                p_units,
-                p_rev,
-                share,
-                trend_str
-            ])
+            prod_rows.append([p_name, p_data["category"], p_units, p_rev, share, trend_str])
             tot_units += p_units
 
         prod_totals = ["TOTAL", "", tot_units, total_sales, 1.0 if total_sales > 0 else 0.0, ""]
         self.builder.write_table(
             ws_prod,
             start_row=6,
-            headers=["Product", "Category", "Units Sold (Week)", "Revenue (Week)", "% of Week's Revenue", "Trend vs. Prior Week"],
+            headers=[
+                "Product",
+                "Category",
+                "Units Sold (Week)",
+                "Revenue (Week)",
+                "% of Week's Revenue",
+                "Trend vs. Prior Week",
+            ],
             data_rows=prod_rows,
-            col_formats=[None, None, self.builder.FMT_INTEGER, self.builder.FMT_CURRENCY, self.builder.FMT_PERCENT, None],
+            col_formats=[
+                None,
+                None,
+                self.builder.FMT_INTEGER,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_PERCENT,
+                None,
+            ],
             col_alignments=["left", "left", "center", "right", "right", "center"],
-            totals_row=prod_totals
+            totals_row=prod_totals,
         )
         self.builder.autofit_column_widths(ws_prod)
 
@@ -456,13 +551,12 @@ class ExcelXLSXService:
         bills = Bill.query.filter(
             func.date(Bill.created_at) >= start_month,
             func.date(Bill.created_at) <= end_month,
-            Bill.status.notin_(["CANCELLED", "VOIDED"])
+            Bill.status.notin_(["CANCELLED", "VOIDED"]),
         ).all()
 
         # Query Expenses for month
         expenses = Expense.query.filter(
-            func.date(Expense.date) >= start_month,
-            func.date(Expense.date) <= end_month
+            func.date(Expense.date) >= start_month, func.date(Expense.date) <= end_month
         ).all()
         total_exp = sum(e.amount for e in expenses)
 
@@ -478,7 +572,9 @@ class ExcelXLSXService:
 
         # ── Sheet 1: Month Overview ──
         ws_overview = wb.create_sheet(title="Month Overview")
-        self.builder.write_branded_header(ws_overview, "Monthly Sales Summary", month_label, num_columns=6)
+        self.builder.write_branded_header(
+            ws_overview, "Monthly Sales Summary", month_label, num_columns=6
+        )
 
         metrics = [
             {"label": "Gross Sales", "value": total_sales, "format": "currency"},
@@ -488,7 +584,9 @@ class ExcelXLSXService:
             {"label": "Operating Days", "value": op_days_count, "format": "number"},
             {"label": "Avg Daily Sales", "value": avg_daily, "format": "currency"},
         ]
-        next_row = self.builder.write_metric_cards(ws_overview, start_row=7, metrics=metrics, cols_per_card=2)
+        next_row = self.builder.write_metric_cards(
+            ws_overview, start_row=7, metrics=metrics, cols_per_card=2
+        )
 
         # Week-by-Week rollup within month
         week_rollups = {}
@@ -520,18 +618,28 @@ class ExcelXLSXService:
             start_row=next_row,
             headers=["Week Rollup", "Orders", "Revenue", "Profit"],
             data_rows=week_rows,
-            col_formats=[None, self.builder.FMT_INTEGER, self.builder.FMT_CURRENCY, self.builder.FMT_CURRENCY],
+            col_formats=[
+                None,
+                self.builder.FMT_INTEGER,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_CURRENCY,
+            ],
             col_alignments=["left", "center", "right", "right"],
             totals_row=week_totals,
-            section_title="Weekly Performance Rollup"
+            section_title="Weekly Performance Rollup",
         )
         self.builder.autofit_column_widths(ws_overview)
 
         # ── Sheet 2: Daily Breakdown (Chart-Ready) ──
         ws_daily = wb.create_sheet(title="Daily Breakdown")
-        self.builder.write_branded_header(ws_daily, "Monthly Daily Breakdown & Cumulative Trend", month_label, num_columns=5)
+        self.builder.write_branded_header(
+            ws_daily, "Monthly Daily Breakdown & Cumulative Trend", month_label, num_columns=5
+        )
 
-        daily_agg = {date(year, month, d): {"orders": 0, "rev": 0.0, "exp": 0.0} for d in range(1, last_day + 1)}
+        daily_agg = {
+            date(year, month, d): {"orders": 0, "rev": 0.0, "exp": 0.0}
+            for d in range(1, last_day + 1)
+        }
         for b in bills:
             if b.created_at and b.created_at.date() in daily_agg:
                 daily_agg[b.created_at.date()]["orders"] += 1
@@ -546,13 +654,9 @@ class ExcelXLSXService:
         for d_date, d_data in sorted(daily_agg.items()):
             cum_rev += d_data["rev"]
             d_profit = d_data["rev"] - d_data["exp"]
-            daily_rows.append([
-                d_date.strftime("%d-%b-%Y"),
-                d_data["orders"],
-                d_data["rev"],
-                d_profit,
-                cum_rev
-            ])
+            daily_rows.append(
+                [d_date.strftime("%d-%b-%Y"), d_data["orders"], d_data["rev"], d_profit, cum_rev]
+            )
 
         daily_totals = ["TOTAL", total_orders, total_sales, net_profit, total_sales]
         self.builder.write_table(
@@ -560,15 +664,23 @@ class ExcelXLSXService:
             start_row=6,
             headers=["Date", "Orders", "Revenue", "Profit", "Running Cumulative Revenue"],
             data_rows=daily_rows,
-            col_formats=[None, self.builder.FMT_INTEGER, self.builder.FMT_CURRENCY, self.builder.FMT_CURRENCY, self.builder.FMT_CURRENCY],
+            col_formats=[
+                None,
+                self.builder.FMT_INTEGER,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_CURRENCY,
+            ],
             col_alignments=["center", "center", "right", "right", "right"],
-            totals_row=daily_totals
+            totals_row=daily_totals,
         )
         self.builder.autofit_column_widths(ws_daily)
 
         # ── Sheet 3: Product-Wise Totals ──
         ws_prod = wb.create_sheet(title="Product-Wise Totals")
-        self.builder.write_branded_header(ws_prod, "Monthly Product-Wise Sales", month_label, num_columns=6)
+        self.builder.write_branded_header(
+            ws_prod, "Monthly Product-Wise Sales", month_label, num_columns=6
+        )
 
         prod_agg = {}
         for b in bills:
@@ -590,25 +702,39 @@ class ExcelXLSXService:
         for p_name, p_val in sorted(prod_agg.items(), key=lambda x: x[1]["rev"], reverse=True):
             profit = p_val["rev"] - p_val["cog"]
             share = (p_val["rev"] / total_sales) if total_sales > 0 else 0.0
-            p_rows.append([
-                p_name,
-                p_val["cat"],
-                p_val["qty"],
-                p_val["rev"],
-                profit,
-                share
-            ])
+            p_rows.append([p_name, p_val["cat"], p_val["qty"], p_val["rev"], profit, share])
             tot_units += p_val["qty"]
 
-        p_totals = ["TOTAL", "", tot_units, total_sales, net_profit, 1.0 if total_sales > 0 else 0.0]
+        p_totals = [
+            "TOTAL",
+            "",
+            tot_units,
+            total_sales,
+            net_profit,
+            1.0 if total_sales > 0 else 0.0,
+        ]
         self.builder.write_table(
             ws_prod,
             start_row=6,
-            headers=["Product", "Category", "Units Sold (Month)", "Revenue (Month)", "Profit (Month)", "% of Month's Revenue"],
+            headers=[
+                "Product",
+                "Category",
+                "Units Sold (Month)",
+                "Revenue (Month)",
+                "Profit (Month)",
+                "% of Month's Revenue",
+            ],
             data_rows=p_rows,
-            col_formats=[None, None, self.builder.FMT_INTEGER, self.builder.FMT_CURRENCY, self.builder.FMT_CURRENCY, self.builder.FMT_PERCENT],
+            col_formats=[
+                None,
+                None,
+                self.builder.FMT_INTEGER,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_PERCENT,
+            ],
             col_alignments=["left", "left", "center", "right", "right", "right"],
-            totals_row=p_totals
+            totals_row=p_totals,
         )
         self.builder.autofit_column_widths(ws_prod)
 
@@ -642,18 +768,27 @@ class ExcelXLSXService:
 
         wb = self.builder.create_workbook()
         ws = wb.create_sheet(title="Weekly Expenses")
-        self.builder.write_branded_header(ws, "Weekly Business Expense Report", range_label, num_columns=7)
+        self.builder.write_branded_header(
+            ws, "Weekly Business Expense Report", range_label, num_columns=7
+        )
 
-        expenses = Expense.query.filter(
-            func.date(Expense.date) >= start_week,
-            func.date(Expense.date) <= end_week
-        ).order_by(Expense.date.asc()).all()
+        expenses = (
+            Expense.query.filter(
+                func.date(Expense.date) >= start_week, func.date(Expense.date) <= end_week
+            )
+            .order_by(Expense.date.asc())
+            .all()
+        )
 
         total_exp = sum(e.amount for e in expenses)
 
         if not expenses:
-            self.builder.write_empty_state_sheet(ws, "Weekly Expense Report", range_label, "No expenses recorded for this week.")
-            filepath = os.path.join(self.export_dir, self.builder.get_safe_filename("WeeklyExpenses", range_code))
+            self.builder.write_empty_state_sheet(
+                ws, "Weekly Expense Report", range_label, "No expenses recorded for this week."
+            )
+            filepath = os.path.join(
+                self.export_dir, self.builder.get_safe_filename("WeeklyExpenses", range_code)
+            )
             wb.save(filepath)
             return filepath
 
@@ -677,11 +812,16 @@ class ExcelXLSXService:
             start_row=6,
             headers=["Category", "Amount", "% of Week's Expenses", "# of Entries"],
             data_rows=cat_rows,
-            col_formats=[None, self.builder.FMT_CURRENCY, self.builder.FMT_PERCENT, self.builder.FMT_INTEGER],
+            col_formats=[
+                None,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_PERCENT,
+                self.builder.FMT_INTEGER,
+            ],
             col_alignments=["left", "right", "right", "center"],
             totals_row=cat_totals,
             section_title="Category Summary",
-            freeze_header=False
+            freeze_header=False,
         )
 
         # Table B: Full Ledger
@@ -689,27 +829,37 @@ class ExcelXLSXService:
         for e in expenses:
             e_dt = e.date.strftime("%d-%b-%Y") if hasattr(e.date, "strftime") else str(e.date)
             w_name = e.worker.name if e.worker else "-"
-            ledger_rows.append([
-                e_dt,
-                e.title,
-                e.category,
-                e.amount,
-                (e.payment_method or "Cash").title(),
-                w_name,
-                e.notes or ""
-            ])
+            ledger_rows.append(
+                [
+                    e_dt,
+                    e.title,
+                    e.category,
+                    e.amount,
+                    (e.payment_method or "Cash").title(),
+                    w_name,
+                    e.notes or "",
+                ]
+            )
 
         ledger_totals = ["TOTAL", f"{len(expenses)} Entries", "", total_exp, "", "", ""]
         self.builder.write_table(
             ws,
             start_row=next_row,
-            headers=["Date", "Title", "Category", "Amount", "Payment Method", "Linked Worker", "Notes"],
+            headers=[
+                "Date",
+                "Title",
+                "Category",
+                "Amount",
+                "Payment Method",
+                "Linked Worker",
+                "Notes",
+            ],
             data_rows=ledger_rows,
             col_formats=[None, None, None, self.builder.FMT_CURRENCY, None, None, None],
             col_alignments=["center", "left", "left", "right", "center", "left", "left"],
             totals_row=ledger_totals,
             section_title="Detailed Expense Ledger",
-            freeze_header=False
+            freeze_header=False,
         )
         self.builder.autofit_column_widths(ws)
 
@@ -744,14 +894,16 @@ class ExcelXLSXService:
 
         wb = self.builder.create_workbook()
 
-        curr_expenses = Expense.query.filter(
-            func.date(Expense.date) >= start_month,
-            func.date(Expense.date) <= end_month
-        ).order_by(Expense.date.asc()).all()
+        curr_expenses = (
+            Expense.query.filter(
+                func.date(Expense.date) >= start_month, func.date(Expense.date) <= end_month
+            )
+            .order_by(Expense.date.asc())
+            .all()
+        )
 
         prev_expenses = Expense.query.filter(
-            func.date(Expense.date) >= prev_start,
-            func.date(Expense.date) <= prev_end
+            func.date(Expense.date) >= prev_start, func.date(Expense.date) <= prev_end
         ).all()
 
         total_curr = sum(e.amount for e in curr_expenses)
@@ -759,7 +911,9 @@ class ExcelXLSXService:
 
         # ── Sheet 1: Category Summary ──
         ws_cat = wb.create_sheet(title="Category Summary")
-        self.builder.write_branded_header(ws_cat, "Monthly Expense Category Summary", month_label, num_columns=4)
+        self.builder.write_branded_header(
+            ws_cat, "Monthly Expense Category Summary", month_label, num_columns=4
+        )
 
         curr_cat = {}
         for e in curr_expenses:
@@ -790,13 +944,15 @@ class ExcelXLSXService:
             data_rows=cat_rows,
             col_formats=[None, self.builder.FMT_CURRENCY, self.builder.FMT_PERCENT, None],
             col_alignments=["left", "right", "right", "center"],
-            totals_row=cat_totals
+            totals_row=cat_totals,
         )
         self.builder.autofit_column_widths(ws_cat)
 
         # ── Sheet 2: Vendor/Payee Breakdown ──
         ws_vendor = wb.create_sheet(title="Vendor Breakdown")
-        self.builder.write_branded_header(ws_vendor, "Vendor & Payee Outflows", month_label, num_columns=4)
+        self.builder.write_branded_header(
+            ws_vendor, "Vendor & Payee Outflows", month_label, num_columns=4
+        )
 
         vendor_agg = {}
         for e in curr_expenses:
@@ -819,37 +975,49 @@ class ExcelXLSXService:
             data_rows=vendor_rows,
             col_formats=[None, None, self.builder.FMT_INTEGER, self.builder.FMT_CURRENCY],
             col_alignments=["left", "left", "center", "right"],
-            totals_row=vendor_totals
+            totals_row=vendor_totals,
         )
         self.builder.autofit_column_widths(ws_vendor)
 
         # ── Sheet 3: Full Ledger ──
         ws_ledger = wb.create_sheet(title="Full Ledger")
-        self.builder.write_branded_header(ws_ledger, "Monthly Expense Full Ledger", month_label, num_columns=7)
+        self.builder.write_branded_header(
+            ws_ledger, "Monthly Expense Full Ledger", month_label, num_columns=7
+        )
 
         ledger_rows = []
         for e in curr_expenses:
             e_dt = e.date.strftime("%d-%b-%Y") if hasattr(e.date, "strftime") else str(e.date)
             w_name = e.worker.name if e.worker else "-"
-            ledger_rows.append([
-                e_dt,
-                e.title,
-                e.category,
-                e.amount,
-                (e.payment_method or "Cash").title(),
-                w_name,
-                e.notes or ""
-            ])
+            ledger_rows.append(
+                [
+                    e_dt,
+                    e.title,
+                    e.category,
+                    e.amount,
+                    (e.payment_method or "Cash").title(),
+                    w_name,
+                    e.notes or "",
+                ]
+            )
 
         ledger_totals = ["TOTAL", f"{len(curr_expenses)} Entries", "", total_curr, "", "", ""]
         self.builder.write_table(
             ws_ledger,
             start_row=6,
-            headers=["Date", "Title", "Category", "Amount", "Payment Method", "Linked Worker", "Notes"],
+            headers=[
+                "Date",
+                "Title",
+                "Category",
+                "Amount",
+                "Payment Method",
+                "Linked Worker",
+                "Notes",
+            ],
             data_rows=ledger_rows,
             col_formats=[None, None, None, self.builder.FMT_CURRENCY, None, None, None],
             col_alignments=["center", "left", "left", "right", "center", "left", "left"],
-            totals_row=ledger_totals
+            totals_row=ledger_totals,
         )
         self.builder.autofit_column_widths(ws_ledger)
 
@@ -874,16 +1042,21 @@ class ExcelXLSXService:
 
         wb = self.builder.create_workbook()
 
-        expenses = Expense.query.filter(
-            func.date(Expense.date) >= start_year,
-            func.date(Expense.date) <= end_year
-        ).order_by(Expense.date.asc()).all()
+        expenses = (
+            Expense.query.filter(
+                func.date(Expense.date) >= start_year, func.date(Expense.date) <= end_year
+            )
+            .order_by(Expense.date.asc())
+            .all()
+        )
 
         total_ytd = sum(e.amount for e in expenses)
 
         # ── Sheet 1: Year Overview ──
         ws_overview = wb.create_sheet(title="Year Overview")
-        self.builder.write_branded_header(ws_overview, "Yearly Expense Audit Overview", year_label, num_columns=4)
+        self.builder.write_branded_header(
+            ws_overview, "Yearly Expense Audit Overview", year_label, num_columns=4
+        )
 
         monthly_totals = {m: 0.0 for m in range(1, 13)}
         for e in expenses:
@@ -896,17 +1069,26 @@ class ExcelXLSXService:
 
         high_month_idx, high_month_val = max(monthly_totals.items(), key=lambda x: x[1])
         low_month_idx, low_month_val = min(
-            [(m, a) for m, a in monthly_totals.items() if a > 0] or [(1, 0.0)],
-            key=lambda x: x[1]
+            [(m, a) for m, a in monthly_totals.items() if a > 0] or [(1, 0.0)], key=lambda x: x[1]
         )
 
         metrics = [
             {"label": "Total YTD Expenses", "value": total_ytd, "format": "currency"},
             {"label": "Avg Monthly Expense", "value": avg_monthly, "format": "currency"},
-            {"label": "Highest Expense Month", "value": f"{calendar.month_abbr[high_month_idx]} (₹{high_month_val:,.0f})", "format": "text"},
-            {"label": "Lowest Expense Month", "value": f"{calendar.month_abbr[low_month_idx]} (₹{low_month_val:,.0f})", "format": "text"},
+            {
+                "label": "Highest Expense Month",
+                "value": f"{calendar.month_abbr[high_month_idx]} (₹{high_month_val:,.0f})",
+                "format": "text",
+            },
+            {
+                "label": "Lowest Expense Month",
+                "value": f"{calendar.month_abbr[low_month_idx]} (₹{low_month_val:,.0f})",
+                "format": "text",
+            },
         ]
-        next_row = self.builder.write_metric_cards(ws_overview, start_row=7, metrics=metrics, cols_per_card=2)
+        next_row = self.builder.write_metric_cards(
+            ws_overview, start_row=7, metrics=metrics, cols_per_card=2
+        )
 
         month_rows = []
         prev_amt = 0.0
@@ -917,12 +1099,7 @@ class ExcelXLSXService:
                 vs_prior = f"▲ {diff:+.1f}%" if diff >= 0 else f"▼ {abs(diff):.1f}%"
             else:
                 vs_prior = "-"
-            month_rows.append([
-                calendar.month_name[m],
-                c_amt,
-                vs_prior,
-                "-"
-            ])
+            month_rows.append([calendar.month_name[m], c_amt, vs_prior, "-"])
             if c_amt > 0:
                 prev_amt = c_amt
 
@@ -935,13 +1112,15 @@ class ExcelXLSXService:
             col_formats=[None, self.builder.FMT_CURRENCY, None, None],
             col_alignments=["left", "right", "center", "center"],
             totals_row=month_totals,
-            section_title="Month-by-Month Expense Trend"
+            section_title="Month-by-Month Expense Trend",
         )
         self.builder.autofit_column_widths(ws_overview)
 
         # ── Sheet 2: Category Breakdown (Year Pivot) ──
         ws_pivot = wb.create_sheet(title="Category Breakdown (Year)")
-        self.builder.write_branded_header(ws_pivot, "Yearly Category Expense Matrix", year_label, num_columns=15)
+        self.builder.write_branded_header(
+            ws_pivot, "Yearly Category Expense Matrix", year_label, num_columns=15
+        )
 
         cat_matrix = {}
         for e in expenses:
@@ -963,7 +1142,23 @@ class ExcelXLSXService:
                 col_month_totals[m - 1] += months[m]
 
         pivot_totals = ["TOTAL"] + col_month_totals + [total_ytd, 1.0 if total_ytd > 0 else 0.0]
-        pivot_headers = ["Category", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Total", "% of Year"]
+        pivot_headers = [
+            "Category",
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+            "Total",
+            "% of Year",
+        ]
         pivot_formats = [None] + [self.builder.FMT_CURRENCY] * 13 + [self.builder.FMT_PERCENT]
         pivot_aligns = ["left"] + ["right"] * 14
 
@@ -974,37 +1169,49 @@ class ExcelXLSXService:
             data_rows=pivot_rows,
             col_formats=pivot_formats,
             col_alignments=pivot_aligns,
-            totals_row=pivot_totals
+            totals_row=pivot_totals,
         )
         self.builder.autofit_column_widths(ws_pivot)
 
         # ── Sheet 3: Full Ledger ──
         ws_ledger = wb.create_sheet(title="Full Ledger")
-        self.builder.write_branded_header(ws_ledger, "Yearly Expense Master Ledger", year_label, num_columns=7)
+        self.builder.write_branded_header(
+            ws_ledger, "Yearly Expense Master Ledger", year_label, num_columns=7
+        )
 
         ledger_rows = []
         for e in expenses:
             e_dt = e.date.strftime("%d-%b-%Y") if hasattr(e.date, "strftime") else str(e.date)
             w_name = e.worker.name if e.worker else "-"
-            ledger_rows.append([
-                e_dt,
-                e.title,
-                e.category,
-                e.amount,
-                (e.payment_method or "Cash").title(),
-                w_name,
-                e.notes or ""
-            ])
+            ledger_rows.append(
+                [
+                    e_dt,
+                    e.title,
+                    e.category,
+                    e.amount,
+                    (e.payment_method or "Cash").title(),
+                    w_name,
+                    e.notes or "",
+                ]
+            )
 
         ledger_totals = ["TOTAL", f"{len(expenses)} Entries", "", total_ytd, "", "", ""]
         self.builder.write_table(
             ws_ledger,
             start_row=6,
-            headers=["Date", "Title", "Category", "Amount", "Payment Method", "Linked Worker", "Notes"],
+            headers=[
+                "Date",
+                "Title",
+                "Category",
+                "Amount",
+                "Payment Method",
+                "Linked Worker",
+                "Notes",
+            ],
             data_rows=ledger_rows,
             col_formats=[None, None, None, self.builder.FMT_CURRENCY, None, None, None],
             col_alignments=["center", "left", "left", "right", "center", "left", "left"],
-            totals_row=ledger_totals
+            totals_row=ledger_totals,
         )
         self.builder.autofit_column_widths(ws_ledger)
 
@@ -1032,16 +1239,23 @@ class ExcelXLSXService:
         wb = self.builder.create_workbook()
 
         # Query full year bills & expenses
-        bills = Bill.query.filter(
-            func.date(Bill.created_at) >= start_year,
-            func.date(Bill.created_at) <= end_year,
-            Bill.status.notin_(["CANCELLED", "VOIDED"])
-        ).order_by(Bill.created_at.asc()).all()
+        bills = (
+            Bill.query.filter(
+                func.date(Bill.created_at) >= start_year,
+                func.date(Bill.created_at) <= end_year,
+                Bill.status.notin_(["CANCELLED", "VOIDED"]),
+            )
+            .order_by(Bill.created_at.asc())
+            .all()
+        )
 
-        expenses = Expense.query.filter(
-            func.date(Expense.date) >= start_year,
-            func.date(Expense.date) <= end_year
-        ).order_by(Expense.date.asc()).all()
+        expenses = (
+            Expense.query.filter(
+                func.date(Expense.date) >= start_year, func.date(Expense.date) <= end_year
+            )
+            .order_by(Expense.date.asc())
+            .all()
+        )
 
         gross_sales = sum(b.total_amount for b in bills)
         total_exp = sum(e.amount for e in expenses)
@@ -1052,7 +1266,9 @@ class ExcelXLSXService:
 
         # ── Sheet 1: Executive Summary ──
         ws_exec = wb.create_sheet(title="Executive Summary")
-        self.builder.write_branded_header(ws_exec, "Master Financial Audit Summary", year_label, num_columns=5)
+        self.builder.write_branded_header(
+            ws_exec, "Master Financial Audit Summary", year_label, num_columns=5
+        )
 
         metrics = [
             {"label": "Gross Sales (Year)", "value": gross_sales, "format": "currency"},
@@ -1062,7 +1278,9 @@ class ExcelXLSXService:
             {"label": "Total Orders", "value": total_orders, "format": "number"},
             {"label": "Avg Bill Value", "value": avg_bill, "format": "currency"},
         ]
-        next_row = self.builder.write_metric_cards(ws_exec, start_row=7, metrics=metrics, cols_per_card=2)
+        next_row = self.builder.write_metric_cards(
+            ws_exec, start_row=7, metrics=metrics, cols_per_card=2
+        )
 
         # Monthly rollup table
         month_sales = {m: 0.0 for m in range(1, 13)}
@@ -1089,16 +1307,24 @@ class ExcelXLSXService:
             start_row=next_row,
             headers=["Month", "Sales Revenue", "Expenses", "Net Profit", "Margin %"],
             data_rows=exec_rows,
-            col_formats=[None, self.builder.FMT_CURRENCY, self.builder.FMT_CURRENCY, self.builder.FMT_CURRENCY, self.builder.FMT_PERCENT],
+            col_formats=[
+                None,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_PERCENT,
+            ],
             col_alignments=["left", "right", "right", "right", "right"],
             totals_row=exec_totals,
-            section_title="Combined Monthly Financial Performance"
+            section_title="Combined Monthly Financial Performance",
         )
         self.builder.autofit_column_widths(ws_exec)
 
         # ── Sheet 2: Sales Detail (Year) ──
         ws_sales = wb.create_sheet(title="Sales Detail (Year)")
-        self.builder.write_branded_header(ws_sales, "Annual Daily Sales Breakdown", year_label, num_columns=5)
+        self.builder.write_branded_header(
+            ws_sales, "Annual Daily Sales Breakdown", year_label, num_columns=5
+        )
 
         # Group by day
         sales_by_day = {}
@@ -1115,13 +1341,15 @@ class ExcelXLSXService:
         for d in sorted(sales_by_day.keys()):
             d_rev = sales_by_day[d]["rev"]
             cum_rev += d_rev
-            sales_rows.append([
-                d.strftime("%d-%b-%Y"),
-                d.strftime("%A"),
-                sales_by_day[d]["orders"],
-                d_rev,
-                cum_rev
-            ])
+            sales_rows.append(
+                [
+                    d.strftime("%d-%b-%Y"),
+                    d.strftime("%A"),
+                    sales_by_day[d]["orders"],
+                    d_rev,
+                    cum_rev,
+                ]
+            )
 
         sales_totals = ["TOTAL", "", total_orders, gross_sales, gross_sales]
         self.builder.write_table(
@@ -1129,15 +1357,23 @@ class ExcelXLSXService:
             start_row=6,
             headers=["Date", "Day", "Orders", "Sales Revenue", "Cumulative Revenue"],
             data_rows=sales_rows,
-            col_formats=[None, None, self.builder.FMT_INTEGER, self.builder.FMT_CURRENCY, self.builder.FMT_CURRENCY],
+            col_formats=[
+                None,
+                None,
+                self.builder.FMT_INTEGER,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_CURRENCY,
+            ],
             col_alignments=["center", "left", "center", "right", "right"],
-            totals_row=sales_totals
+            totals_row=sales_totals,
         )
         self.builder.autofit_column_widths(ws_sales)
 
         # ── Sheet 3: Expense Detail (Year Pivot) ──
         ws_exp_pivot = wb.create_sheet(title="Expense Detail (Year)")
-        self.builder.write_branded_header(ws_exp_pivot, "Annual Expense Category Matrix", year_label, num_columns=15)
+        self.builder.write_branded_header(
+            ws_exp_pivot, "Annual Expense Category Matrix", year_label, num_columns=15
+        )
 
         cat_matrix = {}
         for e in expenses:
@@ -1159,7 +1395,23 @@ class ExcelXLSXService:
                 col_month_totals[m - 1] += months[m]
 
         pivot_totals = ["TOTAL"] + col_month_totals + [total_exp, 1.0 if total_exp > 0 else 0.0]
-        pivot_headers = ["Category", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Total", "% of Year"]
+        pivot_headers = [
+            "Category",
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+            "Total",
+            "% of Year",
+        ]
         pivot_formats = [None] + [self.builder.FMT_CURRENCY] * 13 + [self.builder.FMT_PERCENT]
         pivot_aligns = ["left"] + ["right"] * 14
 
@@ -1170,13 +1422,15 @@ class ExcelXLSXService:
             data_rows=pivot_rows,
             col_formats=pivot_formats,
             col_alignments=pivot_aligns,
-            totals_row=pivot_totals
+            totals_row=pivot_totals,
         )
         self.builder.autofit_column_widths(ws_exp_pivot)
 
         # ── Sheet 4: Payroll Summary ──
         ws_payroll = wb.create_sheet(title="Payroll Summary")
-        self.builder.write_branded_header(ws_payroll, "Annual Worker Payroll & Attendance Summary", year_label, num_columns=5)
+        self.builder.write_branded_header(
+            ws_payroll, "Annual Worker Payroll & Attendance Summary", year_label, num_columns=5
+        )
 
         workers = Worker.query.all()
         payroll_rows = []
@@ -1189,7 +1443,7 @@ class ExcelXLSXService:
             payments = SalaryPayment.query.filter(
                 SalaryPayment.worker_id == w.worker_id,
                 SalaryPayment.year == year,
-                SalaryPayment.paid == True
+                SalaryPayment.paid == True,
             ).all()
             w_paid = sum(p.final_salary for p in payments)
 
@@ -1197,7 +1451,7 @@ class ExcelXLSXService:
             advances = Advance.query.filter(
                 Advance.worker_id == w.worker_id,
                 func.date(Advance.date) >= start_year,
-                func.date(Advance.date) <= end_year
+                func.date(Advance.date) <= end_year,
             ).all()
             w_adv = sum(a.amount for a in advances)
 
@@ -1206,16 +1460,10 @@ class ExcelXLSXService:
                 Attendance.worker_id == w.worker_id,
                 func.date(Attendance.date) >= start_year,
                 func.date(Attendance.date) <= end_year,
-                Attendance.status == "Present"
+                Attendance.status == "Present",
             ).count()
 
-            payroll_rows.append([
-                w.name,
-                w.role or "Staff",
-                w_paid,
-                w_adv,
-                att_count
-            ])
+            payroll_rows.append([w.name, w.role or "Staff", w_paid, w_adv, att_count])
             tot_paid += w_paid
             tot_adv += w_adv
             tot_days += att_count
@@ -1224,41 +1472,63 @@ class ExcelXLSXService:
         self.builder.write_table(
             ws_payroll,
             start_row=6,
-            headers=["Worker Name", "Role / Title", "Total Paid (Year)", "Total Advances (Year)", "Days Present (Year)"],
+            headers=[
+                "Worker Name",
+                "Role / Title",
+                "Total Paid (Year)",
+                "Total Advances (Year)",
+                "Days Present (Year)",
+            ],
             data_rows=payroll_rows,
-            col_formats=[None, None, self.builder.FMT_CURRENCY, self.builder.FMT_CURRENCY, self.builder.FMT_INTEGER],
+            col_formats=[
+                None,
+                None,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_INTEGER,
+            ],
             col_alignments=["left", "left", "right", "right", "center"],
-            totals_row=payroll_totals
+            totals_row=payroll_totals,
         )
         self.builder.autofit_column_widths(ws_payroll)
 
         # ── Sheet 5: Full Transaction Log (Unified Chronological) ──
         ws_tx = wb.create_sheet(title="Transaction Log")
-        self.builder.write_branded_header(ws_tx, "Annual Unified Transaction Ledger", year_label, num_columns=6)
+        self.builder.write_branded_header(
+            ws_tx, "Annual Unified Transaction Ledger", year_label, num_columns=6
+        )
 
         # Merge bills and expenses into a single unified stream
         unified_events = []
         for b in bills:
             dt = b.created_at or datetime.combine(start_year, datetime.min.time())
-            unified_events.append({
-                "datetime": dt,
-                "type": "Sale",
-                "ref": f"Bill #{b.bill_no}",
-                "category": "POS Revenue",
-                "amount": b.total_amount,
-                "is_credit": True
-            })
+            unified_events.append(
+                {
+                    "datetime": dt,
+                    "type": "Sale",
+                    "ref": f"Bill #{b.bill_no}",
+                    "category": "POS Revenue",
+                    "amount": b.total_amount,
+                    "is_credit": True,
+                }
+            )
 
         for e in expenses:
-            dt = e.date if isinstance(e.date, datetime) else datetime.combine(e.date or start_year, datetime.min.time())
-            unified_events.append({
-                "datetime": dt,
-                "type": "Expense",
-                "ref": e.title,
-                "category": e.category or "Expense",
-                "amount": e.amount,
-                "is_credit": False
-            })
+            dt = (
+                e.date
+                if isinstance(e.date, datetime)
+                else datetime.combine(e.date or start_year, datetime.min.time())
+            )
+            unified_events.append(
+                {
+                    "datetime": dt,
+                    "type": "Expense",
+                    "ref": e.title,
+                    "category": e.category or "Expense",
+                    "amount": e.amount,
+                    "is_credit": False,
+                }
+            )
 
         unified_events.sort(key=lambda x: x["datetime"])
 
@@ -1271,14 +1541,16 @@ class ExcelXLSXService:
             else:
                 running_bal -= amt
 
-            tx_rows.append([
-                ev["datetime"].strftime("%d-%b-%Y %I:%M %p"),
-                ev["type"],
-                ev["ref"],
-                ev["category"],
-                amt if ev["is_credit"] else -amt,
-                running_bal
-            ])
+            tx_rows.append(
+                [
+                    ev["datetime"].strftime("%d-%b-%Y %I:%M %p"),
+                    ev["type"],
+                    ev["ref"],
+                    ev["category"],
+                    amt if ev["is_credit"] else -amt,
+                    running_bal,
+                ]
+            )
 
         tx_totals = ["TOTAL", f"{len(unified_events)} Transactions", "", "", net_profit, net_profit]
         self.builder.write_table(
@@ -1286,9 +1558,16 @@ class ExcelXLSXService:
             start_row=6,
             headers=["Date & Time", "Type", "Reference", "Category", "Amount", "Running Balance"],
             data_rows=tx_rows,
-            col_formats=[None, None, None, None, self.builder.FMT_CURRENCY, self.builder.FMT_CURRENCY],
+            col_formats=[
+                None,
+                None,
+                None,
+                None,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_CURRENCY,
+            ],
             col_alignments=["center", "center", "left", "left", "right", "right"],
-            totals_row=tx_totals
+            totals_row=tx_totals,
         )
         self.builder.autofit_column_widths(ws_tx)
 

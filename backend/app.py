@@ -116,6 +116,7 @@ def start_dashboard_refresher():
                     try:
                         from models import AgentCheckpoint
                         from datetime import timedelta
+
                         cutoff_done = now - timedelta(hours=24)
                         cutoff_expired = now - timedelta(days=7)
                         AgentCheckpoint.query.filter(
@@ -701,9 +702,7 @@ def run_programmatic_sqlite_migrations(app, db):
                     )
                 if "user_message" not in log_cols:
                     _log.info("Migrating SQLite: Adding user_message to agent_action_logs")
-                    conn.execute(
-                        text("ALTER TABLE agent_action_logs ADD COLUMN user_message TEXT")
-                    )
+                    conn.execute(text("ALTER TABLE agent_action_logs ADD COLUMN user_message TEXT"))
                 if "affected_entity_id" not in log_cols:
                     _log.info("Migrating SQLite: Adding affected_entity_id to agent_action_logs")
                     conn.execute(
@@ -734,7 +733,9 @@ def run_programmatic_sqlite_migrations(app, db):
                     )
                 """))
                 conn.execute(
-                    text("CREATE INDEX IF NOT EXISTS idx_merge_groups_status ON merge_groups(status)")
+                    text(
+                        "CREATE INDEX IF NOT EXISTS idx_merge_groups_status ON merge_groups(status)"
+                    )
                 )
 
                 # Re-read bills columns (may have been read earlier, re-fetch to be safe)
@@ -748,9 +749,7 @@ def run_programmatic_sqlite_migrations(app, db):
                     )
                 if "amount_paid" not in bills_cols_v2:
                     _log.info("Migrating SQLite: Adding amount_paid column to bills")
-                    conn.execute(
-                        text("ALTER TABLE bills ADD COLUMN amount_paid FLOAT DEFAULT 0")
-                    )
+                    conn.execute(text("ALTER TABLE bills ADD COLUMN amount_paid FLOAT DEFAULT 0"))
                 if "amount_pending" not in bills_cols_v2:
                     _log.info("Migrating SQLite: Adding amount_pending column to bills")
                     conn.execute(
@@ -759,7 +758,9 @@ def run_programmatic_sqlite_migrations(app, db):
                 if "merge_group_id" not in bills_cols_v2:
                     _log.info("Migrating SQLite: Adding merge_group_id column to bills")
                     conn.execute(
-                        text("ALTER TABLE bills ADD COLUMN merge_group_id TEXT REFERENCES merge_groups(id)")
+                        text(
+                            "ALTER TABLE bills ADD COLUMN merge_group_id TEXT REFERENCES merge_groups(id)"
+                        )
                     )
 
                 # Backfill: existing bills are all fully paid
@@ -772,7 +773,9 @@ def run_programmatic_sqlite_migrations(app, db):
                 """))
 
                 conn.execute(
-                    text("CREATE INDEX IF NOT EXISTS idx_bills_payment_status ON bills(payment_status)")
+                    text(
+                        "CREATE INDEX IF NOT EXISTS idx_bills_payment_status ON bills(payment_status)"
+                    )
                 )
 
                 # Add pending_revenue to daily_sales_summary
@@ -781,7 +784,9 @@ def run_programmatic_sqlite_migrations(app, db):
                 if "pending_revenue" not in dss_cols:
                     _log.info("Migrating SQLite: Adding pending_revenue to daily_sales_summary")
                     conn.execute(
-                        text("ALTER TABLE daily_sales_summary ADD COLUMN pending_revenue FLOAT DEFAULT 0")
+                        text(
+                            "ALTER TABLE daily_sales_summary ADD COLUMN pending_revenue FLOAT DEFAULT 0"
+                        )
                     )
 
             _log.info("Programmatic SQLite migrations completed successfully")

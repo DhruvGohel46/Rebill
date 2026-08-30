@@ -39,6 +39,7 @@ _log = logging.getLogger(__name__)
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _serialize_tool_calls(tool_calls) -> List[Dict[str, Any]]:
     """Convert ToolCall dataclass list into JSON-serializable dicts."""
     return [{"id": tc.id, "name": tc.name, "args": tc.args} for tc in tool_calls]
@@ -55,6 +56,7 @@ def _build_tool_call_message(content: Optional[str], tool_calls_raw: List[Dict])
 # ---------------------------------------------------------------------------
 # Node: call_llm
 # ---------------------------------------------------------------------------
+
 
 def node_call_llm(
     state: AgentState,
@@ -80,9 +82,7 @@ def node_call_llm(
             max_tokens=state["max_tokens"],
         )
     except Exception as e:
-        _log.error(
-            "LLM call failed for %s agent (graph): %s", state.get("agent_name"), e
-        )
+        _log.error("LLM call failed for %s agent (graph): %s", state.get("agent_name"), e)
         state["status"] = "error"
         state["error"] = (
             f"I encountered an error connecting to your AI provider: {str(e)}. "
@@ -105,6 +105,7 @@ def node_call_llm(
 # ---------------------------------------------------------------------------
 # Node: check_tool_calls
 # ---------------------------------------------------------------------------
+
 
 def node_check_tool_calls(
     state: AgentState,
@@ -141,8 +142,7 @@ def node_check_tool_calls(
         # max_tool_rounds ceiling — same fallback as run_stream()
         pending = state.get("pending_actions") or []
         final_text = state.get("last_llm_response_content") or (
-            f"I have prepared the action for your approval: "
-            f"{pending[0].get('diff_summary')}"
+            f"I have prepared the action for your approval: " f"{pending[0].get('diff_summary')}"
             if pending
             else "I have processed your request."
         )
@@ -157,6 +157,7 @@ def node_check_tool_calls(
 # ---------------------------------------------------------------------------
 # Node: dispatch_tool
 # ---------------------------------------------------------------------------
+
 
 def node_dispatch_tool(
     state: AgentState,
@@ -235,7 +236,7 @@ def node_dispatch_tool(
         state["pending_actions"].append(dispatch_res)
         state["pending_tool_call"] = {
             **dispatch_res,
-            "_tc": tc,               # keep original tc for message reconstruction
+            "_tc": tc,  # keep original tc for message reconstruction
         }
         # We also append a tool message NOW so that when the graph resumes,
         # append_tool_result has the correct follow-up context. The content
@@ -245,7 +246,7 @@ def node_dispatch_tool(
             "name": tool_name,
             "tool_call_id": tool_id,
             "content": json.dumps(dispatch_res),
-            "_pending": True,        # marker so append_tool_result knows to include proposal notice
+            "_pending": True,  # marker so append_tool_result knows to include proposal notice
         }
         # Store pending tool message separately to be appended on resume
         state["pending_tool_call"]["_tool_message"] = tool_msg
@@ -253,7 +254,6 @@ def node_dispatch_tool(
         state["status"] = "waiting_approval"
         state["current_node"] = "dispatch_tool"
         return (None, state)
-
 
     elif dispatch_res.get("status") == "executed":
         state["executed_actions"].append(dispatch_res)
@@ -283,6 +283,7 @@ def node_dispatch_tool(
 # ---------------------------------------------------------------------------
 # Node: append_tool_result
 # ---------------------------------------------------------------------------
+
 
 def node_append_tool_result(
     state: AgentState,
@@ -314,9 +315,7 @@ def node_append_tool_result(
 
     # Append assistant stub (mirrors run_stream() lines 377-385)
     all_tcs = state.get("_dispatched_tool_calls_this_round") or pending_tool_msgs
-    first_name = (
-        pending_tool_msgs[0].get("name") if pending_tool_msgs else "tool"
-    )
+    first_name = pending_tool_msgs[0].get("name") if pending_tool_msgs else "tool"
     if last_content:
         follow_up_messages.append({"role": "assistant", "content": last_content})
     else:

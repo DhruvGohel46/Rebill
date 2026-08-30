@@ -118,6 +118,8 @@ def update_category(category_id):
         raise NotFoundError("Category not found or no changes made", code="CATEGORY_NOT_FOUND")
 
     cache.invalidate("categories")
+    cache.invalidate("products")
+    cache.invalidate("products_with_stock")
     _update_catalog_version()
     return jsonify({"success": True, "message": "Category updated successfully"}), 200
 
@@ -132,6 +134,8 @@ def delete_category(category_id):
     if usage["used"]:
         db.update_category(category_id, {"active": False})
         cache.invalidate("categories")
+        cache.invalidate("products")
+        cache.invalidate("products_with_stock")
         _update_catalog_version()
         return (
             jsonify(

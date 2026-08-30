@@ -10,8 +10,6 @@ import '../../styles/Management.css';
 import { useSettings } from '../../context/SettingsContext';
 import GlobalSelect from '../ui/GlobalSelect';
 import PageContainer from '../layout/PageContainer';
-import Card from '../ui/Card';
-import Button from '../ui/Button';
 import { createEmptyVariation, sanitizeVariationsForSave } from '../../utils/productVariations';
 import { usePOSData } from '../../context/POSDataContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -499,31 +497,7 @@ const ProductManagement = ({ activeTab, setActiveTab }) => {
     }
   };
 
-  const handleDeleteDirect = async (product) => {
-    try {
-      const prodName = `"${product.name}"`;
-      if (isOnlineMode) {
-        await OnlineProductService.deleteProduct(product.product_id);
-        showSuccess(`Cloud product ${prodName} permanently deleted`, {
-          title: 'Product Deleted',
-          category: 'inventory',
-          action_route: '/management'
-        });
-      } else {
-        await productsAPI.deleteProductPermanently(product.product_id);
-        showSuccess(`Product ${prodName} permanently deleted`, {
-          title: 'Product Deleted',
-          category: 'inventory',
-          action_route: '/management'
-        });
-      }
-      await loadProducts();
-      checkCatalogVersion();
-    } catch (err) {
-      const apiError = handleAPIError(err);
-      setError(apiError.message);
-    }
-  };
+
 
   const confirmPermanentDelete = async (e) => {
     e.preventDefault();

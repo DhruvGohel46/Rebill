@@ -23,7 +23,10 @@ import {
   IoMoveOutline,
   IoCheckmarkDoneOutline,
   IoCloseOutline,
-  IoCreateOutline
+  IoCreateOutline,
+  IoRestaurantOutline,
+  IoCheckmarkCircle,
+  IoTimeOutline
 } from 'react-icons/io5';
 import { motion, Reorder } from 'framer-motion';
 import {
@@ -51,7 +54,6 @@ const TrashIcon = ({ color }) => (
 
 
 const WorkingPOSInterface = ({ onBillCreated }) => {
-
   const { currentTheme, isDark } = useTheme();
 
   const { settings } = useSettings();
@@ -1671,7 +1673,43 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                 </span>
               )}
             </h2>
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => navigate('/live')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  background: isDark
+                    ? 'linear-gradient(135deg, rgba(255, 107, 26, 0.15) 0%, rgba(234, 88, 12, 0.25) 100%)'
+                    : '#FFF7ED',
+                  border: '1.5px solid rgba(255, 107, 26, 0.4)',
+                  borderRadius: '12px',
+                  color: '#FF6B1A',
+                  fontSize: '13.5px',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 10px rgba(255, 107, 26, 0.15)',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 14px rgba(255, 107, 26, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 10px rgba(255, 107, 26, 0.15)';
+                }}
+                title="Open Real-time Live Orders & Active Table Board"
+              >
+                <div className="live-pulse-dot" style={{ width: '8px', height: '8px' }} />
+                <span>Live Board</span>
+                <IoRestaurantOutline size={15} />
+              </button>
+
               {!isEditMode ? (
                 <button
                   onClick={startEditMode}
@@ -2771,7 +2809,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                 boxShadow: paymentStatus === 'paid' ? '0 2px 8px rgba(16, 185, 129, 0.3)' : 'none'
               }}
             >
-              <span>✓</span> Paid
+              <IoCheckmarkCircle size={14} /> Paid
             </button>
             <button
               type="button"
@@ -2796,7 +2834,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                 boxShadow: paymentStatus === 'pending' ? '0 2px 8px rgba(245, 158, 11, 0.3)' : 'none'
               }}
             >
-              <span>⏳</span> Mark Pending
+              <IoTimeOutline size={14} /> Mark Pending
             </button>
           </div>
 

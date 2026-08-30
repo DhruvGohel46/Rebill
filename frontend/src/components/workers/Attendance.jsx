@@ -218,7 +218,6 @@ const Attendance = () => {
                         {workers.map((worker) => {
                             const isPresent = worker.today_attendance === 'Present';
                             const isAbsent = worker.today_attendance === 'Absent';
-                            const isUnmarked = !worker.today_attendance || worker.today_attendance === 'Not Marked';
 
                             return (
                                 <tr

@@ -388,7 +388,7 @@ class PermissionGate:
             action_log.status = "executed"
             action_log.result_summary = json.dumps(exec_res)
             action_log.execution_timestamp = datetime.now()
-            
+
             # Extract affected entity id if present
             entity_id = (
                 exec_res.get("expense_id")

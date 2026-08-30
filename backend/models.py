@@ -114,9 +114,7 @@ class Bill(db.Model):
     payment_status = db.Column(db.String(20), default="paid")  # "paid" | "pending" | "partial"
     amount_paid = db.Column(db.Float, default=0.0)
     amount_pending = db.Column(db.Float, default=0.0)
-    merge_group_id = db.Column(
-        db.String(36), db.ForeignKey("merge_groups.id"), nullable=True
-    )
+    merge_group_id = db.Column(db.String(36), db.ForeignKey("merge_groups.id"), nullable=True)
     created_at = db.Column(db.DateTime, default=func.now())
     updated_at = db.Column(db.DateTime, default=func.now(), onupdate=func.now())
 
@@ -151,9 +149,7 @@ class MergeGroup(db.Model):
 
     bills = db.relationship("Bill", backref="merge_group_ref", lazy=True)
 
-    __table_args__ = (
-        db.Index("idx_merge_groups_status", "status"),
-    )
+    __table_args__ = (db.Index("idx_merge_groups_status", "status"),)
 
     def to_dict(self):
         import json as _json
@@ -162,9 +158,7 @@ class MergeGroup(db.Model):
             "id": self.id,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "created_by": self.created_by,
-            "member_bill_ids": (
-                _json.loads(self.member_bill_ids) if self.member_bill_ids else []
-            ),
+            "member_bill_ids": (_json.loads(self.member_bill_ids) if self.member_bill_ids else []),
             "total_amount": self.total_amount,
             "amount_paid": self.amount_paid,
             "amount_pending": self.amount_pending,
@@ -503,7 +497,9 @@ class DailySalesSummary(db.Model):
     total_expenses = db.Column(db.Float, default=0.0)
     net_profit = db.Column(db.Float, default=0.0)
     average_bill_value = db.Column(db.Float, default=0.0)
-    pending_revenue = db.Column(db.Float, default=0.0)  # Sum of amount_pending for pending/partial bills
+    pending_revenue = db.Column(
+        db.Float, default=0.0
+    )  # Sum of amount_pending for pending/partial bills
     top_products_json = db.Column(db.Text, default="[]")  # JSON of top 10 products
     updated_at = db.Column(db.DateTime, default=func.now(), onupdate=func.now())
 
@@ -678,7 +674,9 @@ class AgentActionLog(db.Model):
             "error_message": self.error_message,
             "user_message": self.user_message,
             "affected_entity_id": self.affected_entity_id,
-            "execution_timestamp": self.execution_timestamp.isoformat() if self.execution_timestamp else None,
+            "execution_timestamp": (
+                self.execution_timestamp.isoformat() if self.execution_timestamp else None
+            ),
             "performed_by": self.performed_by,
             "input_tokens": self.input_tokens or 0,
             "output_tokens": self.output_tokens or 0,
@@ -697,7 +695,9 @@ class AgentInteractionAudit(db.Model):
     routed_agent = db.Column(db.String(50), nullable=False)
     tools_called = db.Column(db.Text, default="[]")  # JSON list of tools & arguments
     tool_results = db.Column(db.Text, default="[]")  # JSON list of tool outcomes
-    status = db.Column(db.String(30), default="completed")  # completed, proposal_generated, executed, failed
+    status = db.Column(
+        db.String(30), default="completed"
+    )  # completed, proposal_generated, executed, failed
     has_mutation = db.Column(db.Boolean, default=False)
     affected_entities = db.Column(db.Text, nullable=True)
     assistant_response = db.Column(db.Text, nullable=True)
@@ -757,8 +757,8 @@ class AgentCheckpoint(db.Model):
     __tablename__ = "agent_checkpoints"
 
     conversation_id = db.Column(db.String(100), primary_key=True)
-    state_json = db.Column(db.Text, nullable=False)       # json.dumps(AgentState)
-    status = db.Column(db.String(30), nullable=False)     # mirrors state["status"]
+    state_json = db.Column(db.Text, nullable=False)  # json.dumps(AgentState)
+    status = db.Column(db.String(30), nullable=False)  # mirrors state["status"]
     created_at = db.Column(db.DateTime, default=func.now())
     updated_at = db.Column(db.DateTime, default=func.now(), onupdate=func.now())
 
@@ -774,4 +774,3 @@ class AgentCheckpoint(db.Model):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
-

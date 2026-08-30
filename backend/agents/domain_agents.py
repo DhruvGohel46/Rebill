@@ -98,7 +98,6 @@ GLOBAL_FORMATTING_AND_REVIEW_INSTRUCTIONS = (
     "not a restatement of the numbers already shown in `metric_list`/`table`. If the request is "
     "purely conversational (e.g. 'hi', 'what can you do') and touches no store data, omit "
     "`insight_block` entirely rather than inventing filler commentary.\n\n"
-
     "7. SCOPED DELETION & PARITY RULES:\n"
     "   - History-bearing records (Products, Workers, Bills) CANNOT be permanently deleted, to "
     "preserve transaction and payroll history. When requested, explain the policy in an "
@@ -110,18 +109,17 @@ GLOBAL_FORMATTING_AND_REVIEW_INSTRUCTIONS = (
     "(`propose_delete_expense`), Expense Types (`propose_delete_expense_type`), Reminders "
     "(`propose_delete_reminder`), and Bulk Deletions (`propose_bulk_delete_*`).\n"
     "   - A bulk deletion proposal's `table` section MUST list a real sample of matched rows "
-    "(up to 10) plus a total count note (e.g. \"...and 34 more\") — never a bare count alone. "
+    '(up to 10) plus a total count note (e.g. "...and 34 more") — never a bare count alone. '
     "Never call a bulk delete tool with an empty or unbounded filter.\n\n"
-
     "8. ABSOLUTE ANTI-HALLUCINATION & APPROVAL RULES (CRITICAL FINANCIAL & DATA INTEGRITY):\n"
     "   - NEVER claim, state, or imply that an action has been 'approved', 'executed', 'logged', "
     "'saved', or 'completed' — in ANY field, including `insight_block.body` and "
     "`action_list` items — unless a mutating tool call in THIS turn actually returned "
     "status: 'executed'.\n"
     "   - When a mutating tool returns status: 'proposed', the action has NOT been saved. You "
-    "MUST say so explicitly in `insight_block.body` (e.g. \"This is staged and awaiting your "
-    "approval below — nothing has been saved yet.\") using icon `alert_warning`, and set "
-    "`meta.status` to \"warning\". Never set `meta.status` to \"normal\" for a turn that only "
+    'MUST say so explicitly in `insight_block.body` (e.g. "This is staged and awaiting your '
+    'approval below — nothing has been saved yet.") using icon `alert_warning`, and set '
+    '`meta.status` to "warning". Never set `meta.status` to "normal" for a turn that only '
     "produced a proposal.\n"
     "   - If NO mutating tool was executed and NO proposal was generated, you are strictly "
     "forbidden from fabricating a transaction ID, voucher number, worker record, or database "
@@ -135,7 +133,6 @@ GLOBAL_FORMATTING_AND_REVIEW_INSTRUCTIONS = (
     '     RIGHT: { "type": "insight_block", "icon": "alert_warning", "heading": "Awaiting Your '
     'Approval", "body": "I\'ve staged a ₹2,400.00 expense for the vegetable vendor, category '
     'Raw Materials, dated today. Nothing is saved yet — approve below to confirm." }\n\n'
-
     "9. TOOL CALL MANDATE FOR MUTATING ACTIONS:\n"
     "   - Whenever the user instructs to log, record, add, adjust, update, advance, or delete "
     "money or records, you MUST invoke the corresponding mutating tool (`propose_log_expense`, "
@@ -146,22 +143,20 @@ GLOBAL_FORMATTING_AND_REVIEW_INSTRUCTIONS = (
     "they never substitute for calling the tool.\n"
     "   - Only include `action_list` when offering concrete, specific operational advice (e.g. "
     "'Push High-Margin Pairings' with a real body explaining which items and why). NEVER output "
-    "an empty, vague, or placeholder item such as `{ \"title\": \"1\", \"body\": \"\" }` or "
-    "`{ \"title\": \"Action\", \"body\": \"Consider reviewing this\" }` — if you have no concrete "
+    'an empty, vague, or placeholder item such as `{ "title": "1", "body": "" }` or '
+    '`{ "title": "Action", "body": "Consider reviewing this" }` — if you have no concrete '
     "action to suggest, omit the `action_list` section entirely rather than padding it.\n\n"
-
     "10. SELF-CHECK BEFORE RESPONDING — verify silently before emitting the JSON:\n"
     "   a. Does every currency value use ₹ with exactly 2 decimals?\n"
     "   b. Does `insight_block` (if present) say something the metrics don't already say "
     "verbatim?\n"
     "   c. If any tool call this turn returned status 'proposed', does `meta.status` = "
-    "\"warning\" and does the body clearly say nothing is saved yet?\n"
+    '"warning" and does the body clearly say nothing is saved yet?\n'
     "   d. Is every `action_list` item concrete and non-empty, or is the whole section omitted?\n"
     "   e. Is the output ONE valid JSON object with no surrounding prose, no markdown fences, "
     "no trailing commas?\n"
     "   If any check fails, silently correct the JSON before returning it — do not narrate the "
     "correction.\n\n"
-
     "11. FULL WORKED EXAMPLE (proposed action, not yet executed):\n"
     "User: 'give 1000 to raju bhai for coldrink bill'\n"
     "After calling propose_log_expense (tool returns status: 'proposed'), respond:\n"
@@ -187,7 +182,6 @@ GLOBAL_FORMATTING_AND_REVIEW_INSTRUCTIONS = (
     "  ],\n"
     '  "meta": { "status": "warning", "statusIcon": "status_warning" }\n'
     "}\n\n"
-
     "12. FULL WORKED EXAMPLE (read-only analytics, no mutation):\n"
     "User: 'how did we do today'\n"
     "After calling get_sales_summary, respond:\n"
@@ -208,15 +202,13 @@ GLOBAL_FORMATTING_AND_REVIEW_INSTRUCTIONS = (
     '      "icon": "ai_review",\n'
     '      "heading": "What Stands Out",\n'
     '      "body": "100% of today\'s payments were cash with zero UPI — worth checking if your QR '
-    'code display is visible at the counter, since most stores this size see at least some '
+    "code display is visible at the counter, since most stores this size see at least some "
     'digital split."\n'
     "    }\n"
     "  ],\n"
     '  "meta": { "status": "normal", "statusIcon": "status_normal" }\n'
     "}\n"
 )
-
-
 
 
 class DomainAgent:
@@ -936,51 +928,41 @@ class OrchestratorAgent:
             "You are the InfoOS Root AI Orchestrator for a franchise retail/restaurant store. "
             "Your ONLY job is to classify the user's message into exactly ONE domain agent. "
             "You do not answer the question yourself — you only route it.\n\n"
-
             "DOMAINS AND WHAT THEY OWN:\n\n"
-
             "expense — money going OUT of the business to a third party (vendors, suppliers, "
             "utilities, one-off cash payments), and reviewing past spend.\n"
             "  Examples: 'give 1000 to raju bhai for coldrink bill', 'paid the electricity bill', "
             "'record an expense', 'log today's vendor payment', 'how much did we spend on vegetables "
             "this month', 'add a new expense category for maintenance'\n\n"
-
             "billing — a CUSTOMER-facing sales transaction at the POS: creating, viewing, or voiding "
             "a customer's bill/receipt/order, table numbers, tokens.\n"
             "  Examples: 'show recent bills', 'void bill #104', 'what's on table 4's bill', "
             "'bill 2 burgers for takeaway', 'what was our last customer's total', 'reprint token 12's "
             "receipt'\n\n"
-
             "worker — staff-related: attendance, shifts, salaries, payroll, advances, adding/removing "
             "employees.\n"
             "  Examples: 'who is on duty today', 'mark Ramesh present', 'what's Salman's salary this "
             "month', 'give Priya a 2000 advance', 'add a new worker named Salman', 'how many days did "
             "Ravi work this month'\n\n"
-
             "inventory — physical STOCK quantities of ingredients/materials/direct-sale items, not "
             "prices or the menu itself.\n"
             "  Examples: 'check low stock items', 'how much cheese left', 'we got a new delivery of "
             "50kg flour', 'reduce paneer stock by 4 units', 'stock audit for this week'\n\n"
-
             "product — the MENU/CATALOG definition: item names, prices, categories, groups, recipes, "
             "variations — not how much stock exists, not a customer's bill.\n"
             "  Examples: 'add a new burger to the menu', 'change pizza price to 250', 'create a "
             "category called Beverages', 'disable the small size for cold coffee', 'what categories "
             "do we have'\n\n"
-
             "analytics — READ-ONLY store-wide performance: sales totals, revenue, profit, trends, "
             "top items, payment method breakdown — asking 'how are we doing', not asking to change "
             "anything.\n"
             "  Examples: 'what are today's sales', 'top 5 items this week', 'compare this month to "
             "last month', 'what percent of payments are cash', 'how's business been lately'\n\n"
-
             "reminder — scheduling a future alert/task for the OWNER, not a business transaction "
             "itself.\n"
             "  Examples: 'remind me at 5pm to call the vendor', 'set a daily reminder to check the "
             "freezer', 'snooze my rent reminder', 'what reminders do I have pending'\n\n"
-
             "DISAMBIGUATION RULES for commonly confused cases — apply these BEFORE guessing:\n\n"
-
             "1. Money changing hands to a PERSON/VENDOR (not a customer) → always 'expense', even if "
             "phrased casually or mentions a name (e.g. 'gave 500 to the milkman' is expense, NOT "
             "worker, even though a person is named — the milkman isn't staff).\n"
@@ -1001,12 +983,10 @@ class OrchestratorAgent:
             "6. If the message is a pure question with no entity named at all and could plausibly fit "
             "several domains, prefer 'analytics' as the safest general fallback — it is read-only and "
             "causes no harm if the routing guess is imperfect.\n\n"
-
             "OUTPUT FORMAT — CRITICAL:\n"
             "Return ONLY one lowercase word, nothing else: no punctuation, no explanation, no "
             "quotes, no restating the question. Valid outputs are exactly one of:\n"
             "expense | billing | worker | inventory | product | analytics | reminder\n\n"
-
             "EXAMPLES OF FULL BEHAVIOR:\n"
             "Input: 'i give 5000 for raw material today notedown this'\n"
             "Output: expense\n\n"
@@ -1144,14 +1124,20 @@ class OrchestratorAgent:
                     pending_list = data.get("pending_actions") or []
                     executed_list = data.get("executed_actions") or []
                     steps_list = data.get("steps") or []
-                    
-                    status = "executed" if executed_list else "proposal_generated" if pending_list else "completed"
+
+                    status = (
+                        "executed"
+                        if executed_list
+                        else "proposal_generated" if pending_list else "completed"
+                    )
                     has_mutation = bool(pending_list or executed_list)
-                    
+
                     audit_record = AgentInteractionAudit(
                         user_message=user_message,
                         routed_agent=domain,
-                        tools_called=json.dumps([s.get("tool") for s in steps_list if s.get("tool")]),
+                        tools_called=json.dumps(
+                            [s.get("tool") for s in steps_list if s.get("tool")]
+                        ),
                         tool_results=json.dumps(steps_list),
                         status=status,
                         has_mutation=has_mutation,

@@ -113,16 +113,12 @@ def merge_bills(bill_ids: List[int], actor: str = "admin") -> Dict[str, Any]:
     if len(bills) != len(bill_ids):
         found_ids = {b.id for b in bills}
         missing = [bid for bid in bill_ids if bid not in found_ids]
-        raise NotFoundError(
-            f"Bills not found: {missing}", code="BILLS_NOT_FOUND"
-        )
+        raise NotFoundError(f"Bills not found: {missing}", code="BILLS_NOT_FOUND")
 
     # Validate all are today's and non-cancelled
     for bill in bills:
         if bill.created_at and bill.created_at.date() != today:
-            raise ValidationError(
-                f"Bill #{bill.bill_no} is not from today", code="BILL_NOT_TODAY"
-            )
+            raise ValidationError(f"Bill #{bill.bill_no} is not from today", code="BILL_NOT_TODAY")
         if bill.status and bill.status.strip().upper() in _EXCLUDED_STATUSES:
             raise ValidationError(
                 f"Bill #{bill.bill_no} is {bill.status} and cannot be merged",
@@ -138,9 +134,7 @@ def merge_bills(bill_ids: List[int], actor: str = "admin") -> Dict[str, Any]:
 
     # Validate none are in settled/reverted groups
     if existing_group_ids:
-        existing_groups = MergeGroup.query.filter(
-            MergeGroup.id.in_(existing_group_ids)
-        ).all()
+        existing_groups = MergeGroup.query.filter(MergeGroup.id.in_(existing_group_ids)).all()
         for g in existing_groups:
             if g.status != "open":
                 raise ValidationError(
@@ -208,14 +202,19 @@ def merge_bills(bill_ids: List[int], actor: str = "admin") -> Dict[str, Any]:
     target_group.member_bill_ids = json.dumps(sorted(all_member_ids))
     target_group.total_amount = sum(b.total_amount for b in all_member_bills)
     target_group.amount_paid = sum(getattr(b, "amount_paid", 0.0) or 0.0 for b in all_member_bills)
-    target_group.amount_pending = sum(getattr(b, "amount_pending", 0.0) or 0.0 for b in all_member_bills)
+    target_group.amount_pending = sum(
+        getattr(b, "amount_pending", 0.0) or 0.0 for b in all_member_bills
+    )
 
     db.session.commit()
 
     logger.info(
         "Merged %d bills into group %s (total=%.2f, paid=%.2f, pending=%.2f) by %s",
-        len(all_member_ids), target_group.id,
-        target_group.total_amount, target_group.amount_paid, target_group.amount_pending,
+        len(all_member_ids),
+        target_group.id,
+        target_group.total_amount,
+        target_group.amount_paid,
+        target_group.amount_pending,
         actor,
     )
 
@@ -271,16 +270,78 @@ def settle_group(
     # Re-aggregate daily summary since revenue status changed
     try:
         from services.aggregation_service import update_daily_summary
+
         update_daily_summary()
     except Exception as e:
         logger.warning("Aggregation update after settle: %s", e)
 
     logger.info(
         "Settled merge group %s: ₹%.2f collected (%d payments) by %s",
-        group_id, total_payment, len(payments), actor,
+        group_id,
+        total_payment,
+        len(payments),
+        actor,
     )
 
     return group.to_dict()
+
+
+def settle_bill(
+    bill_id: int,
+    payments: List[Dict[str, Any]],
+    actor: str = "admin",
+) -> Dict[str, Any]:
+    """
+    Settle a standalone pending bill by marking it as paid.
+    Supports lookup by either primary key id or bill_no.
+    """
+    bill = Bill.query.get(bill_id)
+    if not bill:
+        # Fallback to bill_no lookup for today if id didn't match directly
+        today = date.today()
+        bill = (
+            Bill.query.filter(
+                Bill.bill_no == bill_id,
+                func.date(Bill.created_at) == today,
+            )
+            .order_by(Bill.id.desc())
+            .first()
+        )
+
+    if not bill:
+        raise NotFoundError(f"Bill #{bill_id} not found", code="BILL_NOT_FOUND")
+
+    total_payment = sum(p.get("amount", 0) for p in payments)
+    pending = getattr(bill, "amount_pending", 0.0) or bill.total_amount
+    if total_payment < pending - 0.01:
+        raise ValidationError(
+            f"Payment total (₹{total_payment:.2f}) is less than pending amount (₹{pending:.2f})",
+            code="INSUFFICIENT_PAYMENT",
+        )
+
+    bill.payment_status = "paid"
+    bill.amount_paid = bill.total_amount
+    bill.amount_pending = 0.0
+    if payments and len(payments) == 1:
+        bill.payment_method = payments[0].get("method", bill.payment_method)
+
+    db.session.commit()
+
+    try:
+        from services.aggregation_service import update_daily_summary
+
+        update_daily_summary()
+    except Exception as e:
+        logger.warning("Aggregation update after settle bill: %s", e)
+
+    logger.info(
+        "Settled standalone bill #%d: ₹%.2f collected by %s",
+        bill.bill_no,
+        total_payment,
+        actor,
+    )
+
+    return _bill_to_live_dict(bill)
 
 
 def split_group(group_id: str, actor: str = "admin") -> Dict[str, Any]:
@@ -318,6 +379,7 @@ def split_group(group_id: str, actor: str = "admin") -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _bill_to_live_dict(bill: Bill) -> Dict[str, Any]:
     """Serialize a Bill for the live order board."""

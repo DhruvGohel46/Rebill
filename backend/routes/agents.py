@@ -3,7 +3,14 @@ import logging
 from flask import Blueprint, request, jsonify, current_app, Response, stream_with_context
 from functools import wraps
 from datetime import datetime, timedelta
-from models import db, AgentConfig, AgentPermission, AgentActionLog, AgentCheckpoint, AgentInteractionAudit
+from models import (
+    db,
+    AgentConfig,
+    AgentPermission,
+    AgentActionLog,
+    AgentCheckpoint,
+    AgentInteractionAudit,
+)
 from agents.crypto_utils import encrypt_api_key, decrypt_api_key
 from agents.llm_adapter import get_adapter
 from agents.domain_agents import OrchestratorAgent
@@ -337,7 +344,9 @@ def reject_action(action_id):
                         200,
                     )
         except ValueError as ve:
-            _log.warning("Graph resume (reject) failed for action %s: %s — falling back", action_id, ve)
+            _log.warning(
+                "Graph resume (reject) failed for action %s: %s — falling back", action_id, ve
+            )
         except Exception as e:
             _log.error("Graph resume (reject) error for action %s: %s — falling back", action_id, e)
 
@@ -708,7 +717,17 @@ def get_audit_logs():
     total_count = query.count()
     logs = query.order_by(AgentActionLog.created_at.desc()).offset(offset).limit(limit).all()
 
-    return jsonify({"success": True, "total_count": total_count, "count": len(logs), "logs": [l.to_dict() for l in logs]}), 200
+    return (
+        jsonify(
+            {
+                "success": True,
+                "total_count": total_count,
+                "count": len(logs),
+                "logs": [l.to_dict() for l in logs],
+            }
+        ),
+        200,
+    )
 
 
 @agents_bp.route("/logs/export", methods=["GET"])
@@ -742,7 +761,17 @@ def export_audit_logs():
     logs = query.order_by(AgentActionLog.created_at.desc()).all()
 
     if format_type == "json":
-        return jsonify({"success": True, "count": len(logs), "export_date": datetime.now().isoformat(), "logs": [l.to_dict() for l in logs]}), 200
+        return (
+            jsonify(
+                {
+                    "success": True,
+                    "count": len(logs),
+                    "export_date": datetime.now().isoformat(),
+                    "logs": [l.to_dict() for l in logs],
+                }
+            ),
+            200,
+        )
 
     # CSV Generation
     import io
@@ -750,42 +779,52 @@ def export_audit_logs():
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow([
-        "Action ID",
-        "Timestamp",
-        "Agent",
-        "Action Type",
-        "Tool Name",
-        "Diff Summary",
-        "User Prompt",
-        "Status",
-        "Affected Entity ID",
-        "Execution Timestamp",
-        "Performed By",
-        "Error Message",
-    ])
+    writer.writerow(
+        [
+            "Action ID",
+            "Timestamp",
+            "Agent",
+            "Action Type",
+            "Tool Name",
+            "Diff Summary",
+            "User Prompt",
+            "Status",
+            "Affected Entity ID",
+            "Execution Timestamp",
+            "Performed By",
+            "Error Message",
+        ]
+    )
 
     for l in logs:
-        writer.writerow([
-            l.id,
-            l.created_at.strftime("%Y-%m-%d %H:%M:%S") if l.created_at else "",
-            l.agent_name,
-            l.action_type,
-            l.tool_name,
-            l.diff_summary or "",
-            l.user_message or "",
-            l.status,
-            l.affected_entity_id or "",
-            l.execution_timestamp.strftime("%Y-%m-%d %H:%M:%S") if l.execution_timestamp else "",
-            l.performed_by or "",
-            l.error_message or "",
-        ])
+        writer.writerow(
+            [
+                l.id,
+                l.created_at.strftime("%Y-%m-%d %H:%M:%S") if l.created_at else "",
+                l.agent_name,
+                l.action_type,
+                l.tool_name,
+                l.diff_summary or "",
+                l.user_message or "",
+                l.status,
+                l.affected_entity_id or "",
+                (
+                    l.execution_timestamp.strftime("%Y-%m-%d %H:%M:%S")
+                    if l.execution_timestamp
+                    else ""
+                ),
+                l.performed_by or "",
+                l.error_message or "",
+            ]
+        )
 
     csv_data = output.getvalue()
     return Response(
         csv_data,
         mimetype="text/csv",
-        headers={"Content-Disposition": f"attachment;filename=ai_activity_audit_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"},
+        headers={
+            "Content-Disposition": f"attachment;filename=ai_activity_audit_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        },
     )
 
 
@@ -798,7 +837,18 @@ def get_interaction_audits():
 
     query = AgentInteractionAudit.query
     total_count = query.count()
-    interactions = query.order_by(AgentInteractionAudit.created_at.desc()).offset(offset).limit(limit).all()
+    interactions = (
+        query.order_by(AgentInteractionAudit.created_at.desc()).offset(offset).limit(limit).all()
+    )
 
-    return jsonify({"success": True, "total_count": total_count, "count": len(interactions), "interactions": [i.to_dict() for i in interactions]}), 200
-
+    return (
+        jsonify(
+            {
+                "success": True,
+                "total_count": total_count,
+                "count": len(interactions),
+                "interactions": [i.to_dict() for i in interactions],
+            }
+        ),
+        200,
+    )
