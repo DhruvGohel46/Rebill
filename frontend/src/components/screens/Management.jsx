@@ -1435,7 +1435,7 @@ const ProductManagement = ({ activeTab, setActiveTab }) => {
             onChange={(val) => setCategoryFilter(val)}
             placeholder="Filter Category"
             className="pmDropdown"
-            direction="top"
+            direction="bottom"
           />
         </div>
 

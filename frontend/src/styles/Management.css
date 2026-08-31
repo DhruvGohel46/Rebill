@@ -588,6 +588,102 @@
   }
 }
 
+/* ── Group Management Search Bar Modernized ── */
+.gm-search-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 240px;
+}
+
+.gm-search-icon {
+  position: absolute;
+  left: 13px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.gm-search-input {
+  width: 100%;
+  height: 40px;
+  padding: 8px 14px 8px 38px !important;
+  border-radius: 12px;
+  background: var(--glass-input);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-weight: 550;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.gm-search-input:focus {
+  border-color: #FF6B1A !important;
+  box-shadow: 0 0 0 3px rgba(255, 107, 26, 0.2) !important;
+}
+
+/* ── Product Variations Card & Rows ── */
+.pmVariationsCard {
+  margin-top: calc(18px * var(--display-zoom));
+  margin-bottom: calc(18px * var(--display-zoom));
+  padding: calc(18px * var(--display-zoom));
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  gap: calc(12px * var(--display-zoom));
+}
+
+.pmVariationsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pmVariationsList {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10px * var(--display-zoom));
+}
+
+.pmVariationRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  gap: calc(10px * var(--display-zoom));
+  align-items: center;
+}
+
+.pmVariationActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pmVariationsEmpty {
+  padding: calc(16px * var(--display-zoom));
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 0.86rem;
+  font-weight: 500;
+  border-radius: 12px;
+  border: 1px dashed var(--glass-border);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.pmActionDanger {
+  color: #EF4444 !important;
+}
+
+.pmActionDanger:hover {
+  background: rgba(239, 68, 68, 0.12) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: #DC2626 !important;
+}
+
 /* ── Explicit Black-Grey Surfaces (No Blue Tint) ── */
 [data-theme="dark"] .pmHeader,
 [data-theme="dark"] .pmPanel,
@@ -598,9 +694,20 @@
   box-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.5) !important;
 }
 
+[data-theme="dark"] .pmVariationsCard {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme="dark"] .pmVariationsEmpty {
+  background: rgba(255, 255, 255, 0.01) !important;
+  border: 1px dashed rgba(255, 255, 255, 0.08) !important;
+}
+
 [data-theme="dark"] .pmInput,
 [data-theme="dark"] .pmSelect,
-[data-theme="dark"] .inventory-search-input {
+[data-theme="dark"] .inventory-search-input,
+[data-theme="dark"] .gm-search-input {
   background: #16171B !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   color: #FFFFFF !important;
@@ -620,9 +727,20 @@
   box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05) !important;
 }
 
+[data-theme="light"] .pmVariationsCard {
+  background: #F8FAFC !important;
+  border: 1.5px solid #E2E8F0 !important;
+}
+
+[data-theme="light"] .pmVariationsEmpty {
+  background: #F1F5F9 !important;
+  border: 1.5px dashed #CBD5E1 !important;
+}
+
 [data-theme="light"] .pmInput,
 [data-theme="light"] .pmSelect,
-[data-theme="light"] .inventory-search-input {
+[data-theme="light"] .inventory-search-input,
+[data-theme="light"] .gm-search-input {
   background: #F8FAFC !important;
   border: 1.5px solid #CBD5E1 !important;
   color: #0F172A !important;

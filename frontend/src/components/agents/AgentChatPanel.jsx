@@ -549,8 +549,8 @@ export default function AgentChatPanel() {
             style={{
               width: '82vw',
               maxWidth: 960,
-              height: '98.5vh',
-              maxHeight: '98.5vh',
+              height: '88vh',
+              maxHeight: '88vh',
               background: isDark ? 'linear-gradient(165deg, #11141F 0%, #0B0D14 100%)' : '#FFFFFF',
               border: isDark ? '1px solid rgba(255, 255, 255, 0.11)' : '1px solid #CBD5E1',
               borderRadius: 24,
@@ -611,26 +611,12 @@ export default function AgentChatPanel() {
             >
               {/* Left Identity */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 12,
-                    background: isDark ? 'rgba(255, 107, 26, 0.12)' : '#FFF7ED',
-                    border: isDark ? '1px solid rgba(255, 107, 26, 0.28)' : '1px solid #FDBA74',
-                    boxShadow: '0 4px 14px rgba(255, 107, 26, 0.18)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <DynamicAiMascot
-                    size={34}
-                    state={loading ? 'thinking' : isRecording ? 'listening' : 'idle'}
-                    glow={loading || isRecording}
-                  />
-                </div>
+                <DynamicAiMascot
+                  size={38}
+                  state={loading ? 'thinking' : isRecording ? 'listening' : 'idle'}
+                  glow={loading || isRecording}
+                  style={{ marginRight: 2 }}
+                />
 
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>

@@ -179,21 +179,21 @@ export default function DynamicAiMascot({
   const mouthX = 100 + gaze.x * 0.25;
   const mouthY = 126 + gaze.y * 0.25;
 
-  // Dynamic Mouth Path based on expression state
-  let mouthPath = `M ${mouthX - 14} ${mouthY} Q ${mouthX} ${mouthY + 11} ${mouthX + 14} ${mouthY}`;
+  // Dynamic Mouth Path based on expression state (Prominent & Expressive)
+  let mouthPath = `M ${mouthX - 18} ${mouthY} Q ${mouthX} ${mouthY + 14} ${mouthX + 18} ${mouthY}`;
   if (currentState === 'happy' || currentState === 'hover') {
-    mouthPath = `M ${mouthX - 16} ${mouthY - 2} Q ${mouthX} ${mouthY + 14} ${mouthX + 16} ${mouthY - 2}`;
+    mouthPath = `M ${mouthX - 20} ${mouthY - 2} Q ${mouthX} ${mouthY + 18} ${mouthX + 20} ${mouthY - 2}`;
   } else if (currentState === 'thinking') {
-    mouthPath = `M ${mouthX - 7} ${mouthY + 1} Q ${mouthX} ${mouthY - 3} ${mouthX + 7} ${mouthY + 1}`;
+    mouthPath = `M ${mouthX - 10} ${mouthY + 1} Q ${mouthX} ${mouthY - 4} ${mouthX + 10} ${mouthY + 1}`;
   } else if (currentState === 'alert') {
-    mouthPath = `M ${mouthX - 7} ${mouthY + 1} Q ${mouthX} ${mouthY + 8} ${mouthX + 7} ${mouthY + 1}`;
+    mouthPath = `M ${mouthX - 10} ${mouthY + 1} Q ${mouthX} ${mouthY + 10} ${mouthX + 10} ${mouthY + 1}`;
   } else if (currentState === 'speaking') {
     if (talkFrame === 1) {
-      mouthPath = `M ${mouthX - 12} ${mouthY - 1} Q ${mouthX} ${mouthY + 13} ${mouthX + 12} ${mouthY - 1}`;
+      mouthPath = `M ${mouthX - 16} ${mouthY - 1} Q ${mouthX} ${mouthY + 16} ${mouthX + 16} ${mouthY - 1}`;
     } else if (talkFrame === 2) {
-      mouthPath = `M ${mouthX - 8} ${mouthY} Q ${mouthX} ${mouthY + 6} ${mouthX + 8} ${mouthY}`;
+      mouthPath = `M ${mouthX - 11} ${mouthY} Q ${mouthX} ${mouthY + 8} ${mouthX + 11} ${mouthY}`;
     } else if (talkFrame === 3) {
-      mouthPath = `M ${mouthX - 14} ${mouthY - 2} Q ${mouthX} ${mouthY + 11} ${mouthX + 14} ${mouthY - 2}`;
+      mouthPath = `M ${mouthX - 18} ${mouthY - 2} Q ${mouthX} ${mouthY + 14} ${mouthX + 18} ${mouthY - 2}`;
     }
   }
 
@@ -317,21 +317,21 @@ export default function DynamicAiMascot({
           transition={{ duration: 0.2 }}
         />
 
-        {/* ── EYES (Left & Right - Optically Centered & Upward at Y=88) ── */}
+        {/* ── EYES (Left & Right - Prominent, Expressive & Optically Centered) ── */}
         {currentState === 'happy' ? (
           /* Cheerful Crescent Eyes (^ ^) */
           <g>
             <path
-              d={`M ${leftEyeX - 8} ${leftEyeY + 2} Q ${leftEyeX} ${leftEyeY - 6} ${leftEyeX + 8} ${leftEyeY + 2}`}
+              d={`M ${leftEyeX - 10} ${leftEyeY + 2} Q ${leftEyeX} ${leftEyeY - 8} ${leftEyeX + 10} ${leftEyeY + 2}`}
               stroke={`url(#${gradientId})`}
-              strokeWidth="6"
+              strokeWidth="7.5"
               strokeLinecap="round"
               fill="none"
             />
             <path
-              d={`M ${rightEyeX - 8} ${rightEyeY + 2} Q ${rightEyeX} ${rightEyeY - 6} ${rightEyeX + 8} ${rightEyeY + 2}`}
+              d={`M ${rightEyeX - 10} ${rightEyeY + 2} Q ${rightEyeX} ${rightEyeY - 8} ${rightEyeX + 10} ${rightEyeY + 2}`}
               stroke={`url(#${gradientId})`}
-              strokeWidth="6"
+              strokeWidth="7.5"
               strokeLinecap="round"
               fill="none"
             />
@@ -343,7 +343,7 @@ export default function DynamicAiMascot({
             <motion.circle
               cx={leftEyeX}
               cy={leftEyeY}
-              r={currentState === 'listening' ? 8.5 : 7.5}
+              r={currentState === 'listening' ? 11.5 : 10.5}
               fill={`url(#${gradientId})`}
               animate={{
                 scaleY: isBlinking ? 0.08 : 1,
@@ -357,7 +357,7 @@ export default function DynamicAiMascot({
             <motion.circle
               cx={rightEyeX}
               cy={rightEyeY}
-              r={currentState === 'listening' ? 8.5 : 7.5}
+              r={currentState === 'listening' ? 11.5 : 10.5}
               fill={`url(#${gradientId})`}
               animate={{
                 scaleY: isBlinking ? 0.08 : 1,
@@ -369,21 +369,21 @@ export default function DynamicAiMascot({
           </g>
         )}
 
-        {/* ── Small Curved Organic Nose (Centered at Y=107) ── */}
+        {/* ── Prominent Organic Nose (Centered at Y=107) ── */}
         <motion.path
-          d={`M ${noseX} ${noseY - 4} Q ${noseX + 3.5} ${noseY + 2} ${noseX - 2.5} ${noseY + 6}`}
+          d={`M ${noseX} ${noseY - 5} Q ${noseX + 4.5} ${noseY + 2} ${noseX - 3.5} ${noseY + 8}`}
           stroke={`url(#${gradientId})`}
-          strokeWidth="5.5"
+          strokeWidth="7.5"
           strokeLinecap="round"
           strokeLinejoin="round"
           fill="none"
         />
 
-        {/* ── Simple Small Curved Smile (Centered at Y=126) ── */}
+        {/* ── Expressive Curved Smile (Centered at Y=126) ── */}
         <motion.path
           d={mouthPath}
           stroke={`url(#${gradientId})`}
-          strokeWidth="6"
+          strokeWidth="7.5"
           strokeLinecap="round"
           strokeLinejoin="round"
           fill="none"

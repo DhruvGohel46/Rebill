@@ -68,6 +68,7 @@ import AdminUnlockModal from './components/system/AdminUnlockModal';
 import AdminRoute from './components/system/AdminRoute';
 import AgentChatPanel from './components/agents/AgentChatPanel';
 import DynamicAiMascot from './components/common/DynamicAiMascot';
+import infoosLogo from './assets/logo.png';
 
 // Worker Pages
 // Worker Pages
@@ -606,9 +607,12 @@ function AppContent() {
             padding: '0 var(--spacing-6)',
             zIndex: 2000,
             flexShrink: 0,
+            position: 'relative',
             transition: 'filter var(--transition-normal) var(--ease-out)',
-            background: isDark ? 'var(--glass-header)' : '#FFFFFF',
-            borderBottom: isDark ? '1px solid var(--glass-border)' : '1px solid #E2E8F0',
+            background: isDark ? 'rgba(15, 17, 21, 0.75)' : 'rgba(255, 255, 255, 0.80)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            borderBottom: isDark ? '1px solid var(--glass-border)' : '1px solid rgba(226, 232, 240, 0.8)',
             boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.04)',
           }}
         >
@@ -848,16 +852,22 @@ function AppContent() {
             )}
           </div>
 
-          {/* Center - Title */}
+          {/* Center - Title (True Center Aligned with InfoOS Logo Symbol) */}
           <div style={{
-            flex: 1,
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
             display: 'flex',
             justifyContent: 'center',
-            alignItems: 'center'
+            alignItems: 'center',
+            maxWidth: 'calc(100% - 660px)',
+            pointerEvents: 'none',
+            zIndex: 1,
           }}>
             <h1
               style={{
-                fontSize: 'var(--text-2xl)',
+                fontSize: 'calc(1.35rem * var(--display-zoom))',
                 fontWeight: 'var(--font-semibold)',
                 letterSpacing: '0.3px',
                 color: 'var(--primary-500)',
@@ -866,18 +876,37 @@ function AppContent() {
                 cursor: 'default',
                 transition: 'opacity var(--transition-normal) var(--ease-out)',
                 display: 'flex',
-                alignItems: 'center'
+                alignItems: 'center',
+                gap: '8px',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                pointerEvents: 'auto',
               }}
               onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
               onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
             >
-              InfoOS
+              <img
+                src={infoosLogo}
+                alt="InfoOS"
+                style={{
+                  width: 'calc(24px * var(--display-zoom))',
+                  height: 'calc(24px * var(--display-zoom))',
+                  objectFit: 'contain',
+                  flexShrink: 0,
+                  filter: 'drop-shadow(0 2px 6px rgba(249, 115, 22, 0.35))'
+                }}
+              />
+              <span>InfoOS</span>
               <span style={{
-                fontSize: 'var(--text-sm)',
+                fontSize: 'calc(0.85rem * var(--display-zoom))',
                 fontWeight: 'var(--font-normal)',
                 color: 'var(--text-secondary)',
                 opacity: 0.65,
-                marginLeft: 'var(--spacing-2)'
+                marginLeft: '4px',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
               }}>
                 ({settings.shop_name || 'Burger Bhau'})
               </span>

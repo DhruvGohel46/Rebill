@@ -100,14 +100,14 @@
   
   /* Dark Theme Glass */
   --glass-dark-card: rgba(22,26,32,0.75);
-  --glass-dark-header: transparent;
-  --glass-dark-sidebar: transparent;
+  --glass-dark-header: rgba(15, 17, 21, 0.75);
+  --glass-dark-sidebar: rgba(15, 17, 21, 0.75);
   --glass-dark-modal: rgba(20,24,30,0.85);
   --glass-dark-border: rgba(255,255,255,0.06);
   
   /* Light Theme Glass */
   --glass-light-card: #ffffff;
-  --glass-light-header: #ffffff;
+  --glass-light-header: rgba(255, 255, 255, 0.80);
   --glass-light-sidebar: #ffffff;
   --glass-light-modal: #ffffff;
   --glass-light-border: #e2e8f0;

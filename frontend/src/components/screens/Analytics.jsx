@@ -143,7 +143,7 @@ const Analytics = () => {
 
     // ─── Summary / Product Sales ───
     const [summary, setSummary] = useState(null);
-    const [productSales, setProductSales] = useState([]);
+    const [rawProductSales, setRawProductSales] = useState([]);
     const [selectedDate, setSelectedDate] = useState(getLocalDateString());
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -168,7 +168,7 @@ const Analytics = () => {
     // ─── Range toggle ───
     const [viewRange, setViewRange] = useState('day');       // 'day' | 'week' | 'month' | 'year'
     const [rangeProductSales, setRangeProductSales] = useState([]);
-    const [viewRangeProductSales, setViewRangeProductSales] = useState([]);
+    const [rawRangeProducts, setRawRangeProducts] = useState([]);
     const [rangeSummary, setRangeSummary] = useState(null);
     const [rangeLoading, setRangeLoading] = useState(false);
 
@@ -180,7 +180,7 @@ const Analytics = () => {
         if (!isAdmin) {
             setLoading(false);
             setSummary(null);
-            setProductSales([]);
+            setRawProductSales([]);
             return;
         }
         if (selectedDate === getLocalDateString() && cachedAnalytics?.data) {
@@ -214,8 +214,7 @@ const Analytics = () => {
 
     // ─── Reload data when group changes ───
     useEffect(() => {
-        if (isAdmin) {
-            loadProductSales(selectedDate);
+        if (isAdmin && viewRange !== 'day') {
             loadRangeData();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -271,52 +270,6 @@ const Analytics = () => {
 
     const safeSummary = useMemo(() => summary || {}, [summary]);
 
-    // ─── Dynamic group-wise total sales KPI ───
-    const displayTotalSales = useMemo(() => {
-        const chartSummary = viewRange === 'day' ? safeSummary : (rangeSummary || safeSummary);
-        if (selectedGroupId === 'all') {
-            return chartSummary.total_sales || 0;
-        }
-        const salesSource = viewRange === 'day' ? productSales : viewRangeProductSales;
-        return salesSource.reduce((acc, curr) => acc + (curr.total_amount || curr.total || 0), 0);
-    }, [selectedGroupId, viewRange, productSales, viewRangeProductSales, safeSummary, rangeSummary]);
-
-    // ─── Dynamic group-wise category share totals ───
-    const displayCategoryTotals = useMemo(() => {
-        const chartSummary = viewRange === 'day' ? safeSummary : (rangeSummary || safeSummary);
-        const rawTotals = chartSummary.category_totals || {};
-        if (selectedGroupId === 'all') {
-            return rawTotals;
-        }
-        const targetGroupIdStr = String(selectedGroupId);
-        const targetGroupIdInt = parseInt(selectedGroupId, 10);
-
-        const matchedGroup = groups.find(g => 
-            String(g.id) === targetGroupIdStr || g.id === targetGroupIdInt || (g.name && g.name.toLowerCase().trim() === targetGroupIdStr.toLowerCase().trim())
-        );
-
-        const groupCategoryNames = new Set(categories
-            .filter(cat => 
-                String(cat.group_id) === targetGroupIdStr || 
-                cat.group_id === targetGroupIdInt ||
-                (matchedGroup && (String(cat.group_id) === String(matchedGroup.id) || cat.group_id === parseInt(matchedGroup.id, 10)))
-            )
-            .map(cat => cat.name.toLowerCase().trim()));
-            
-        if (matchedGroup) {
-            groupCategoryNames.add(matchedGroup.name.toLowerCase().trim());
-        }
-        groupCategoryNames.add(targetGroupIdStr.toLowerCase().trim());
-
-        const filtered = {};
-        Object.entries(rawTotals).forEach(([name, val]) => {
-            if (groupCategoryNames.has(name.toLowerCase().trim())) {
-                filtered[name] = val;
-            }
-        });
-        return filtered;
-    }, [viewRange, safeSummary, rangeSummary, selectedGroupId, categories, groups]);
-
     // ─── Helper function to check if item belongs to selected group ───
     const isProductInGroup = useCallback((item) => {
         if (!selectedGroupId || selectedGroupId === 'all') return true;
@@ -363,6 +316,73 @@ const Analytics = () => {
 
         return false;
     }, [selectedGroupId, groups, categories, productsList]);
+
+    // ─── Reactive Filtered Product Sales ───
+    const productSales = useMemo(() => {
+        if (!rawProductSales || rawProductSales.length === 0) return [];
+        if (!selectedGroupId || selectedGroupId === 'all') return rawProductSales;
+        return rawProductSales.filter(item => isProductInGroup(item));
+    }, [rawProductSales, selectedGroupId, isProductInGroup]);
+
+    // ─── Reactive Filtered Range Products ───
+    const viewRangeProductSales = useMemo(() => {
+        if (!rawRangeProducts || rawRangeProducts.length === 0) return [];
+        let prods = rawRangeProducts;
+        if (selectedGroupId && selectedGroupId !== 'all') {
+            prods = prods.filter(item => isProductInGroup(item));
+        }
+        return prods.map(p => ({
+            name: p.name,
+            quantity: p.quantity,
+            total_amount: p.total_amount
+        }));
+    }, [rawRangeProducts, selectedGroupId, isProductInGroup]);
+
+    // ─── Dynamic group-wise total sales KPI ───
+    const displayTotalSales = useMemo(() => {
+        const chartSummary = viewRange === 'day' ? safeSummary : (rangeSummary || safeSummary);
+        if (selectedGroupId === 'all') {
+            return chartSummary.total_sales || 0;
+        }
+        const salesSource = viewRange === 'day' ? productSales : viewRangeProductSales;
+        return salesSource.reduce((acc, curr) => acc + (curr.total_amount || curr.total || 0), 0);
+    }, [selectedGroupId, viewRange, productSales, viewRangeProductSales, safeSummary, rangeSummary]);
+
+    // ─── Dynamic group-wise category share totals ───
+    const displayCategoryTotals = useMemo(() => {
+        const chartSummary = viewRange === 'day' ? safeSummary : (rangeSummary || safeSummary);
+        const rawTotals = chartSummary.category_totals || {};
+        if (selectedGroupId === 'all') {
+            return rawTotals;
+        }
+        const targetGroupIdStr = String(selectedGroupId);
+        const targetGroupIdInt = parseInt(selectedGroupId, 10);
+
+        const matchedGroup = groups.find(g => 
+            String(g.id) === targetGroupIdStr || g.id === targetGroupIdInt || (g.name && g.name.toLowerCase().trim() === targetGroupIdStr.toLowerCase().trim())
+        );
+
+        const groupCategoryNames = new Set(categories
+            .filter(cat => 
+                String(cat.group_id) === targetGroupIdStr || 
+                cat.group_id === targetGroupIdInt ||
+                (matchedGroup && (String(cat.group_id) === String(matchedGroup.id) || cat.group_id === parseInt(matchedGroup.id, 10)))
+            )
+            .map(cat => cat.name.toLowerCase().trim()));
+            
+        if (matchedGroup) {
+            groupCategoryNames.add(matchedGroup.name.toLowerCase().trim());
+        }
+        groupCategoryNames.add(targetGroupIdStr.toLowerCase().trim());
+
+        const filtered = {};
+        Object.entries(rawTotals).forEach(([name, val]) => {
+            if (groupCategoryNames.has(name.toLowerCase().trim())) {
+                filtered[name] = val;
+            }
+        });
+        return filtered;
+    }, [viewRange, safeSummary, rangeSummary, selectedGroupId, categories, groups]);
 
     // ═══════════════ DATA LOADING ═══════════════
 
@@ -417,12 +437,7 @@ const Analytics = () => {
         try {
             const response = await summaryAPI.getProductSales(date);
             if (response.data?.success) {
-                let sales = response.data.product_sales || [];
-                // Filter by group if selected
-                if (selectedGroupId !== 'all') {
-                    sales = sales.filter(item => isProductInGroup(item));
-                }
-                setProductSales(sales);
+                setRawProductSales(response.data.product_sales || []);
             }
         } catch (err) {
             console.error('Error loading product sales:', err);
@@ -474,21 +489,7 @@ const Analytics = () => {
 
             if (rangeRes.data.success && rangeRes.data.summary) {
                 const summaryObj = rangeRes.data.summary;
-                let rawProducts = summaryObj.products || [];
-
-                // Filter products by selected group if active
-                if (selectedGroupId !== 'all') {
-                    rawProducts = rawProducts.filter(item => isProductInGroup(item));
-                }
-
-                // Map fields to match Top Selling Products layout expects
-                const mappedProducts = rawProducts.map(p => ({
-                    name: p.name,
-                    quantity: p.quantity,
-                    total_amount: p.total_amount
-                }));
-
-                setViewRangeProductSales(mappedProducts);
+                setRawRangeProducts(summaryObj.products || []);
 
                 // Set aggregated totals from the full range summary to include category totals
                 setRangeSummary({
