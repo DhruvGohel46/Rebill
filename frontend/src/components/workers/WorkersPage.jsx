@@ -311,9 +311,9 @@ export default function WorkersPage() {
               icon: <IoCalendarOutline size={22} />
             },
             {
-              label: 'Monthly Payroll',
-              value: formatCurrency(stats.totalSalary || 0),
-              subtext: `Net Payable: ${formatCurrency(stats.netPayable || 0)}`,
+              label: 'Net Payable',
+              value: formatCurrency(stats.netPayable !== undefined ? stats.netPayable : (stats.totalSalary || 0)),
+              subtext: `Total Base: ${formatCurrency(stats.totalSalary || 0)}`,
               color: '#8B5CF6',
               icon: <IoWalletOutline size={22} />
             }

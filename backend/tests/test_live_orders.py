@@ -323,3 +323,78 @@ def test_analytics_pending_revenue_separation(app, clean_db):
         assert summary is not None
         assert summary.total_sales == 300.0  # Only paid bill
         assert summary.pending_revenue == 200.0  # Pending bill
+
+
+def test_update_bill_to_paid_removes_from_live_board(client, clean_db):
+    """Updating a pending bill to 'paid' immediately removes it from the Live Orders board."""
+    # 1. Create a pending bill
+    res = client.post(
+        "/api/bill/create",
+        json={
+            "products": [{"product_id": "LIVE-PROD-1", "quantity": 2}],
+            "payment_status": "pending",
+        },
+    )
+    assert res.status_code == 201
+    bill_no = res.get_json()["bill"]["bill_no"]
+
+    # 2. Verify on Live Board
+    live_res = client.get("/api/bill/live")
+    assert live_res.status_code == 200
+    live_bills = live_res.get_json()["bills"]
+    assert any(b["bill_no"] == bill_no for b in live_bills)
+
+    # 3. Update status to 'paid'
+    update_res = client.put(
+        f"/api/bill/{bill_no}/update",
+        json={
+            "products": [{"product_id": "LIVE-PROD-1", "quantity": 2}],
+            "payment_status": "paid",
+        },
+    )
+    assert update_res.status_code == 200
+
+    # 4. Verify removed from Live Board
+    live_res2 = client.get("/api/bill/live")
+    assert live_res2.status_code == 200
+    live_bills2 = live_res2.get_json()["bills"]
+    assert not any(b["bill_no"] == bill_no for b in live_bills2)
+
+
+def test_update_bill_to_pending_adds_to_live_board(client, clean_db):
+    """Updating a previously paid bill to 'pending' immediately displays it on the Live Orders board."""
+    # 1. Create a paid bill
+    res = client.post(
+        "/api/bill/create",
+        json={
+            "products": [{"product_id": "LIVE-PROD-1", "quantity": 1}],
+            "payment_status": "paid",
+        },
+    )
+    assert res.status_code == 201
+    bill_no = res.get_json()["bill"]["bill_no"]
+
+    # 2. Verify not on Live Board
+    live_res = client.get("/api/bill/live")
+    assert live_res.status_code == 200
+    assert not any(b["bill_no"] == bill_no for b in live_res.get_json()["bills"])
+
+    # 3. Update status to 'pending'
+    update_res = client.put(
+        f"/api/bill/{bill_no}/update",
+        json={
+            "products": [{"product_id": "LIVE-PROD-1", "quantity": 3}],
+            "payment_status": "pending",
+        },
+    )
+    assert update_res.status_code == 200
+
+    # 4. Verify now present on Live Board with updated total
+    live_res2 = client.get("/api/bill/live")
+    assert live_res2.status_code == 200
+    live_bills = live_res2.get_json()["bills"]
+    found = next((b for b in live_bills if b["bill_no"] == bill_no), None)
+    assert found is not None
+    assert found["total_amount"] == 300.0
+    assert found["amount_pending"] == 300.0
+    assert found["payment_status"] == "pending"

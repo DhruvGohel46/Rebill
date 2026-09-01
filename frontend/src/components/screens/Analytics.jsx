@@ -548,7 +548,7 @@ const Analytics = () => {
 
     const handleEditBill = (bill) => {
         if (bill.status === 'CANCELLED') return;
-        navigate('/bill', { state: { bill } });
+        navigate('/', { state: { bill, from: '/analytics' } });
     };
 
     const handleCancelBillConfirm = async () => {

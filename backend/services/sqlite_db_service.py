@@ -172,6 +172,34 @@ class SQLiteDatabaseService:
                 except Exception as e:
                     print(f"Migration error (table_no): {e}")
 
+            if "payment_status" not in columns:
+                try:
+                    cursor.execute(
+                        "ALTER TABLE bills ADD COLUMN payment_status TEXT DEFAULT 'paid'"
+                    )
+                except Exception as e:
+                    print(f"Migration error (payment_status): {e}")
+
+            if "payment_method" not in columns:
+                try:
+                    cursor.execute(
+                        "ALTER TABLE bills ADD COLUMN payment_method TEXT DEFAULT 'CASH'"
+                    )
+                except Exception as e:
+                    print(f"Migration error (payment_method): {e}")
+
+            if "amount_paid" not in columns:
+                try:
+                    cursor.execute("ALTER TABLE bills ADD COLUMN amount_paid REAL DEFAULT 0.0")
+                except Exception as e:
+                    print(f"Migration error (amount_paid): {e}")
+
+            if "amount_pending" not in columns:
+                try:
+                    cursor.execute("ALTER TABLE bills ADD COLUMN amount_pending REAL DEFAULT 0.0")
+                except Exception as e:
+                    print(f"Migration error (amount_pending): {e}")
+
             # Migrate products to use category_id
             cursor.execute("PRAGMA table_info(products)")
             prod_columns = [info[1] for info in cursor.fetchall()]
@@ -663,6 +691,22 @@ class SQLiteDatabaseService:
                     enriched_item["variation_name"] = item["variation_name"]
                 enriched_items.append(enriched_item)
 
+            new_total = float(bill_data["total_amount"])
+            payment_status = str(bill_data.get("payment_status") or "paid").lower()
+            if payment_status == "paid":
+                amount_paid = new_total
+                amount_pending = 0.0
+            elif payment_status == "pending":
+                amount_paid = 0.0
+                amount_pending = new_total
+            else:
+                amount_paid = float(bill_data.get("amount_paid") or 0.0)
+                amount_pending = max(0.0, new_total - amount_paid)
+
+            payment_method = bill_data.get("payment_method") or "CASH"
+            order_type = bill_data.get("order_type", "dine-in")
+            table_no = bill_data.get("table_no", "")
+
             with self.get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute(
@@ -672,14 +716,26 @@ class SQLiteDatabaseService:
                         customer_mobile = ?,
                         total_amount = ?, 
                         items = ?,
+                        order_type = ?,
+                        table_no = ?,
+                        payment_status = ?,
+                        payment_method = ?,
+                        amount_paid = ?,
+                        amount_pending = ?,
                         updated_at = CURRENT_TIMESTAMP
                     WHERE bill_no = ? AND TRIM(status) != 'CANCELLED'
                 """,
                     (
                         bill_data.get("customer_name", ""),
                         bill_data.get("customer_mobile", "") or bill_data.get("customer_phone", ""),
-                        float(bill_data["total_amount"]),
+                        new_total,
                         json.dumps(enriched_items),
+                        order_type,
+                        table_no,
+                        payment_status,
+                        payment_method,
+                        amount_paid,
+                        amount_pending,
                         bill_no,
                     ),
                 )

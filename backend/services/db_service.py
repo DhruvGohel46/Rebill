@@ -574,15 +574,68 @@ class DatabaseService:
             except Exception as eval_err:
                 print(f"Error adjusting inventory for updated bill: {eval_err}")
 
+            new_total = float(bill_data["total_amount"])
             bill.customer_name = bill_data.get("customer_name", "")
             bill.customer_mobile = bill_data.get("customer_mobile", "") or bill_data.get(
                 "customer_phone", ""
             )
-            bill.total_amount = float(bill_data["total_amount"])
+            bill.total_amount = new_total
             bill.items = json.dumps(enriched_items)
             bill.order_type = bill_data.get("order_type", bill.order_type)
             bill.table_no = bill_data.get("table_no", bill.table_no)
+
+            # Sync payment status & amounts
+            if "payment_status" in bill_data and bill_data["payment_status"] is not None:
+                ps = str(bill_data["payment_status"]).lower()
+                bill.payment_status = ps
+                if ps == "paid":
+                    bill.amount_paid = new_total
+                    bill.amount_pending = 0.0
+                elif ps == "pending":
+                    bill.amount_paid = 0.0
+                    bill.amount_pending = new_total
+                elif ps == "partial":
+                    if "amount_paid" in bill_data and bill_data["amount_paid"] is not None:
+                        bill.amount_paid = float(bill_data["amount_paid"])
+                        bill.amount_pending = max(0.0, new_total - bill.amount_paid)
+                    else:
+                        bill.amount_pending = max(0.0, new_total - (bill.amount_paid or 0.0))
+            else:
+                # Maintain consistency with updated total
+                if getattr(bill, "payment_status", "paid") == "paid":
+                    bill.amount_paid = new_total
+                    bill.amount_pending = 0.0
+                elif getattr(bill, "payment_status", "paid") == "pending":
+                    bill.amount_paid = 0.0
+                    bill.amount_pending = new_total
+                elif getattr(bill, "payment_status", "paid") == "partial":
+                    bill.amount_pending = max(0.0, new_total - (bill.amount_paid or 0.0))
+
+            if "payment_method" in bill_data and bill_data["payment_method"]:
+                bill.payment_method = bill_data["payment_method"]
+
             bill.updated_at = datetime.now()
+
+            # Recalculate any open MergeGroup if linked
+            if getattr(bill, "merge_group_id", None):
+                try:
+                    from models import MergeGroup
+
+                    group = MergeGroup.query.get(bill.merge_group_id)
+                    if group and group.status == "open":
+                        member_ids = (
+                            json.loads(group.member_bill_ids) if group.member_bill_ids else []
+                        )
+                        member_bills = Bill.query.filter(Bill.id.in_(member_ids)).all()
+                        group.total_amount = sum(b.total_amount for b in member_bills)
+                        group.amount_paid = sum(
+                            getattr(b, "amount_paid", 0.0) for b in member_bills
+                        )
+                        group.amount_pending = sum(
+                            getattr(b, "amount_pending", b.total_amount) for b in member_bills
+                        )
+                except Exception as mg_err:
+                    print(f"Error syncing merge group on bill update: {mg_err}")
 
             db.session.commit()
             return True

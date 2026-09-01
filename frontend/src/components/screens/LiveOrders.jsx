@@ -31,7 +31,8 @@ import {
   IoLayersOutline,
   IoAdd,
   IoPersonOutline,
-  IoSearchOutline
+  IoSearchOutline,
+  IoCreateOutline
 } from 'react-icons/io5';
 import '../../styles/LiveOrders.css';
 
@@ -44,6 +45,7 @@ const DraggableOrderCard = ({
   onSettleClick,
   onSplitClick,
   onPrintClick,
+  onEditClick,
   isDark,
   memberBills = [],
 }) => {
@@ -391,6 +393,30 @@ const DraggableOrderCard = ({
           </button>
         )}
 
+        {!isMergedGroup && onEditClick && (
+          <button
+            type="button"
+            onClick={() => onEditClick(order)}
+            style={{
+              padding: '0 12px',
+              height: '38px',
+              borderRadius: '12px',
+              border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1.5px solid #CBD5E1',
+              background: isDark ? '#1C1D22' : '#F1F5F9',
+              color: isDark ? '#CBD5E1' : '#475569',
+              fontWeight: 800,
+              fontSize: '0.82rem',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px'
+            }}
+            title="Edit order in POS"
+          >
+            <IoCreateOutline size={15} /> Edit
+          </button>
+        )}
+
 
       </div>
     </div>
@@ -440,15 +466,33 @@ export default function LiveOrders() {
     }
   }, []);
 
-  // Polling every 2.5 seconds
+  // Polling every 2.5 seconds + Immediate Event Triggers
   useEffect(() => {
     fetchLiveOrders();
     const interval = setInterval(() => {
       fetchLiveOrders(versionHash);
     }, 2500);
 
-    return () => clearInterval(interval);
+    const handleLiveRefresh = () => {
+      fetchLiveOrders();
+    };
+    window.addEventListener('live-orders-refresh', handleLiveRefresh);
+    window.addEventListener('bill-updated', handleLiveRefresh);
+    window.addEventListener('bill-created', handleLiveRefresh);
+    window.addEventListener('pos-catalog-updated', handleLiveRefresh);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('live-orders-refresh', handleLiveRefresh);
+      window.removeEventListener('bill-updated', handleLiveRefresh);
+      window.removeEventListener('bill-created', handleLiveRefresh);
+      window.removeEventListener('pos-catalog-updated', handleLiveRefresh);
+    };
   }, [fetchLiveOrders, versionHash]);
+
+  const handleEditClick = (order) => {
+    navigate('/', { state: { bill: order, from: '/live' } });
+  };
 
   // ── KPI Summary Calculations ──
   const stats = useMemo(() => {
@@ -899,6 +943,7 @@ export default function LiveOrders() {
                     onSettleClick={handleOpenSettle}
                     onSplitClick={(grp) => setSplitModalGroup(grp)}
                     onPrintClick={(b) => printerService.printBill(b)}
+                    onEditClick={handleEditClick}
                     isDark={isDark}
                     memberBills={memberBills}
                   />

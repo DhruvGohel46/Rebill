@@ -564,38 +564,35 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
 
 
   useEffect(() => {
-
     // Check for edit mode
-
     if (location.state?.bill) {
-
       const bill = location.state.bill;
-
       setEditingBill(bill);
 
-      setOrderItems((bill.items || []).map((item) => ({
+      let parsedItems = [];
+      try {
+        const rawItems = bill.items || bill.products || [];
+        parsedItems = typeof rawItems === 'string' ? JSON.parse(rawItems) : rawItems;
+      } catch (e) {
+        parsedItems = [];
+      }
 
+      setOrderItems((parsedItems || []).map((item) => ({
         ...item,
-
         line_key: getCartLineKey(item.product_id, item.variation_id),
-
       })));
 
       setOrderType(bill.order_type || 'dine-in');
-
       setTableNumber(bill.table_no || '');
-
       setCustomerName(bill.customer_name || '');
-
       setCustomerMobile(bill.customer_mobile || bill.customer_phone || '');
-      setPaymentStatus(bill.payment_status || 'paid');
-      setKotNumber('');
+      const loadedStatus = String(bill.payment_status || (bill.amount_pending > 0 ? 'pending' : 'paid')).toLowerCase();
+      setPaymentStatus(loadedStatus === 'pending' ? 'pending' : 'paid');
+      setKotNumber(bill.kot_no || bill.custom_kot_no || '');
 
       // Clear location state so that it doesn't reload on subsequent clicks/refreshes
       navigate(location.pathname, { replace: true, state: {} });
-
     }
-
   }, [location.state, location.pathname, navigate]);
 
 
@@ -914,81 +911,51 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
 
 
       const billData = {
-
         products: mapBillPayloadItems(orderItems),
-
         print: false,
-
         customer_name: customerName || (editingBill ? editingBill.customer_name : ''),
-
         customer_mobile: customerMobile || (editingBill ? editingBill.customer_mobile || editingBill.customer_phone : ''),
-
         order_type: orderType,
-
         table_no: tableNumber || (editingBill ? editingBill.table_no : ''),
         payment_status: paymentStatus,
+        payment_method: editingBill?.payment_method || 'CASH',
+        amount_paid: paymentStatus === 'paid' ? calculateTotal() : 0,
+        amount_pending: paymentStatus === 'pending' ? calculateTotal() : 0,
         kot_no: kotNumber,
-
         custom_kot_no: kotNumber
-
       };
 
-
-
       if (editingBill) {
-
         await billingAPI.updateBill(editingBill.bill_no, billData);
-
         showSuccess('Bill updated successfully');
-
-        navigate('/analytics');
-
+        window.dispatchEvent(new CustomEvent('bill-updated', { detail: { bill_no: editingBill.bill_no, payment_status: paymentStatus } }));
+        window.dispatchEvent(new CustomEvent('live-orders-refresh'));
+        navigate(location.state?.from || '/analytics');
       } else {
-
         // Handle Offline State
-
         if (!isOnline) {
-
           syncService.addToQueue(billData);
-
           resetBillState();
-
           showWarning('You are offline. Bill saved locally and will sync automatically.');
-
           if (onBillCreated) {
-
             onBillCreated({
-
               bill_no: 'OFFLINE',
-
               total: calculateTotal()
-
             });
-
           }
-
           return;
-
         }
-
-
 
         const response = await billingAPI.createBill(billData);
-
         resetBillState();
-
+        window.dispatchEvent(new CustomEvent('bill-created', { detail: response.data.bill }));
+        window.dispatchEvent(new CustomEvent('live-orders-refresh'));
         if (onBillCreated) {
-
           onBillCreated({
-
             bill_no: response.data.bill.bill_no,
-
             total: calculateTotal()
-
           });
-
         }
-
         // Refresh stock levels via global context (single targeted refresh)
 
         refreshProducts();
@@ -1158,88 +1125,55 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
 
 
       const billData = {
-
         products: mapBillPayloadItems(orderItems),
-
         print: false, // We handle printing manually for better control
-
         customer_name: customerName || (editingBill ? editingBill.customer_name : ''),
-
         customer_mobile: customerMobile || (editingBill ? editingBill.customer_mobile || editingBill.customer_phone : ''),
-
         order_type: orderType,
-
         table_no: tableNumber || (editingBill ? editingBill.table_no : ''),
         payment_status: paymentStatus,
+        payment_method: editingBill?.payment_method || 'CASH',
+        amount_paid: paymentStatus === 'paid' ? calculateTotal() : 0,
+        amount_pending: paymentStatus === 'pending' ? calculateTotal() : 0,
         kot_no: kotNumber,
-
         custom_kot_no: kotNumber
-
       };
 
-
-
       let billNo;
-
       if (editingBill) {
-
         await billingAPI.updateBill(editingBill.bill_no, billData);
-
         billNo = editingBill.bill_no;
-
+        window.dispatchEvent(new CustomEvent('bill-updated', { detail: { bill_no: editingBill.bill_no, payment_status: paymentStatus } }));
+        window.dispatchEvent(new CustomEvent('live-orders-refresh'));
       } else {
-
         if (!isOnline) {
-
           syncService.addToQueue(billData);
-
           resetBillState();
-
           showWarning('Offline mode. Bill saved locally.');
-
           return;
-
         }
 
-
-
         const response = await billingAPI.createBill(billData);
-
         billNo = response.data.bill.bill_no;
-
+        window.dispatchEvent(new CustomEvent('bill-created', { detail: response.data.bill }));
+        window.dispatchEvent(new CustomEvent('live-orders-refresh'));
       }
-
-
 
       // Execute Printing Workflow
-
       if (mode === 'both') {
-
         await handleBillAndKOT(billNo);
-
       } else if (mode === 'bill') {
-
         await handlePrintOnly(billNo, 'bill');
-
       } else if (mode === 'kot') {
-
         await handlePrintOnly(billNo, 'kot');
-
       }
-
-
 
       resetBillState();
-
       if (onBillCreated && !editingBill) {
-
         onBillCreated({ bill_no: billNo, total: calculateTotal() });
-
       }
-
       refreshProducts();
-
-      if (editingBill) navigate('/analytics');
+      if (editingBill) navigate(location.state?.from || '/analytics');
 
 
 

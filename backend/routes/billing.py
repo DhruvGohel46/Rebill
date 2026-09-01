@@ -352,6 +352,10 @@ def update_bill(bill_no):
         "items": validated_products,
         "order_type": order_type,
         "table_no": validated.get("table_no", ""),
+        "payment_status": validated.get("payment_status"),
+        "payment_method": validated.get("payment_method"),
+        "amount_paid": validated.get("amount_paid"),
+        "amount_pending": validated.get("amount_pending"),
     }
 
     success = db.update_bill(bill_no, bill_update_data)

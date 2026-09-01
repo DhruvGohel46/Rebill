@@ -96,6 +96,13 @@ class BillUpdateSchema(Schema):
     table_no = fields.String(load_default="")
     kot_no = fields.String(load_default="")
     custom_kot_no = fields.String(load_default="")
+    payment_status = fields.String(
+        validate=validate.OneOf(["paid", "pending", "partial"]),
+        load_default=None,
+    )
+    payment_method = fields.String(load_default=None)
+    amount_paid = fields.Float(load_default=None)
+    amount_pending = fields.Float(load_default=None)
 
     class Meta:
         unknown = EXCLUDE
