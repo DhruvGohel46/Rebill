@@ -6,7 +6,18 @@ from typing import List, Dict, Any, Optional
 from sqlalchemy import func, extract
 
 from config import Config
-from models import db, Bill, Expense, Product, Category, ItemGroup, Worker, Advance, SalaryPayment, Attendance
+from models import (
+    db,
+    Bill,
+    Expense,
+    Product,
+    Category,
+    ItemGroup,
+    Worker,
+    Advance,
+    SalaryPayment,
+    Attendance,
+)
 from services.excel_report_builder import ExcelReportBuilder
 
 
@@ -72,7 +83,9 @@ class ExcelXLSXService:
                     cat_info = {"group": g_name, "category": p.category_rel.name or "General"}
                 else:
                     cat_name = p.category or "General"
-                    g_name = category_name_to_info.get(cat_name.strip().lower(), {}).get("group", "General")
+                    g_name = category_name_to_info.get(cat_name.strip().lower(), {}).get(
+                        "group", "General"
+                    )
                     cat_info = {"group": g_name, "category": cat_name}
 
                 if p.product_id:
@@ -84,7 +97,9 @@ class ExcelXLSXService:
 
         return product_map, category_name_to_info
 
-    def _resolve_item_group_category(self, item: Dict, product_map: Dict, category_map: Dict) -> tuple:
+    def _resolve_item_group_category(
+        self, item: Dict, product_map: Dict, category_map: Dict
+    ) -> tuple:
         """Resolve (group_name, category_name) for any item dictionary."""
         p_id = str(item.get("product_id") or "").strip().lower()
         p_name = str(item.get("name") or item.get("product_name") or "").strip().lower()

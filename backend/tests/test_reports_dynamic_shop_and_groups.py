@@ -79,8 +79,24 @@ def setup_catalog_and_bills(app):
             created_at=today_dt,
             items=json.dumps(
                 [
-                    {"product_id": "P101", "name": "Masala Chai", "quantity": 2, "price": 20.0, "subtotal": 40.0, "cost_price": 8.0, "category": "Tea & Coffee"},
-                    {"product_id": "P103", "name": "Veg Cheese Burger", "quantity": 1, "price": 120.0, "subtotal": 120.0, "cost_price": 45.0, "category": "Burgers"},
+                    {
+                        "product_id": "P101",
+                        "name": "Masala Chai",
+                        "quantity": 2,
+                        "price": 20.0,
+                        "subtotal": 40.0,
+                        "cost_price": 8.0,
+                        "category": "Tea & Coffee",
+                    },
+                    {
+                        "product_id": "P103",
+                        "name": "Veg Cheese Burger",
+                        "quantity": 1,
+                        "price": 120.0,
+                        "subtotal": 120.0,
+                        "cost_price": 45.0,
+                        "category": "Burgers",
+                    },
                 ]
             ),
         )
@@ -92,7 +108,15 @@ def setup_catalog_and_bills(app):
             created_at=today_dt,
             items=json.dumps(
                 [
-                    {"product_id": "P102", "name": "Mango Shake", "quantity": 2, "price": 60.0, "subtotal": 120.0, "cost_price": 25.0, "category": "Milkshakes"},
+                    {
+                        "product_id": "P102",
+                        "name": "Mango Shake",
+                        "quantity": 2,
+                        "price": 60.0,
+                        "subtotal": 120.0,
+                        "cost_price": 25.0,
+                        "category": "Milkshakes",
+                    },
                 ]
             ),
         )

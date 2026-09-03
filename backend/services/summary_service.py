@@ -78,7 +78,9 @@ class SummaryService:
 
             # Calculate category & group breakdowns
             category_totals = self._calculate_category_totals(bills)
-            group_totals, group_category_breakdown = self._calculate_group_and_category_breakdowns(bills)
+            group_totals, group_category_breakdown = self._calculate_group_and_category_breakdowns(
+                bills
+            )
 
             # Get hourly sales breakdown
             hourly_sales = self._calculate_hourly_sales(bills)
@@ -289,7 +291,9 @@ class SummaryService:
             # Calculate summary using existing methods
             total_sales = sum(bill["total_amount"] for bill in bills)
             category_totals = self._calculate_category_totals(bills)
-            group_totals, group_category_breakdown = self._calculate_group_and_category_breakdowns(bills)
+            group_totals, group_category_breakdown = self._calculate_group_and_category_breakdowns(
+                bills
+            )
             hourly_sales = self._calculate_hourly_sales(bills)
 
             # Get first and last bill times
@@ -556,7 +560,9 @@ class SummaryService:
 
             # Category & Group totals
             category_totals = self._calculate_category_totals(bills)
-            group_totals, group_category_breakdown = self._calculate_group_and_category_breakdowns(bills)
+            group_totals, group_category_breakdown = self._calculate_group_and_category_breakdowns(
+                bills
+            )
             expense_category_totals = self._calculate_expense_category_totals(expenses)
 
             # Product breakdown (reusing logic)

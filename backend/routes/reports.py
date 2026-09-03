@@ -284,7 +284,12 @@ def get_available_reports():
                 "name": "Monthly Sales Summary",
                 "endpoint": "/api/reports/excel/monthly",
                 "description": "Monthly group, category, and product-wise totals and overall gross sales report.",
-                "sheets": ["Month Overview", "Daily Breakdown", "Group & Category Breakdown", "Product-Wise Totals"],
+                "sheets": [
+                    "Month Overview",
+                    "Daily Breakdown",
+                    "Group & Category Breakdown",
+                    "Product-Wise Totals",
+                ],
             },
             {
                 "id": "weekly_expenses",
