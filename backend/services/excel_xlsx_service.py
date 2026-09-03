@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional
 from sqlalchemy import func, extract
 
 from config import Config
-from models import db, Bill, Expense, Product, Category, Worker, Advance, SalaryPayment, Attendance
+from models import db, Bill, Expense, Product, Category, ItemGroup, Worker, Advance, SalaryPayment, Attendance
 from services.excel_report_builder import ExcelReportBuilder
 
 
@@ -32,6 +32,75 @@ class ExcelXLSXService:
             except Exception:
                 return []
         return []
+
+    def _get_catalog_maps(self):
+        """
+        Build lookup maps for Group and Category resolution.
+        Returns (product_map, category_map).
+        """
+        group_id_to_name = {}
+        try:
+            groups = ItemGroup.query.filter(ItemGroup.deleted_at == None).all()
+            group_id_to_name = {g.id: g.name for g in groups if g.name}
+        except Exception:
+            pass
+
+        category_id_to_info = {}
+        category_name_to_info = {}
+        try:
+            categories = Category.query.all()
+            for c in categories:
+                c_name = c.name.strip() if c.name else "General"
+                g_name = group_id_to_name.get(c.group_id) or "General"
+                info = {"group": g_name, "category": c_name}
+                category_id_to_info[c.id] = info
+                category_name_to_info[c_name.lower()] = info
+        except Exception:
+            pass
+
+        product_map = {}
+        try:
+            products = Product.query.all()
+            for p in products:
+                cat_info = None
+                if p.category_id and p.category_id in category_id_to_info:
+                    cat_info = category_id_to_info[p.category_id]
+                elif p.category and p.category.strip().lower() in category_name_to_info:
+                    cat_info = category_name_to_info[p.category.strip().lower()]
+                elif p.category_rel:
+                    g_name = group_id_to_name.get(p.category_rel.group_id) or "General"
+                    cat_info = {"group": g_name, "category": p.category_rel.name or "General"}
+                else:
+                    cat_name = p.category or "General"
+                    g_name = category_name_to_info.get(cat_name.strip().lower(), {}).get("group", "General")
+                    cat_info = {"group": g_name, "category": cat_name}
+
+                if p.product_id:
+                    product_map[str(p.product_id).strip().lower()] = cat_info
+                if p.name:
+                    product_map[str(p.name).strip().lower()] = cat_info
+        except Exception:
+            pass
+
+        return product_map, category_name_to_info
+
+    def _resolve_item_group_category(self, item: Dict, product_map: Dict, category_map: Dict) -> tuple:
+        """Resolve (group_name, category_name) for any item dictionary."""
+        p_id = str(item.get("product_id") or "").strip().lower()
+        p_name = str(item.get("name") or item.get("product_name") or "").strip().lower()
+        cat_hint = str(item.get("category") or item.get("category_name") or "").strip()
+
+        if p_id and p_id in product_map:
+            info = product_map[p_id]
+            return info["group"], info["category"]
+        if p_name and p_name in product_map:
+            info = product_map[p_name]
+            return info["group"], info["category"]
+        if cat_hint and cat_hint.lower() in category_map:
+            info = category_map[cat_hint.lower()]
+            return info["group"], info["category"]
+
+        return "General", (cat_hint or "General")
 
     # ─────────────────────────────────────────────────────────────────────────
     # 1. DAILY SALES REPORT
@@ -86,6 +155,45 @@ class ExcelXLSXService:
         avg_bill_val = (total_sales / total_orders) if total_orders > 0 else 0.0
         net_profit = total_sales - total_expenses
 
+        # Preload catalog maps
+        product_map, category_map = self._get_catalog_maps()
+
+        # ── Aggregate products and (group, category) breakdowns ──
+        prod_agg = {}
+        group_cat_agg = {}
+        for b in valid_bills:
+            items = self._parse_bill_items(b.items)
+            for itm in items:
+                name = itm.get("name") or itm.get("product_name") or "Unknown Item"
+                qty = float(itm.get("quantity") or itm.get("qty") or 1)
+                price = float(itm.get("price") or itm.get("unit_price") or 0)
+                subtotal = float(itm.get("subtotal") or (qty * price))
+                g_name, c_name = self._resolve_item_group_category(itm, product_map, category_map)
+                cog = float(itm.get("cost_price") or 0) * qty
+
+                # Product aggregation
+                if name not in prod_agg:
+                    prod_agg[name] = {
+                        "name": name,
+                        "group": g_name,
+                        "category": c_name,
+                        "qty": 0.0,
+                        "unit_price": price,
+                        "revenue": 0.0,
+                        "cog": 0.0,
+                    }
+                prod_agg[name]["qty"] += qty
+                prod_agg[name]["revenue"] += subtotal
+                prod_agg[name]["cog"] += cog
+
+                # Group & Category aggregation
+                gc_key = (g_name, c_name)
+                if gc_key not in group_cat_agg:
+                    group_cat_agg[gc_key] = {"qty": 0.0, "revenue": 0.0, "cog": 0.0}
+                group_cat_agg[gc_key]["qty"] += qty
+                group_cat_agg[gc_key]["revenue"] += subtotal
+                group_cat_agg[gc_key]["cog"] += cog
+
         # ── Sheet 1: Summary ──
         ws_sum = wb.create_sheet(title="Summary")
         self.builder.write_branded_header(ws_sum, "Daily Sales Report", date_label, num_columns=6)
@@ -99,6 +207,57 @@ class ExcelXLSXService:
         ]
         next_row = self.builder.write_metric_cards(
             ws_sum, start_row=7, metrics=metrics, cols_per_card=2
+        )
+
+        # Group & Category Breakdown Table
+        grp_cat_rows = []
+        tot_grp_qty = 0.0
+        tot_grp_rev = 0.0
+        tot_grp_profit = 0.0
+        for (g_name, c_name), gc_data in sorted(
+            group_cat_agg.items(), key=lambda x: (x[0][0].lower(), -x[1]["revenue"])
+        ):
+            gc_profit = gc_data["revenue"] - gc_data["cog"]
+            gc_share = (gc_data["revenue"] / total_sales) if total_sales > 0 else 0.0
+            grp_cat_rows.append(
+                [g_name, c_name, gc_data["qty"], gc_data["revenue"], gc_share, gc_profit]
+            )
+            tot_grp_qty += gc_data["qty"]
+            tot_grp_rev += gc_data["revenue"]
+            tot_grp_profit += gc_profit
+
+        grp_cat_totals = [
+            "TOTAL",
+            "",
+            tot_grp_qty,
+            tot_grp_rev,
+            1.0 if tot_grp_rev > 0 else 0.0,
+            tot_grp_profit,
+        ]
+        next_row = self.builder.write_table(
+            ws_sum,
+            start_row=next_row,
+            headers=[
+                "Group",
+                "Category",
+                "Qty Sold",
+                "Total Revenue",
+                "% of Total Sales",
+                "Profit",
+            ],
+            data_rows=grp_cat_rows,
+            col_formats=[
+                None,
+                None,
+                self.builder.FMT_INTEGER,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_PERCENT,
+                self.builder.FMT_CURRENCY,
+            ],
+            col_alignments=["left", "left", "center", "right", "right", "right"],
+            totals_row=grp_cat_totals,
+            section_title="Group & Category Sales Breakdown",
+            freeze_header=False,
         )
 
         # Payment Breakdown Table
@@ -157,33 +316,8 @@ class ExcelXLSXService:
         # ── Sheet 2: Item-Wise Breakdown ──
         ws_items = wb.create_sheet(title="Item-Wise Breakdown")
         self.builder.write_branded_header(
-            ws_items, "Daily Item-Wise Breakdown", date_label, num_columns=7
+            ws_items, "Daily Item-Wise Breakdown", date_label, num_columns=8
         )
-
-        # Aggregate products
-        prod_agg = {}
-        for b in valid_bills:
-            items = self._parse_bill_items(b.items)
-            for itm in items:
-                name = itm.get("name") or itm.get("product_name") or "Unknown Item"
-                qty = float(itm.get("quantity") or itm.get("qty") or 1)
-                price = float(itm.get("price") or itm.get("unit_price") or 0)
-                subtotal = float(itm.get("subtotal") or (qty * price))
-                cat = itm.get("category") or "General"
-                cog = float(itm.get("cost_price") or 0) * qty
-
-                if name not in prod_agg:
-                    prod_agg[name] = {
-                        "name": name,
-                        "category": cat,
-                        "qty": 0.0,
-                        "unit_price": price,
-                        "revenue": 0.0,
-                        "cog": 0.0,
-                    }
-                prod_agg[name]["qty"] += qty
-                prod_agg[name]["revenue"] += subtotal
-                prod_agg[name]["cog"] += cog
 
         item_rows = []
         tot_qty = 0.0
@@ -191,12 +325,16 @@ class ExcelXLSXService:
         tot_cog = 0.0
         tot_profit = 0.0
 
-        for itm in sorted(prod_agg.values(), key=lambda x: x["revenue"], reverse=True):
+        for itm in sorted(
+            prod_agg.values(),
+            key=lambda x: (x["group"].lower(), x["category"].lower(), -x["revenue"]),
+        ):
             profit = itm["revenue"] - itm["cog"]
             item_rows.append(
                 [
-                    itm["name"],
+                    itm["group"],
                     itm["category"],
+                    itm["name"],
                     itm["qty"],
                     itm["unit_price"],
                     itm["revenue"],
@@ -209,13 +347,14 @@ class ExcelXLSXService:
             tot_cog += itm["cog"]
             tot_profit += profit
 
-        item_totals_row = ["TOTAL", "", tot_qty, None, tot_rev, tot_cog, tot_profit]
+        item_totals_row = ["TOTAL", "", "", tot_qty, None, tot_rev, tot_cog, tot_profit]
         self.builder.write_table(
             ws_items,
             start_row=6,
             headers=[
-                "Product Name",
+                "Group",
                 "Category",
+                "Product Name",
                 "Qty Sold",
                 "Unit Price",
                 "Total Revenue",
@@ -226,13 +365,14 @@ class ExcelXLSXService:
             col_formats=[
                 None,
                 None,
+                None,
                 self.builder.FMT_INTEGER,
                 self.builder.FMT_CURRENCY,
                 self.builder.FMT_CURRENCY,
                 self.builder.FMT_CURRENCY,
                 self.builder.FMT_CURRENCY,
             ],
-            col_alignments=["left", "left", "center", "right", "right", "right", "right"],
+            col_alignments=["left", "left", "left", "center", "right", "right", "right", "right"],
             totals_row=item_totals_row,
         )
         self.builder.autofit_column_widths(ws_items)
@@ -316,8 +456,9 @@ class ExcelXLSXService:
     def export_weekly_sales_summary(self, week_date_str: Optional[str] = None) -> str:
         """
         2. Weekly Sales Summary (Monday to Sunday)
-        Sheet 1: Week Overview (Metrics, Best/Worst day, Day-by-day table)
-        Sheet 2: Product Overview (Units Sold, Revenue, % Share, Trend vs Prior Week)
+        Sheet 1: Week Overview (Metrics, Day-by-Day Table, Group & Category Summary Table)
+        Sheet 2: Group & Category Breakdown (Units Sold, Revenue, % Share, Trend vs Prior Week)
+        Sheet 3: Product Performance (Units Sold, Revenue, % Share, Trend vs Prior Week)
         """
         today_date = date.today()
         if week_date_str:
@@ -357,6 +498,48 @@ class ExcelXLSXService:
             func.date(Expense.date) >= start_week, func.date(Expense.date) <= end_week
         ).all()
         total_exp = sum(e.amount for e in week_expenses)
+
+        # Preload catalog maps
+        product_map, category_map = self._get_catalog_maps()
+
+        # Aggregate current week products & groups/categories
+        curr_prod = {}
+        curr_group_cat = {}
+        for b in week_bills:
+            for itm in self._parse_bill_items(b.items):
+                p_name = itm.get("name") or "Item"
+                qty = float(itm.get("quantity") or 1)
+                rev = float(itm.get("subtotal") or (qty * float(itm.get("price") or 0)))
+                g_name, c_name = self._resolve_item_group_category(itm, product_map, category_map)
+
+                if p_name not in curr_prod:
+                    curr_prod[p_name] = {
+                        "group": g_name,
+                        "category": c_name,
+                        "units": 0.0,
+                        "revenue": 0.0,
+                    }
+                curr_prod[p_name]["units"] += qty
+                curr_prod[p_name]["revenue"] += rev
+
+                gc_key = (g_name, c_name)
+                if gc_key not in curr_group_cat:
+                    curr_group_cat[gc_key] = {"units": 0.0, "revenue": 0.0}
+                curr_group_cat[gc_key]["units"] += qty
+                curr_group_cat[gc_key]["revenue"] += rev
+
+        # Aggregate prior week products & groups/categories
+        prior_prod = {}
+        prior_group_cat = {}
+        for b in prior_week_bills:
+            for itm in self._parse_bill_items(b.items):
+                p_name = itm.get("name") or "Item"
+                qty = float(itm.get("quantity") or 1)
+                rev = float(itm.get("subtotal") or (qty * float(itm.get("price") or 0)))
+                g_name, c_name = self._resolve_item_group_category(itm, product_map, category_map)
+                prior_prod[p_name] = prior_prod.get(p_name, 0.0) + rev
+                gc_key = (g_name, c_name)
+                prior_group_cat[gc_key] = prior_group_cat.get(gc_key, 0.0) + rev
 
         # ── Sheet 1: Week Overview ──
         ws_overview = wb.create_sheet(title="Week Overview")
@@ -430,7 +613,7 @@ class ExcelXLSXService:
             )
 
         day_totals = ["TOTAL", "", total_orders, total_sales, net_profit]
-        self.builder.write_table(
+        next_row = self.builder.write_table(
             ws_overview,
             start_row=next_row,
             headers=["Date", "Day of Week", "Orders", "Revenue", "Profit"],
@@ -445,72 +628,90 @@ class ExcelXLSXService:
             col_alignments=["center", "left", "center", "right", "right"],
             totals_row=day_totals,
             section_title="Day-by-Day Revenue Breakdown",
+            freeze_header=False,
+        )
+
+        # Overview Group & Category rollup table
+        overview_gc_rows = []
+        tot_gc_units = 0.0
+        for (g_name, c_name), gc_info in sorted(
+            curr_group_cat.items(), key=lambda x: (x[0][0].lower(), -x[1]["revenue"])
+        ):
+            gc_rev = gc_info["revenue"]
+            gc_units = gc_info["units"]
+            gc_share = (gc_rev / total_sales) if total_sales > 0 else 0.0
+            overview_gc_rows.append([g_name, c_name, gc_units, gc_rev, gc_share])
+            tot_gc_units += gc_units
+
+        overview_gc_totals = [
+            "TOTAL",
+            "",
+            tot_gc_units,
+            total_sales,
+            1.0 if total_sales > 0 else 0.0,
+        ]
+        self.builder.write_table(
+            ws_overview,
+            start_row=next_row,
+            headers=["Group", "Category", "Units Sold", "Revenue (Week)", "% of Week's Revenue"],
+            data_rows=overview_gc_rows,
+            col_formats=[
+                None,
+                None,
+                self.builder.FMT_INTEGER,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_PERCENT,
+            ],
+            col_alignments=["left", "left", "center", "right", "right"],
+            totals_row=overview_gc_totals,
+            section_title="Group & Category Performance Summary",
+            freeze_header=False,
         )
         self.builder.autofit_column_widths(ws_overview)
 
-        # ── Sheet 2: Product Overview ──
-        ws_prod = wb.create_sheet(title="Product Overview")
+        # ── Sheet 2: Group & Category Breakdown ──
+        ws_grp = wb.create_sheet(title="Group & Category Breakdown")
         self.builder.write_branded_header(
-            ws_prod, "Weekly Product Performance", range_label, num_columns=6
+            ws_grp, "Weekly Group & Category Performance", range_label, num_columns=6
         )
 
-        # Aggregate current week products
-        curr_prod = {}
-        for b in week_bills:
-            for itm in self._parse_bill_items(b.items):
-                p_name = itm.get("name") or "Item"
-                qty = float(itm.get("quantity") or 1)
-                rev = float(itm.get("subtotal") or (qty * float(itm.get("price") or 0)))
-                cat = itm.get("category") or "General"
-                if p_name not in curr_prod:
-                    curr_prod[p_name] = {"category": cat, "units": 0.0, "revenue": 0.0}
-                curr_prod[p_name]["units"] += qty
-                curr_prod[p_name]["revenue"] += rev
-
-        # Aggregate prior week products
-        prior_prod = {}
-        for b in prior_week_bills:
-            for itm in self._parse_bill_items(b.items):
-                p_name = itm.get("name") or "Item"
-                qty = float(itm.get("quantity") or 1)
-                rev = float(itm.get("subtotal") or (qty * float(itm.get("price") or 0)))
-                prior_prod[p_name] = prior_prod.get(p_name, 0.0) + rev
-
-        prod_rows = []
-        tot_units = 0.0
-        for p_name, p_data in sorted(
-            curr_prod.items(), key=lambda x: x[1]["revenue"], reverse=True
+        gc_sheet_rows = []
+        for (g_name, c_name), gc_info in sorted(
+            curr_group_cat.items(), key=lambda x: (x[0][0].lower(), -x[1]["revenue"])
         ):
-            p_rev = p_data["revenue"]
-            p_units = p_data["units"]
-            share = (p_rev / total_sales) if total_sales > 0 else 0.0
-
-            # Compute trend string
-            prior_rev = prior_prod.get(p_name, 0.0)
+            gc_rev = gc_info["revenue"]
+            gc_units = gc_info["units"]
+            gc_share = (gc_rev / total_sales) if total_sales > 0 else 0.0
+            prior_rev = prior_group_cat.get((g_name, c_name), 0.0)
             if prior_rev > 0:
-                pct_change = ((p_rev - prior_rev) / prior_rev) * 100.0
+                pct_change = ((gc_rev - prior_rev) / prior_rev) * 100.0
                 trend_str = (
                     f"▲ {pct_change:+.1f}%" if pct_change >= 0 else f"▼ {abs(pct_change):.1f}%"
                 )
             else:
                 trend_str = "NEW"
+            gc_sheet_rows.append([g_name, c_name, gc_units, gc_rev, gc_share, trend_str])
 
-            prod_rows.append([p_name, p_data["category"], p_units, p_rev, share, trend_str])
-            tot_units += p_units
-
-        prod_totals = ["TOTAL", "", tot_units, total_sales, 1.0 if total_sales > 0 else 0.0, ""]
+        gc_sheet_totals = [
+            "TOTAL",
+            "",
+            tot_gc_units,
+            total_sales,
+            1.0 if total_sales > 0 else 0.0,
+            "",
+        ]
         self.builder.write_table(
-            ws_prod,
+            ws_grp,
             start_row=6,
             headers=[
-                "Product",
+                "Group",
                 "Category",
                 "Units Sold (Week)",
                 "Revenue (Week)",
                 "% of Week's Revenue",
                 "Trend vs. Prior Week",
             ],
-            data_rows=prod_rows,
+            data_rows=gc_sheet_rows,
             col_formats=[
                 None,
                 None,
@@ -520,6 +721,80 @@ class ExcelXLSXService:
                 None,
             ],
             col_alignments=["left", "left", "center", "right", "right", "center"],
+            totals_row=gc_sheet_totals,
+        )
+        self.builder.autofit_column_widths(ws_grp)
+
+        # ── Sheet 3: Product Performance ──
+        ws_prod = wb.create_sheet(title="Product Performance")
+        self.builder.write_branded_header(
+            ws_prod, "Weekly Product Performance", range_label, num_columns=7
+        )
+
+        prod_rows = []
+        tot_units = 0.0
+        for p_name, p_data in sorted(
+            curr_prod.items(),
+            key=lambda x: (x[1]["group"].lower(), x[1]["category"].lower(), -x[1]["revenue"]),
+        ):
+            p_rev = p_data["revenue"]
+            p_units = p_data["units"]
+            share = (p_rev / total_sales) if total_sales > 0 else 0.0
+
+            prior_rev = prior_prod.get(p_name, 0.0)
+            if prior_rev > 0:
+                pct_change = ((p_rev - prior_rev) / prior_rev) * 100.0
+                trend_str = (
+                    f"▲ {pct_change:+.1f}%" if pct_change >= 0 else f"▼ {abs(pct_change):.1f}%"
+                )
+            else:
+                trend_str = "NEW"
+
+            prod_rows.append(
+                [
+                    p_data["group"],
+                    p_data["category"],
+                    p_name,
+                    p_units,
+                    p_rev,
+                    share,
+                    trend_str,
+                ]
+            )
+            tot_units += p_units
+
+        prod_totals = [
+            "TOTAL",
+            "",
+            "",
+            tot_units,
+            total_sales,
+            1.0 if total_sales > 0 else 0.0,
+            "",
+        ]
+        self.builder.write_table(
+            ws_prod,
+            start_row=6,
+            headers=[
+                "Group",
+                "Category",
+                "Product",
+                "Units Sold (Week)",
+                "Revenue (Week)",
+                "% of Week's Revenue",
+                "Trend vs. Prior Week",
+            ],
+            data_rows=prod_rows,
+            col_formats=[
+                None,
+                None,
+                None,
+                self.builder.FMT_INTEGER,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_PERCENT,
+                None,
+            ],
+            col_alignments=["left", "left", "left", "center", "right", "right", "center"],
             totals_row=prod_totals,
         )
         self.builder.autofit_column_widths(ws_prod)
@@ -535,9 +810,10 @@ class ExcelXLSXService:
     def export_monthly_sales_summary(self, month: int, year: int) -> str:
         """
         3. Monthly Sales Summary
-        Sheet 1: Month Overview (Gross Sales, Net Profit, Operating Days, Week rollup)
+        Sheet 1: Month Overview (Gross Sales, Net Profit, Operating Days, Week rollup, Group & Category Overview)
         Sheet 2: Daily Breakdown / Weekly Trend (Date, Orders, Revenue, Profit, Cumulative Revenue)
-        Sheet 3: Product-Wise Totals (Product, Category, Units, Revenue, Profit, % Share)
+        Sheet 3: Group & Category Breakdown (Units, Revenue, Profit, % Share)
+        Sheet 4: Product-Wise Totals (Group, Category, Product, Units, Revenue, Profit, % Share)
         """
         _, last_day = calendar.monthrange(year, month)
         start_month = date(year, month, 1)
@@ -569,6 +845,39 @@ class ExcelXLSXService:
         op_dates = set(b.created_at.date() for b in bills if b.created_at)
         op_days_count = len(op_dates)
         avg_daily = (total_sales / op_days_count) if op_days_count > 0 else 0.0
+
+        # Preload catalog maps
+        product_map, category_map = self._get_catalog_maps()
+
+        # Aggregate products & group/category
+        prod_agg = {}
+        group_cat_agg = {}
+        for b in bills:
+            for itm in self._parse_bill_items(b.items):
+                p_name = itm.get("name") or "Product"
+                qty = float(itm.get("quantity") or 1)
+                rev = float(itm.get("subtotal") or (qty * float(itm.get("price") or 0)))
+                g_name, c_name = self._resolve_item_group_category(itm, product_map, category_map)
+                cog = float(itm.get("cost_price") or 0) * qty
+
+                if p_name not in prod_agg:
+                    prod_agg[p_name] = {
+                        "group": g_name,
+                        "cat": c_name,
+                        "qty": 0.0,
+                        "rev": 0.0,
+                        "cog": 0.0,
+                    }
+                prod_agg[p_name]["qty"] += qty
+                prod_agg[p_name]["rev"] += rev
+                prod_agg[p_name]["cog"] += cog
+
+                gc_key = (g_name, c_name)
+                if gc_key not in group_cat_agg:
+                    group_cat_agg[gc_key] = {"qty": 0.0, "rev": 0.0, "cog": 0.0}
+                group_cat_agg[gc_key]["qty"] += qty
+                group_cat_agg[gc_key]["rev"] += rev
+                group_cat_agg[gc_key]["cog"] += cog
 
         # ── Sheet 1: Month Overview ──
         ws_overview = wb.create_sheet(title="Month Overview")
@@ -613,7 +922,7 @@ class ExcelXLSXService:
             week_rows.append([w_label, w_data["orders"], w_data["revenue"], w_profit])
 
         week_totals = ["TOTAL", total_orders, total_sales, net_profit]
-        self.builder.write_table(
+        next_row = self.builder.write_table(
             ws_overview,
             start_row=next_row,
             headers=["Week Rollup", "Orders", "Revenue", "Profit"],
@@ -627,6 +936,54 @@ class ExcelXLSXService:
             col_alignments=["left", "center", "right", "right"],
             totals_row=week_totals,
             section_title="Weekly Performance Rollup",
+            freeze_header=False,
+        )
+
+        # Group & Category Summary on Sheet 1
+        gc_overview_rows = []
+        tot_gc_units = 0.0
+        tot_gc_profit = 0.0
+        for (g_name, c_name), gc_val in sorted(
+            group_cat_agg.items(), key=lambda x: (x[0][0].lower(), -x[1]["rev"])
+        ):
+            profit = gc_val["rev"] - gc_val["cog"]
+            share = (gc_val["rev"] / total_sales) if total_sales > 0 else 0.0
+            gc_overview_rows.append([g_name, c_name, gc_val["qty"], gc_val["rev"], profit, share])
+            tot_gc_units += gc_val["qty"]
+            tot_gc_profit += profit
+
+        gc_overview_totals = [
+            "TOTAL",
+            "",
+            tot_gc_units,
+            total_sales,
+            tot_gc_profit,
+            1.0 if total_sales > 0 else 0.0,
+        ]
+        self.builder.write_table(
+            ws_overview,
+            start_row=next_row,
+            headers=[
+                "Group",
+                "Category",
+                "Units Sold (Month)",
+                "Revenue (Month)",
+                "Profit (Month)",
+                "% of Month's Revenue",
+            ],
+            data_rows=gc_overview_rows,
+            col_formats=[
+                None,
+                None,
+                self.builder.FMT_INTEGER,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_PERCENT,
+            ],
+            col_alignments=["left", "left", "center", "right", "right", "right"],
+            totals_row=gc_overview_totals,
+            section_title="Group & Category Performance Summary",
+            freeze_header=False,
         )
         self.builder.autofit_column_widths(ws_overview)
 
@@ -676,37 +1033,67 @@ class ExcelXLSXService:
         )
         self.builder.autofit_column_widths(ws_daily)
 
-        # ── Sheet 3: Product-Wise Totals ──
-        ws_prod = wb.create_sheet(title="Product-Wise Totals")
+        # ── Sheet 3: Group & Category Breakdown ──
+        ws_grp = wb.create_sheet(title="Group & Category Breakdown")
         self.builder.write_branded_header(
-            ws_prod, "Monthly Product-Wise Sales", month_label, num_columns=6
+            ws_grp, "Monthly Group & Category Sales Breakdown", month_label, num_columns=6
         )
 
-        prod_agg = {}
-        for b in bills:
-            for itm in self._parse_bill_items(b.items):
-                p_name = itm.get("name") or "Product"
-                qty = float(itm.get("quantity") or 1)
-                rev = float(itm.get("subtotal") or (qty * float(itm.get("price") or 0)))
-                cat = itm.get("category") or "General"
-                cog = float(itm.get("cost_price") or 0) * qty
+        self.builder.write_table(
+            ws_grp,
+            start_row=6,
+            headers=[
+                "Group",
+                "Category",
+                "Units Sold (Month)",
+                "Revenue (Month)",
+                "Profit (Month)",
+                "% of Month's Revenue",
+            ],
+            data_rows=gc_overview_rows,
+            col_formats=[
+                None,
+                None,
+                self.builder.FMT_INTEGER,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_PERCENT,
+            ],
+            col_alignments=["left", "left", "center", "right", "right", "right"],
+            totals_row=gc_overview_totals,
+        )
+        self.builder.autofit_column_widths(ws_grp)
 
-                if p_name not in prod_agg:
-                    prod_agg[p_name] = {"cat": cat, "qty": 0.0, "rev": 0.0, "cog": 0.0}
-                prod_agg[p_name]["qty"] += qty
-                prod_agg[p_name]["rev"] += rev
-                prod_agg[p_name]["cog"] += cog
+        # ── Sheet 4: Product-Wise Totals ──
+        ws_prod = wb.create_sheet(title="Product-Wise Totals")
+        self.builder.write_branded_header(
+            ws_prod, "Monthly Product-Wise Sales", month_label, num_columns=7
+        )
 
         p_rows = []
         tot_units = 0.0
-        for p_name, p_val in sorted(prod_agg.items(), key=lambda x: x[1]["rev"], reverse=True):
+        for p_name, p_val in sorted(
+            prod_agg.items(),
+            key=lambda x: (x[1]["group"].lower(), x[1]["cat"].lower(), -x[1]["rev"]),
+        ):
             profit = p_val["rev"] - p_val["cog"]
             share = (p_val["rev"] / total_sales) if total_sales > 0 else 0.0
-            p_rows.append([p_name, p_val["cat"], p_val["qty"], p_val["rev"], profit, share])
+            p_rows.append(
+                [
+                    p_val["group"],
+                    p_val["cat"],
+                    p_name,
+                    p_val["qty"],
+                    p_val["rev"],
+                    profit,
+                    share,
+                ]
+            )
             tot_units += p_val["qty"]
 
         p_totals = [
             "TOTAL",
+            "",
             "",
             tot_units,
             total_sales,
@@ -717,8 +1104,9 @@ class ExcelXLSXService:
             ws_prod,
             start_row=6,
             headers=[
-                "Product",
+                "Group",
                 "Category",
+                "Product",
                 "Units Sold (Month)",
                 "Revenue (Month)",
                 "Profit (Month)",
@@ -728,12 +1116,13 @@ class ExcelXLSXService:
             col_formats=[
                 None,
                 None,
+                None,
                 self.builder.FMT_INTEGER,
                 self.builder.FMT_CURRENCY,
                 self.builder.FMT_CURRENCY,
                 self.builder.FMT_PERCENT,
             ],
-            col_alignments=["left", "left", "center", "right", "right", "right"],
+            col_alignments=["left", "left", "left", "center", "right", "right", "right"],
             totals_row=p_totals,
         )
         self.builder.autofit_column_widths(ws_prod)
@@ -1326,6 +1715,25 @@ class ExcelXLSXService:
             ws_sales, "Annual Daily Sales Breakdown", year_label, num_columns=5
         )
 
+        # Preload catalog maps
+        product_map, category_map = self._get_catalog_maps()
+
+        # Group & Category annual sales aggregation
+        annual_grp_cat = {}
+        for b in bills:
+            for itm in self._parse_bill_items(b.items):
+                qty = float(itm.get("quantity") or 1)
+                rev = float(itm.get("subtotal") or (qty * float(itm.get("price") or 0)))
+                cog = float(itm.get("cost_price") or 0) * qty
+                g_name, c_name = self._resolve_item_group_category(itm, product_map, category_map)
+
+                gc_key = (g_name, c_name)
+                if gc_key not in annual_grp_cat:
+                    annual_grp_cat[gc_key] = {"units": 0.0, "revenue": 0.0, "cog": 0.0}
+                annual_grp_cat[gc_key]["units"] += qty
+                annual_grp_cat[gc_key]["revenue"] += rev
+                annual_grp_cat[gc_key]["cog"] += cog
+
         # Group by day
         sales_by_day = {}
         for b in bills:
@@ -1369,7 +1777,75 @@ class ExcelXLSXService:
         )
         self.builder.autofit_column_widths(ws_sales)
 
-        # ── Sheet 3: Expense Detail (Year Pivot) ──
+        # ── Sheet 3: Sales by Group & Category ──
+        ws_grp_sales = wb.create_sheet(title="Sales by Group & Category")
+        self.builder.write_branded_header(
+            ws_grp_sales, "Annual Group & Category Sales Breakdown", year_label, num_columns=7
+        )
+
+        annual_gc_rows = []
+        tot_ann_units = 0.0
+        tot_ann_rev = 0.0
+        tot_ann_cog = 0.0
+        tot_ann_profit = 0.0
+        for (g_name, c_name), gc_info in sorted(
+            annual_grp_cat.items(), key=lambda x: (x[0][0].lower(), -x[1]["revenue"])
+        ):
+            gc_profit = gc_info["revenue"] - gc_info["cog"]
+            gc_share = (gc_info["revenue"] / gross_sales) if gross_sales > 0 else 0.0
+            annual_gc_rows.append(
+                [
+                    g_name,
+                    c_name,
+                    gc_info["units"],
+                    gc_info["revenue"],
+                    gc_info["cog"],
+                    gc_profit,
+                    gc_share,
+                ]
+            )
+            tot_ann_units += gc_info["units"]
+            tot_ann_rev += gc_info["revenue"]
+            tot_ann_cog += gc_info["cog"]
+            tot_ann_profit += gc_profit
+
+        annual_gc_totals = [
+            "TOTAL",
+            "",
+            tot_ann_units,
+            tot_ann_rev,
+            tot_ann_cog,
+            tot_ann_profit,
+            1.0 if tot_ann_rev > 0 else 0.0,
+        ]
+        self.builder.write_table(
+            ws_grp_sales,
+            start_row=6,
+            headers=[
+                "Group",
+                "Category",
+                "Units Sold (Year)",
+                "Sales Revenue",
+                "Estimated COGS",
+                "Gross Profit",
+                "% of Annual Sales",
+            ],
+            data_rows=annual_gc_rows,
+            col_formats=[
+                None,
+                None,
+                self.builder.FMT_INTEGER,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_CURRENCY,
+                self.builder.FMT_PERCENT,
+            ],
+            col_alignments=["left", "left", "center", "right", "right", "right", "right"],
+            totals_row=annual_gc_totals,
+        )
+        self.builder.autofit_column_widths(ws_grp_sales)
+
+        # ── Sheet 4: Expense Detail (Year Pivot) ──
         ws_exp_pivot = wb.create_sheet(title="Expense Detail (Year)")
         self.builder.write_branded_header(
             ws_exp_pivot, "Annual Expense Category Matrix", year_label, num_columns=15

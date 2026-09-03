@@ -38,7 +38,7 @@ class ExcelReportBuilder:
         self._load_shop_profile()
 
     def _load_shop_profile(self):
-        """Fetch shop name, address, and GST/Tax ID from settings or config."""
+        """Fetch shop name, address, and GST/Tax ID from database settings or config."""
         self.shop_name = Config.SHOP_NAME or "InfoOS Store"
         self.shop_address = ""
         self.gst_number = ""
@@ -47,17 +47,19 @@ class ExcelReportBuilder:
 
             db_service = DatabaseService()
             settings = db_service.get_all_settings()
-            if settings.get("shop_name"):
-                self.shop_name = settings.get("shop_name")
-            if settings.get("shop_address"):
-                self.shop_address = settings.get("shop_address")
-            if settings.get("gst_number") or settings.get("tax_id"):
-                self.gst_number = settings.get("gst_number") or settings.get("tax_id")
+            if settings.get("shop_name") and str(settings.get("shop_name")).strip():
+                self.shop_name = str(settings.get("shop_name")).strip()
+            if settings.get("shop_address") and str(settings.get("shop_address")).strip():
+                self.shop_address = str(settings.get("shop_address")).strip()
+            gst_val = settings.get("gst_number") or settings.get("gst_no") or settings.get("tax_id")
+            if gst_val and str(gst_val).strip():
+                self.gst_number = str(gst_val).strip()
         except Exception:
             pass
 
     def create_workbook(self) -> openpyxl.Workbook:
         """Create a fresh openpyxl workbook."""
+        self._load_shop_profile()
         wb = openpyxl.Workbook()
         wb.remove(wb.active)  # Remove default blank sheet so named sheets are first
         return wb
@@ -67,6 +69,7 @@ class ExcelReportBuilder:
         Generate standardized filename: InfoOS_{ReportType}_{DateOrRange}_{ShopName}.xlsx
         Guarantees safe alphanumeric characters and no spaces.
         """
+        self._load_shop_profile()
         safe_report = re.sub(r"[^a-zA-Z0-9]", "", report_type)
         safe_date = re.sub(r"[^a-zA-Z0-9\-_]", "", str(date_or_range))
         safe_shop = re.sub(r"[^a-zA-Z0-9]", "", self.shop_name) or "Store"
@@ -87,6 +90,7 @@ class ExcelReportBuilder:
         Row 4: Date Range + Generated on (9pt grey, right-aligned)
         Row 5: Blank spacer
         """
+        self._load_shop_profile()
         end_col_letter = get_column_letter(max(num_columns, 4))
 
         # Row 1: Shop Name

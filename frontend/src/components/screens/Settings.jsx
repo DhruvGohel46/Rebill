@@ -1265,6 +1265,7 @@ const Settings = () => {
     const [formSettings, setFormSettings] = useState({
         // Shop
         shop_name: '',
+        logo_url: '',
         shop_address: '',
         shop_contact: '',
         gst_no: '',
@@ -1456,6 +1457,115 @@ const Settings = () => {
                                 </div>
 
                                 <div className="stSectionContent">
+                                    <div className="stFormGroup">
+                                        <div className="stLabel">
+                                            <span className="stLabelTitle">Shop Logo</span>
+                                            <span className="stLabelDesc">Logo displayed on header navigation button, bills, and reports</span>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                            {formSettings.logo_url ? (
+                                                <div style={{
+                                                    width: '54px',
+                                                    height: '54px',
+                                                    borderRadius: '12px',
+                                                    overflow: 'hidden',
+                                                    border: 'none',
+                                                    background: 'var(--bg-secondary, #1a1d24)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    flexShrink: 0,
+                                                    boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                                                }}>
+                                                    <img
+                                                        src={formSettings.logo_url}
+                                                        alt="Shop Logo"
+                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div style={{
+                                                    width: '54px',
+                                                    height: '54px',
+                                                    borderRadius: '12px',
+                                                    border: '1.5px dashed var(--border-primary, rgba(255,255,255,0.2))',
+                                                    background: 'var(--bg-secondary, rgba(255,255,255,0.03))',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '4px',
+                                                    color: 'var(--text-muted, #94a3b8)',
+                                                    flexShrink: 0,
+                                                }}>
+                                                    <IoCloudUploadOutline size={18} />
+                                                    <span style={{ fontSize: '10px', fontWeight: 600 }}>No Logo</span>
+                                                </div>
+                                            )}
+
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                                <label style={{
+                                                    cursor: 'pointer',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '7px',
+                                                    padding: '8px 14px',
+                                                    borderRadius: '10px',
+                                                    fontSize: '13px',
+                                                    fontWeight: 600,
+                                                    background: 'var(--primary-500, #f97316)',
+                                                    color: '#FFFFFF',
+                                                    boxShadow: '0 2px 6px rgba(249, 115, 22, 0.25)',
+                                                    userSelect: 'none',
+                                                    transition: 'opacity 0.15s ease',
+                                                }}>
+                                                    <IoCloudUploadOutline size={16} />
+                                                    {formSettings.logo_url ? 'Change Logo' : 'Upload Logo'}
+                                                    <input
+                                                        type="file"
+                                                        accept="image/png, image/jpeg, image/webp, image/svg+xml"
+                                                        style={{ display: 'none' }}
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) {
+                                                                if (file.size > 2 * 1024 * 1024) {
+                                                                    showError('Logo image must be under 2MB');
+                                                                    return;
+                                                                }
+                                                                const reader = new FileReader();
+                                                                reader.onload = () => {
+                                                                    handleChange('logo_url', reader.result);
+                                                                    showSuccess('Logo selected! Click Save to apply.');
+                                                                };
+                                                                reader.readAsDataURL(file);
+                                                            }
+                                                        }}
+                                                    />
+                                                </label>
+
+                                                {formSettings.logo_url && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleChange('logo_url', '')}
+                                                        style={{
+                                                            padding: '8px 12px',
+                                                            borderRadius: '10px',
+                                                            fontSize: '13px',
+                                                            fontWeight: 600,
+                                                            cursor: 'pointer',
+                                                            background: 'rgba(239, 68, 68, 0.12)',
+                                                            color: '#ef4444',
+                                                            border: '1px solid rgba(239, 68, 68, 0.25)',
+                                                            transition: 'background 0.15s ease',
+                                                        }}
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div className="stFormGroup">
                                         <div className="stLabel">
                                             <span className="stLabelTitle">Shop Name</span>

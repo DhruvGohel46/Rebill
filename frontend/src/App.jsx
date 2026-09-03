@@ -67,7 +67,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import AdminUnlockModal from './components/system/AdminUnlockModal';
 import AdminRoute from './components/system/AdminRoute';
 import AgentChatPanel from './components/agents/AgentChatPanel';
-import DynamicAiMascot from './components/common/DynamicAiMascot';
+import AiHeaderButton from './components/ui/AiHeaderButton';
 import infoosLogo from './assets/logo.png';
 
 // Worker Pages
@@ -95,7 +95,7 @@ import { syncService } from './api/sync';
 import { POSDataProvider, usePOSData } from './context/POSDataContext';
 
 // Import UI components
-import Sidebar from './components/ui/Sidebar';
+import ShopMenuDropdown from './components/ui/ShopMenuDropdown';
 
 // System components (production hardening)
 import ErrorBoundary from './components/system/ErrorBoundary';
@@ -155,7 +155,7 @@ function AppContent() {
     } catch (_) {}
   }, [_location, checkCatalogVersion]);
 
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  // Sidebar removed — navigation is now in the header ShopMenuDropdown
   const [posKey, setPosKey] = useState(0);
 
   // ── Calculator State ──
@@ -536,13 +536,13 @@ function AppContent() {
     },
   ];
 
-  const workerNavItems = adminNavItems.filter((item) =>
-    ['pos', 'live', 'summary', 'reminders'].includes(item.id)
-  );
 
   const workerAllowedPaths = new Set(['/', '/live', '/analytics', '/reminders']);
 
-  const navItems = isAdmin ? adminNavItems : workerNavItems;
+  const navItems = adminNavItems.map((item) => ({
+    ...item,
+    isLocked: !isAdmin && !workerAllowedPaths.has(item.path),
+  }));
 
   const todayLabel = new Date().toLocaleDateString(undefined, {
     weekday: 'short',
@@ -565,6 +565,7 @@ function AppContent() {
     <div style={{
       height: 'var(--viewport-height, 100vh)',
       display: 'flex',
+      flexDirection: 'column',
       backgroundColor: 'transparent',
       color: currentTheme.colors.text.primary,
       fontFamily: currentTheme.typography.fontFamily.primary,
@@ -573,34 +574,14 @@ function AppContent() {
       {/* Global API Error → Toast bridge */}
       <ApiErrorListener />
 
-      {/* Search Sidebar */}
-      <Sidebar
-        isCollapsed={isSidebarCollapsed}
-        toggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        navItems={navItems}
-        onNavigate={(item) => {
-          if (!isAdmin && !workerAllowedPaths.has(item.path)) {
-            openUnlock(item.path);
-            navigate('/');
-            return;
-          }
-          navigate(item.path);
-        }}
-      />
-
-      {/* Main Content Area */}
-      <div style={{
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        overflow: 'hidden',
-        position: 'relative'
-      }}>
+      {/* Main Content Area — full width, no sidebar gutter */}
         <header
           className="glass-header"
           style={{
             height: 'var(--header-height)',
+            minHeight: 'var(--header-height)',
+            maxHeight: 'var(--header-height)',
+            boxSizing: 'border-box',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -609,15 +590,32 @@ function AppContent() {
             flexShrink: 0,
             position: 'relative',
             transition: 'filter var(--transition-normal) var(--ease-out)',
-            background: isDark ? 'rgba(15, 17, 21, 0.75)' : 'rgba(255, 255, 255, 0.80)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            borderBottom: isDark ? '1px solid var(--glass-border)' : '1px solid rgba(226, 232, 240, 0.8)',
-            boxShadow: isDark ? 'none' : '0 1px 4px rgba(15, 23, 42, 0.04)',
+            background: isDark
+              ? 'linear-gradient(180deg, rgba(28, 32, 44, 0.82) 0%, rgba(14, 16, 22, 0.76) 100%)'
+              : 'linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(248, 250, 252, 0.78) 100%)',
+            backdropFilter: 'blur(36px) saturate(210%)',
+            WebkitBackdropFilter: 'blur(36px) saturate(210%)',
+            borderBottom: isDark
+              ? '1px solid rgba(255, 255, 255, 0.12)'
+              : '1px solid rgba(226, 232, 240, 0.75)',
+            boxShadow: isDark
+              ? '0 8px 32px -4px rgba(0, 0, 0, 0.50), inset 0 1px 1px 0 rgba(255, 255, 255, 0.20)'
+              : '0 8px 24px -4px rgba(15, 23, 42, 0.06), inset 0 1px 1px 0 rgba(255, 255, 255, 0.90)',
           }}
         >
-          {/* Left Side - New Bill Button + Calculator */}
+          {/* Left Side - Shop Menu + New Bill Button + Calculator */}
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', width: 'auto' }} ref={calcRef}>
+            {/* Shop Menu Dropdown (replaces sidebar) */}
+            <ShopMenuDropdown
+              navItems={navItems}
+              onNavigate={(item) => {
+                if (!isAdmin && !workerAllowedPaths.has(item.path)) {
+                  openUnlock(item.path);
+                  return;
+                }
+                navigate(item.path);
+              }}
+            />
             <button
               onClick={() => {
                 setPosKey(prev => prev + 1);
@@ -669,34 +667,12 @@ function AppContent() {
               Calculator
             </button>
 
-            {/* AI Assistant Header Button (Owner / Admin Only) */}
+            {/* AI Assistant Header Button (Owner / Admin Only) with Custom Outline */}
             {isAdmin && (
-              <button
-                id="header-ai-btn"
+              <AiHeaderButton
                 onClick={() => window.dispatchEvent(new CustomEvent('toggle-agent-chat'))}
-                title="Ask Your Business AI"
-                className="liquid-glass-button"
-                style={{
-                  background: 'rgba(249,115,22,0.12)',
-                  border: '1px solid rgba(249,115,22,0.4)',
-                  color: '#F97316',
-                  fontSize: 'var(--text-sm)',
-                  fontWeight: 'var(--font-medium)',
-                  flexShrink: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '7px',
-                  padding: '6px 12px 6px 9px',
-                  borderRadius: '20px',
-                  backdropFilter: 'var(--glass-blur)',
-                  WebkitBackdropFilter: 'var(--glass-blur)',
-                  boxShadow: '0 0 12px rgba(249,115,22,0.22)',
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                }}
-              >
-                <DynamicAiMascot size={22} glow={true} />
-                <span style={{ fontWeight: 650, letterSpacing: '0.01em' }}>Ask Your Business AI</span>
-              </button>
+                isDark={isDark}
+              />
             )}
 
             {/* Calculator Dropdown (Premium 24px Glassmorphism & High-Contrast Display) */}
@@ -953,14 +929,14 @@ function AppContent() {
 
               {/* Notification & Theme */}
             <div style={{ display: 'flex', gap: '8px', position: 'relative' }}>
-              {/* Redesigned Owner/Worker pill toggle */}
+              {/* Owner/Worker pill toggle */}
               <div
                 title={isAdmin ? 'Admin mode active' : 'Worker mode active'}
                 style={{
                   position: 'relative',
                   width: 'calc(240px * var(--display-zoom))',
                   height: 'calc(42px * var(--display-zoom))',
-                  borderRadius: 'calc(12px * var(--display-zoom))',
+                  borderRadius: 'calc(48px * var(--display-zoom))',
                   background: 'var(--bg-secondary)',
                   border: '1px solid var(--glass-border)',
                   backdropFilter: 'var(--glass-blur)',
@@ -979,7 +955,7 @@ function AppContent() {
                     left: isAdmin ? 'calc(4px * var(--display-zoom))' : 'calc(120px * var(--display-zoom))',
                     width: 'calc(116px * var(--display-zoom))',
                     height: 'calc(34px * var(--display-zoom))',
-                    borderRadius: 'calc(8px * var(--display-zoom))',
+                    borderRadius: 'calc(48px* var(--display-zoom))',
                     background: 'var(--primary-500)',
                     boxShadow: '0 4px 12px rgba(249, 115, 22, 0.2)',
                     zIndex: 1,
@@ -997,6 +973,7 @@ function AppContent() {
                     flex: 1,
                     height: '100%',
                     border: 'none',
+                    borderRadius: 'calc(48px* var(--display-zoom))',
                     background: 'transparent',
                     cursor: 'pointer',
                     fontSize: 'calc(13px * var(--display-zoom))',
@@ -1026,6 +1003,7 @@ function AppContent() {
                     flex: 1,
                     height: '100%',
                     border: 'none',
+                    borderRadius: 'calc(48px * var(--display-zoom))',
                     background: 'transparent',
                     cursor: 'pointer',
                     fontSize: 'calc(13px * var(--display-zoom))',
@@ -1201,7 +1179,7 @@ function AppContent() {
         </main>
 
 
-      </div> {/* End Main Content Area */}
+
 
       {/* Global Notification System */}
       <NotificationSystem />

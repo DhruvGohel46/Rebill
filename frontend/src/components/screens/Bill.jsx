@@ -2171,7 +2171,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
 
             paddingBottom: currentTheme.spacing[3],
 
-                 borderBottom: isDark ? `1px solid ${currentTheme.colors.border}` : '1.5px solid #E2E8F0',
+            borderBottom: isDark ? `1px solid ${currentTheme.colors.border}` : '1.5px solid #E2E8F0',
           }}>
             <h3 style={{
               margin: 0,
@@ -2524,27 +2524,27 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                 (activeField === 'kot' && kotNumber) ||
                 (activeField === 'customer' && customerName) ||
                 (activeField === 'mobile' && customerMobile)) && (
-                <button
-                  onClick={() => {
-                    if (activeField === 'table') setTableNumber('');
-                    if (activeField === 'kot') setKotNumber('');
-                    if (activeField === 'customer') setCustomerName('');
-                    if (activeField === 'mobile') setCustomerMobile('');
-                  }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: isDark ? 'var(--text-secondary)' : '#64748B',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    padding: '0 4px',
-                    lineHeight: 1
-                  }}
-                  title="Clear"
-                >
-                  ✕
-                </button>
-              )}
+                  <button
+                    onClick={() => {
+                      if (activeField === 'table') setTableNumber('');
+                      if (activeField === 'kot') setKotNumber('');
+                      if (activeField === 'customer') setCustomerName('');
+                      if (activeField === 'mobile') setCustomerMobile('');
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: isDark ? 'var(--text-secondary)' : '#64748B',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      padding: '0 4px',
+                      lineHeight: 1
+                    }}
+                    title="Clear"
+                  >
+                    ✕
+                  </button>
+                )}
             </div>
           )}
 
@@ -2590,6 +2590,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                 color: isDark ? '#94A3B8' : '#475569',
                 marginBottom: '8px',
                 paddingBottom: '6px',
+                paddingRight: '10px',
                 borderBottom: isDark ? '1px solid rgba(255,255,255,0.08)' : '1.5px solid #E2E8F0',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
@@ -2607,6 +2608,7 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
                     gridTemplateColumns: '2fr 1fr 1fr',
                     alignItems: 'center',
                     padding: '6px 0',
+                    paddingRight: '10px',
                     borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #F1F5F9',
                   }}>
                     <div>
@@ -2689,8 +2691,8 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
 
                     <div style={{
                       textAlign: 'right',
-                      fontSize: '13.5px',
-                      fontWeight: 800,
+                      fontSize: '17.5px',
+                      fontWeight: 700,
                       color: isDark ? '#F8FAFC' : '#0F172A',
                       fontVariantNumeric: 'tabular-nums'
                     }}>
@@ -2807,11 +2809,11 @@ const WorkingPOSInterface = ({ onBillCreated }) => {
               }}>Total Amount</span>
             </div>
             <span style={{
-              fontSize: '25px',
-              fontFamily: 'monospace',
-              fontWeight: 900,
+              fontSize: '26px',
+              fontFamily: "var(--font-primary, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif)",
+              fontWeight: 700,
               color: isDark ? '#FFFFFF' : '#0F172A',
-              letterSpacing: '-0.5px',
+              letterSpacing: '-0.02em',
               fontVariantNumeric: 'tabular-nums'
             }}>
               {formatCurrency(calculateTotal())}

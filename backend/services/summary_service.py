@@ -59,6 +59,8 @@ class SummaryService:
                         else 0.0
                     ),
                     "category_totals": {},
+                    "group_totals": {},
+                    "group_category_breakdown": {},
                     "first_bill_time": None,
                     "last_bill_time": None,
                     "average_bill_value": 0.0,
@@ -74,8 +76,9 @@ class SummaryService:
             first_bill_time = min(timestamps).split(" ")[1] if timestamps else None
             last_bill_time = max(timestamps).split(" ")[1] if timestamps else None
 
-            # Calculate category totals
+            # Calculate category & group breakdowns
             category_totals = self._calculate_category_totals(bills)
+            group_totals, group_category_breakdown = self._calculate_group_and_category_breakdowns(bills)
 
             # Get hourly sales breakdown
             hourly_sales = self._calculate_hourly_sales(bills)
@@ -92,6 +95,8 @@ class SummaryService:
                 "total_expenses": total_expenses,
                 "net_profit": net_profit,
                 "category_totals": category_totals,
+                "group_totals": group_totals,
+                "group_category_breakdown": group_category_breakdown,
                 "first_bill_time": first_bill_time,
                 "last_bill_time": last_bill_time,
                 "average_bill_value": average_bill_value,
@@ -107,11 +112,92 @@ class SummaryService:
                 "total_bills": 0,
                 "total_sales": 0.0,
                 "category_totals": {},
+                "group_totals": {},
+                "group_category_breakdown": {},
                 "first_bill_time": None,
                 "last_bill_time": None,
                 "average_bill_value": 0.0,
                 "error": str(e),
             }
+
+    def _calculate_group_and_category_breakdowns(self, bills: List[Dict]):
+        """Calculate total sales per group and group -> category breakdown"""
+        group_totals = {}
+        group_category_breakdown = {}
+
+        # Build lookup maps
+        cat_to_group = {}
+        prod_to_cat = {}
+        prod_to_group = {}
+        try:
+            from models import ItemGroup, Category, Product
+
+            groups = {g.id: g.name for g in ItemGroup.query.filter_by(deleted_at=None).all()}
+            categories = Category.query.all()
+            for c in categories:
+                g_name = groups.get(c.group_id, "General")
+                cat_to_group[c.name.strip().lower()] = (g_name, c.name.strip().title())
+                if c.id:
+                    cat_to_group[str(c.id)] = (g_name, c.name.strip().title())
+
+            prods = Product.query.all()
+            for p in prods:
+                if p.category_rel and p.category_rel.name:
+                    c_name = p.category_rel.name.strip().title()
+                    g_name = (
+                        p.category_rel.group.name
+                        if (p.category_rel.group and not p.category_rel.group.deleted_at)
+                        else "General"
+                    )
+                elif p.category:
+                    c_name = p.category.strip().title()
+                    g_name = cat_to_group.get(p.category.strip().lower(), ("General", c_name))[0]
+                else:
+                    c_name = "General"
+                    g_name = "General"
+                prod_to_cat[p.product_id] = c_name
+                prod_to_group[p.product_id] = g_name
+                if p.name:
+                    prod_to_cat[p.name.strip().lower()] = c_name
+                    prod_to_group[p.name.strip().lower()] = g_name
+        except Exception:
+            pass
+
+        import json
+
+        for bill in bills:
+            items = (
+                json.loads(bill["items"])
+                if isinstance(bill.get("items"), str)
+                else (bill.get("items") or [])
+            )
+            for product in items:
+                pid = product.get("product_id")
+                pname = (product.get("name") or "").strip().lower()
+                raw_cat = (product.get("category") or "").strip().lower()
+
+                g_name = prod_to_group.get(pid) or prod_to_group.get(pname)
+                c_name = prod_to_cat.get(pid) or prod_to_cat.get(pname)
+
+                if not g_name or not c_name:
+                    if raw_cat in cat_to_group:
+                        mapped_g, mapped_c = cat_to_group[raw_cat]
+                        g_name = g_name or mapped_g
+                        c_name = c_name or mapped_c
+
+                g_name = g_name or "General"
+                c_name = c_name or (raw_cat.title() if raw_cat else "General")
+
+                line_total = float(product.get("price", 0)) * float(product.get("quantity", 1))
+
+                group_totals[g_name] = group_totals.get(g_name, 0.0) + line_total
+                if g_name not in group_category_breakdown:
+                    group_category_breakdown[g_name] = {}
+                group_category_breakdown[g_name][c_name] = (
+                    group_category_breakdown[g_name].get(c_name, 0.0) + line_total
+                )
+
+        return group_totals, group_category_breakdown
 
     def _calculate_category_totals(self, bills: List[Dict]) -> Dict[str, float]:
         """Calculate total sales per category"""
@@ -193,6 +279,8 @@ class SummaryService:
                     "total_expenses": total_expenses,
                     "net_profit": 0.0 - total_expenses,
                     "category_totals": {},
+                    "group_totals": {},
+                    "group_category_breakdown": {},
                     "first_bill_time": None,
                     "last_bill_time": None,
                     "average_bill_value": 0.0,
@@ -201,6 +289,7 @@ class SummaryService:
             # Calculate summary using existing methods
             total_sales = sum(bill["total_amount"] for bill in bills)
             category_totals = self._calculate_category_totals(bills)
+            group_totals, group_category_breakdown = self._calculate_group_and_category_breakdowns(bills)
             hourly_sales = self._calculate_hourly_sales(bills)
 
             # Get first and last bill times
@@ -224,6 +313,8 @@ class SummaryService:
                 "total_expenses": total_expenses,
                 "net_profit": net_profit,
                 "category_totals": category_totals,
+                "group_totals": group_totals,
+                "group_category_breakdown": group_category_breakdown,
                 "hourly_sales": hourly_sales,
                 "first_bill_time": first_bill_time,
                 "last_bill_time": last_bill_time,
@@ -239,6 +330,8 @@ class SummaryService:
                 "total_bills": 0,
                 "total_sales": 0.0,
                 "category_totals": {},
+                "group_totals": {},
+                "group_category_breakdown": {},
                 "first_bill_time": None,
                 "last_bill_time": None,
                 "average_bill_value": 0.0,
@@ -461,8 +554,9 @@ class SummaryService:
             total_sales = sum(bill["total_amount"] for bill in bills)
             total_expenses = sum(expense["amount"] for expense in expenses)
 
-            # Category totals
+            # Category & Group totals
             category_totals = self._calculate_category_totals(bills)
+            group_totals, group_category_breakdown = self._calculate_group_and_category_breakdowns(bills)
             expense_category_totals = self._calculate_expense_category_totals(expenses)
 
             # Product breakdown (reusing logic)
@@ -514,6 +608,8 @@ class SummaryService:
                 "net_profit": total_sales - total_expenses,
                 "total_bills": len(bills),
                 "category_totals": category_totals,
+                "group_totals": group_totals,
+                "group_category_breakdown": group_category_breakdown,
                 "expense_category_totals": expense_category_totals,
                 "average_bill_value": total_sales / len(bills) if bills else 0.0,
                 "products": sorted_products,

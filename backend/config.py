@@ -46,7 +46,7 @@ class Config:
     MAX_CHARS_PER_LINE = 32
 
     # Shop information
-    SHOP_NAME = os.environ.get("SHOP_NAME") or "FAST FOOD SHOP"
+    SHOP_NAME = os.environ.get("SHOP_NAME") or "InfoOS POS"
     SHOP_ADDRESS = os.environ.get("SHOP_ADDRESS") or "Your Address Here"
     SHOP_PHONE = os.environ.get("SHOP_PHONE") or "Phone: XXXXXXXXXX"
 

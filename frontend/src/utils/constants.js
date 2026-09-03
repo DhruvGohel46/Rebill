@@ -124,7 +124,7 @@ export const VALIDATION = {
 // Print settings
 export const PRINT_SETTINGS = {
   MAX_CHARS_PER_LINE: 32,
-  SHOP_NAME: 'FAST FOOD SHOP',
+  SHOP_NAME: 'InfoOS POS',
   SHOP_ADDRESS: 'Your Address Here',
   SHOP_PHONE: 'Phone: XXXXXXXXXX'
 };

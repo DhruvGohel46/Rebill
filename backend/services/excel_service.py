@@ -31,6 +31,7 @@ class ExcelService:
                 "Time",
                 "Product ID",
                 "Product Name",
+                "Group",
                 "Category",
                 "Quantity",
                 "Unit Price",
@@ -53,7 +54,8 @@ class ExcelService:
                             bill["time"],
                             product["product_id"],
                             product["name"],
-                            product.get("category", "N/A"),  # Category might not be in bill data
+                            product.get("group", product.get("group_name", "General")),
+                            product.get("category", "General"),
                             product["quantity"],
                             f"{product['price']:.2f}",
                             f"{product['price'] * product['quantity']:.2f}",
@@ -88,8 +90,18 @@ class ExcelService:
                 writer.writerow(["First Bill Time", summary_data.get("first_bill_time", "N/A")])
                 writer.writerow(["Last Bill Time", summary_data.get("last_bill_time", "N/A")])
 
+                # Group-wise totals
+                group_totals = summary_data.get("group_totals", {})
+                if group_totals:
+                    writer.writerow(["", ""])  # Empty row
+                    writer.writerow(["=== GROUP WISE SALES ==="])
+                    writer.writerow(["Group", "Total Sales"])
+                    for grp, total in group_totals.items():
+                        writer.writerow([grp, f"{total:.2f}"])
+
                 # Category-wise totals
                 writer.writerow(["", ""])  # Empty row
+                writer.writerow(["=== CATEGORY WISE SALES ==="])
                 writer.writerow(["Category", "Total Sales"])
 
                 category_totals = summary_data.get("category_totals", {})
@@ -136,6 +148,15 @@ class ExcelService:
                 writer.writerow(["First Bill Time", summary_data.get("first_bill_time", "N/A")])
                 writer.writerow(["Last Bill Time", summary_data.get("last_bill_time", "N/A")])
 
+                # Group-wise totals
+                group_totals = summary_data.get("group_totals", {})
+                if group_totals:
+                    writer.writerow(["", ""])  # Empty row
+                    writer.writerow(["=== GROUP WISE SALES ==="])
+                    writer.writerow(["Group", "Total Sales"])
+                    for grp, total in group_totals.items():
+                        writer.writerow([grp, f"{total:.2f}"])
+
                 # Category-wise totals
                 writer.writerow(["", ""])  # Empty row
                 writer.writerow(["=== CATEGORY WISE SALES ==="])
@@ -156,6 +177,8 @@ class ExcelService:
                     "Time",
                     "Product ID",
                     "Product Name",
+                    "Group",
+                    "Category",
                     "Quantity",
                     "Unit Price",
                     "Line Total",
@@ -172,6 +195,8 @@ class ExcelService:
                             bill["time"],
                             product["product_id"],
                             product["name"],
+                            product.get("group", product.get("group_name", "General")),
+                            product.get("category", "General"),
                             product["quantity"],
                             f"{product['price']:.2f}",
                             f"{product['price'] * product['quantity']:.2f}",
