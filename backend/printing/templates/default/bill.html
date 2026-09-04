@@ -53,15 +53,11 @@
         <span class="order-type-bold"><strong>{{ bill.order_type | title }}</strong></span>
       </div>
       <div class="meta-row">
-        <span>{{ bill.time }}</span>
-        <span></span>
+        <span>Bill Time: {{ bill.time }}</span>
+        <span>Bill No.: {{ bill.bill_no }}</span>
       </div>
       <div class="meta-row">
         <span class="token-bold"><strong>{% if bill.kot_no %}KOT No.: {{ bill.kot_no }}{% else %}Token No.: {{ bill.today_token or bill.bill_no }}{% endif %}</strong></span>
-        <span></span>
-      </div>
-      <div class="meta-row">
-        <span>Bill No.: {{ bill.bill_no }}</span>
       </div>
     </div>
 

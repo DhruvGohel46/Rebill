@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSettings } from '../../context/SettingsContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 /**
  * ShopMenuDropdown
@@ -24,8 +25,14 @@ const getInitials = (name = '') =>
 const ShopMenuDropdown = ({ navItems = [], onNavigate }) => {
     const { isDark } = useTheme();
     const { settings } = useSettings();
+    const { isAdmin } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
+
+    const workerAllowedPaths = new Set(['/', '/live', '/analytics', '/reminders']);
+    const visibleNavItems = isAdmin
+        ? navItems
+        : navItems.filter((item) => !item.isLocked && workerAllowedPaths.has(item.path));
 
     const [open, setOpen] = useState(false);
     const wrapperRef = useRef(null);
@@ -119,10 +126,26 @@ const ShopMenuDropdown = ({ navItems = [], onNavigate }) => {
                         backdropFilter: 'blur(24px)',
                         WebkitBackdropFilter: 'blur(24px)',
                         borderRadius: '12px',
-                        border: 'none',
+                        border: '1px solid var(--glass-border)',
                         outline: 'none',
-                        boxShadow: 'var(--shadow-sm)',
-                        transition: 'background 0.15s ease',
+                        boxShadow: isDark
+                            ? '0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+                            : '0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.04)',
+                        transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.16)';
+                        e.currentTarget.style.boxShadow = isDark
+                            ? '0 4px 12px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.12)'
+                            : '0 4px 10px -2px rgba(15, 23, 42, 0.12), 0 2px 4px -2px rgba(15, 23, 42, 0.06)';
+                        e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.08)' : '#F8FAFC';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--glass-border)';
+                        e.currentTarget.style.boxShadow = isDark
+                            ? '0 2px 6px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+                            : '0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.04)';
+                        e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.05)' : '#FFFFFF';
                     }}
                     aria-expanded={false}
                     aria-haspopup="true"
@@ -382,7 +405,7 @@ const ShopMenuDropdown = ({ navItems = [], onNavigate }) => {
 
                                 {/* Nav Items List (Clean Naked Icons with App Theme Orange Accents) */}
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    {navItems.map((item, idx) => (
+                                    {visibleNavItems.map((item, idx) => (
                                         <NavRow
                                             key={item.id}
                                             item={item}

@@ -1,4 +1,4 @@
-/* Thermal Receipt Stylesheet - Standardized Font Size (Scaled by 0.8: 24px / 26px) */
+/* Thermal Receipt Stylesheet - Standardized Font Size (Scaled by 1.3x: 31px / 34px) */
 
 * {
   box-sizing: border-box;
@@ -8,7 +8,7 @@
 
 body {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 24px;
+  font-size: 31px;
   line-height: 1.35;
   color: #000;
   background-color: #fff;
@@ -22,75 +22,76 @@ body {
 
 .header {
   text-align: center;
-  margin-bottom: 8px;
+  margin-bottom: 2px;
 }
 
 .logo {
   max-width: 110px;
   height: auto;
-  margin-bottom: 6px;
+  margin-bottom: 1px;
 }
 
 .shop-name {
-  font-size: 26px;
+  font-size: 34px;
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: 1px;
 }
 
 .shop-address, .shop-contact {
-  font-size: 24px;
+  font-size: 31px;
   font-weight: 400;
 }
 
 .divider-solid {
   border-top: 2px solid #000;
-  margin: 8px 0;
+  margin: 2px 0;
 }
 
 .divider-dashed {
   border-top: 2px dashed #000;
-  margin: 8px 0;
+  margin: 2px 0;
 }
 
 .customer-section {
-  font-size: 24px;
+  font-size: 31px;
   font-weight: 400;
-  margin: 6px 0;
+  margin: 1px 0;
 }
 
 .metadata {
-  font-size: 24px;
+  font-size: 31px;
   font-weight: 400;
-  margin-bottom: 6px;
+  margin-bottom: 1px;
 }
 
 .meta-row {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 4px;
+  margin-bottom: 1px;
+  padding-right: 20px;
 }
 
 .order-type-bold, .token-bold {
   font-weight: 700;
-  font-size: 24px;
+  font-size: 31px;
 }
 
 .items-table {
   width: 100%;
   border-collapse: collapse;
-  margin: 6px 0;
+  margin: 2px 0;
 }
 
 .items-table th {
   font-weight: 700;
-  font-size: 24px;
+  font-size: 31px;
   padding: 6px 2px;
   border-bottom: 2px solid #000;
 }
 
 .items-table td {
   padding: 6px 2px;
-  font-size: 24px;
+  font-size: 31px;
   font-weight: 400;
 }
 
@@ -117,11 +118,11 @@ body {
 .item-name {
   word-break: break-word;
   font-weight: 400;
-  font-size: 24px;
+  font-size: 31px;
 }
 
 .item-sub {
-  font-size: 24px;
+  font-size: 31px;
   font-weight: 400;
 }
 
@@ -138,38 +139,38 @@ body {
 }
 
 .totals {
-  margin: 8px 0;
+  margin: 3px 0;
 }
 
 .total-row {
   display: flex;
   justify-content: space-between;
-  font-size: 24px;
+  font-size: 31px;
   font-weight: 400;
-  margin-bottom: 6px;
+  margin-bottom: 1px;
 }
 
 .grand-total {
-  font-size: 24px;
+  font-size: 31px;
   font-weight: 700;
-  margin-top: 6px;
+  margin-top: 2px;
 }
 
 .footer {
   text-align: center;
-  margin-top: 12px;
-  font-size: 24px;
+  margin-top: 2px;
+  font-size: 25px;
   font-weight: 400;
 }
 
 .footer-msg {
-  margin-bottom: 6px;
+  margin-bottom: 1px;
 }
 
 .qr-container {
   display: flex;
   justify-content: center;
-  margin-top: 8px;
+  margin-top: 2px;
 }
 
 .qr-code {

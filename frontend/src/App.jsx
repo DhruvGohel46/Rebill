@@ -152,7 +152,7 @@ function AppContent() {
         document.documentElement.style.setProperty('--text-scale', scale);
       }
       checkCatalogVersion();
-    } catch (_) {}
+    } catch (_) { }
   }, [_location, checkCatalogVersion]);
 
   // Sidebar removed — navigation is now in the header ShopMenuDropdown
@@ -269,7 +269,7 @@ function AppContent() {
         setCalcDisplay(formatted);
         setCalcExpression(expr + ' =');
         setCalcJustEvaluated(true);
-      } catch {}
+      } catch { }
       return;
     }
     const isOp = ['+', '-', '*', '/'].includes(value);
@@ -309,7 +309,7 @@ function AppContent() {
       try {
         const num = parseFloat(calcDisplay);
         if (!isNaN(num)) setCalcDisplay((num / 100).toString());
-      } catch {}
+      } catch { }
       return;
     }
     if (val === '+/-') {
@@ -373,11 +373,11 @@ function AppContent() {
 
     const unsubscribeInstallRequest = window.electronAPI.onInstallRequest(() => {
       const activeTasks = window.posActiveTasks ? Array.from(window.posActiveTasks) : [];
-      
+
       const checkAndRespond = async () => {
         // Also check if printing is currently running at the OS level
         const printingOs = window.electronAPI.isPrinting ? await window.electronAPI.isPrinting() : false;
-        
+
         const tasks = [...activeTasks];
         if (printingOs && !tasks.includes('printing')) {
           tasks.push('printing');
@@ -539,10 +539,9 @@ function AppContent() {
 
   const workerAllowedPaths = new Set(['/', '/live', '/analytics', '/reminders']);
 
-  const navItems = adminNavItems.map((item) => ({
-    ...item,
-    isLocked: !isAdmin && !workerAllowedPaths.has(item.path),
-  }));
+  const navItems = isAdmin
+    ? adminNavItems
+    : adminNavItems.filter((item) => workerAllowedPaths.has(item.path));
 
   const todayLabel = new Date().toLocaleDateString(undefined, {
     weekday: 'short',
@@ -574,128 +573,128 @@ function AppContent() {
       {/* Global API Error → Toast bridge */}
       <ApiErrorListener />
 
-      {/* Main Content Area — full width, no sidebar gutter */}
-        <header
-          className="glass-header"
-          style={{
-            height: 'var(--header-height)',
-            minHeight: 'var(--header-height)',
-            maxHeight: 'var(--header-height)',
-            boxSizing: 'border-box',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0 var(--spacing-6)',
-            zIndex: 2000,
-            flexShrink: 0,
-            position: 'relative',
-            transition: 'filter var(--transition-normal) var(--ease-out)',
-            background: isDark
-              ? 'linear-gradient(180deg, rgba(28, 32, 44, 0.82) 0%, rgba(14, 16, 22, 0.76) 100%)'
-              : 'linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(248, 250, 252, 0.78) 100%)',
-            backdropFilter: 'blur(36px) saturate(210%)',
-            WebkitBackdropFilter: 'blur(36px) saturate(210%)',
-            borderBottom: isDark
-              ? '1px solid rgba(255, 255, 255, 0.12)'
-              : '1px solid rgba(226, 232, 240, 0.75)',
-            boxShadow: isDark
-              ? '0 8px 32px -4px rgba(0, 0, 0, 0.50), inset 0 1px 1px 0 rgba(255, 255, 255, 0.20)'
-              : '0 8px 24px -4px rgba(15, 23, 42, 0.06), inset 0 1px 1px 0 rgba(255, 255, 255, 0.90)',
-          }}
-        >
-          {/* Left Side - Shop Menu + New Bill Button + Calculator */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', width: 'auto' }} ref={calcRef}>
-            {/* Shop Menu Dropdown (replaces sidebar) */}
-            <ShopMenuDropdown
-              navItems={navItems}
-              onNavigate={(item) => {
-                if (!isAdmin && !workerAllowedPaths.has(item.path)) {
-                  openUnlock(item.path);
-                  return;
-                }
-                navigate(item.path);
-              }}
+      {/* Main Header Area  */}
+      <header
+        className="glass-header"
+        style={{
+          height: 'var(--header-height)',
+          minHeight: 'var(--header-height)',
+          maxHeight: 'var(--header-height)',
+          boxSizing: 'border-box',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 var(--spacing-6)',
+          zIndex: 2000,
+          flexShrink: 0,
+          position: 'relative',
+          transition: 'filter var(--transition-normal) var(--ease-out)',
+          background: isDark
+            ? 'linear-gradient(180deg, rgba(28, 32, 44, 0.82) 0%, rgba(14, 16, 22, 0.76) 100%)'
+            : 'linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(248, 250, 252, 0.78) 100%)',
+          backdropFilter: 'blur(36px) saturate(210%)',
+          WebkitBackdropFilter: 'blur(36px) saturate(210%)',
+          borderBottom: isDark
+            ? '1px solid rgba(255, 255, 255, 0.12)'
+            : '1px solid rgba(226, 232, 240, 0.75)',
+          boxShadow: isDark
+            ? '0 8px 32px -4px rgba(0, 0, 0, 0.50), inset 0 1px 1px 0 rgba(255, 255, 255, 0.20)'
+            : '0 8px 24px -4px rgba(15, 23, 42, 0.06), inset 0 1px 1px 0 rgba(255, 255, 255, 0.90)',
+        }}
+      >
+        {/* Left Side - Shop Menu + New Bill Button + Calculator */}
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px', width: 'auto' }} ref={calcRef}>
+          {/* Shop Menu Dropdown (replaces sidebar) */}
+          <ShopMenuDropdown
+            navItems={navItems}
+            onNavigate={(item) => {
+              if (!isAdmin && !workerAllowedPaths.has(item.path)) {
+                openUnlock(item.path);
+                return;
+              }
+              navigate(item.path);
+            }}
+          />
+          <button
+            onClick={() => {
+              setPosKey(prev => prev + 1);
+              navigate('/', { replace: true, state: {} });
+            }}
+            className="liquid-glass-button"
+            style={{
+              fontSize: 'var(--text-sm)',
+              fontWeight: 'var(--font-medium)',
+              flexShrink: 0,
+            }}
+          >
+            Start New Bill
+          </button>
+
+          {/* Calculator Toggle Button */}
+          <button
+            id="calc-toggle-btn"
+            onClick={() => setShowCalculator(prev => !prev)}
+            title="Calculator (Alt)"
+            className="liquid-glass-button"
+            style={{
+              background: showCalculator ? 'rgba(249,115,22,0.2)' : 'var(--bg-secondary)',
+              border: showCalculator ? '1px solid var(--primary-500)' : '1px solid var(--glass-border)',
+              color: showCalculator ? 'var(--primary-400)' : 'var(--text-primary)',
+              fontSize: 'var(--text-sm)',
+              fontWeight: 'var(--font-medium)',
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              backdropFilter: 'var(--glass-blur)',
+              WebkitBackdropFilter: 'var(--glass-blur)',
+              boxShadow: showCalculator ? '0 0 14px rgba(249,115,22,0.35)' : 'var(--shadow-sm)',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <rect x="2" y="3" width="20" height="18" rx="2" />
+              <line x1="8" y1="10" x2="8" y2="10" />
+              <line x1="12" y1="10" x2="12" y2="10" />
+              <line x1="16" y1="10" x2="16" y2="10" />
+              <line x1="8" y1="14" x2="8" y2="14" />
+              <line x1="12" y1="14" x2="12" y2="14" />
+              <line x1="16" y1="14" x2="16" y2="14" />
+              <line x1="8" y1="18" x2="8" y2="18" />
+              <line x1="12" y1="18" x2="16" y2="18" />
+            </svg>
+            Calculator
+          </button>
+
+          {/* AI Assistant Header Button (Owner / Admin Only) with Custom Outline */}
+          {isAdmin && (
+            <AiHeaderButton
+              onClick={() => window.dispatchEvent(new CustomEvent('toggle-agent-chat'))}
+              isDark={isDark}
             />
-            <button
-              onClick={() => {
-                setPosKey(prev => prev + 1);
-                navigate('/', { replace: true, state: {} });
-              }}
-              className="liquid-glass-button"
+          )}
+
+          {/* Calculator Dropdown (Premium 24px Glassmorphism & High-Contrast Display) */}
+          {showCalculator && (
+            <div
+              ref={calcRef}
               style={{
-                fontSize: 'var(--text-sm)',
-                fontWeight: 'var(--font-medium)',
-                flexShrink: 0,
+                position: 'absolute',
+                top: 'calc(100% + 12px)',
+                left: 0,
+                zIndex: 9999,
+                width: '272px',
+                borderRadius: '24px',
+                background: 'var(--bg-primary, #18191D)',
+                border: '1.5px solid var(--glass-border, rgba(255, 255, 255, 0.12))',
+                boxShadow: '0 24px 60px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+                backdropFilter: 'blur(24px)',
+                WebkitBackdropFilter: 'blur(24px)',
+                padding: '16px',
+                animation: 'calcSlideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
               }}
             >
-              Start New Bill
-            </button>
-
-            {/* Calculator Toggle Button */}
-            <button
-              id="calc-toggle-btn"
-              onClick={() => setShowCalculator(prev => !prev)}
-              title="Calculator (Alt)"
-              className="liquid-glass-button"
-              style={{
-                background: showCalculator ? 'rgba(249,115,22,0.2)' : 'var(--bg-secondary)',
-                border: showCalculator ? '1px solid var(--primary-500)' : '1px solid var(--glass-border)',
-                color: showCalculator ? 'var(--primary-400)' : 'var(--text-primary)',
-                fontSize: 'var(--text-sm)',
-                fontWeight: 'var(--font-medium)',
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                backdropFilter: 'var(--glass-blur)',
-                WebkitBackdropFilter: 'var(--glass-blur)',
-                boxShadow: showCalculator ? '0 0 14px rgba(249,115,22,0.35)' : 'var(--shadow-sm)',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                <rect x="2" y="3" width="20" height="18" rx="2"/>
-                <line x1="8" y1="10" x2="8" y2="10"/>
-                <line x1="12" y1="10" x2="12" y2="10"/>
-                <line x1="16" y1="10" x2="16" y2="10"/>
-                <line x1="8" y1="14" x2="8" y2="14"/>
-                <line x1="12" y1="14" x2="12" y2="14"/>
-                <line x1="16" y1="14" x2="16" y2="14"/>
-                <line x1="8" y1="18" x2="8" y2="18"/>
-                <line x1="12" y1="18" x2="16" y2="18"/>
-              </svg>
-              Calculator
-            </button>
-
-            {/* AI Assistant Header Button (Owner / Admin Only) with Custom Outline */}
-            {isAdmin && (
-              <AiHeaderButton
-                onClick={() => window.dispatchEvent(new CustomEvent('toggle-agent-chat'))}
-                isDark={isDark}
-              />
-            )}
-
-            {/* Calculator Dropdown (Premium 24px Glassmorphism & High-Contrast Display) */}
-            {showCalculator && (
-              <div
-                ref={calcRef}
-                style={{
-                  position: 'absolute',
-                  top: 'calc(100% + 12px)',
-                  left: 0,
-                  zIndex: 9999,
-                  width: '272px',
-                  borderRadius: '24px',
-                  background: 'var(--bg-primary, #18191D)',
-                  border: '1.5px solid var(--glass-border, rgba(255, 255, 255, 0.12))',
-                  boxShadow: '0 24px 60px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05)',
-                  backdropFilter: 'blur(24px)',
-                  WebkitBackdropFilter: 'blur(24px)',
-                  padding: '16px',
-                  animation: 'calcSlideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                }}
-              >
-                <style>{`
+              <style>{`
                   @keyframes calcSlideDown {
                     from { opacity: 0; transform: translateY(-10px) scale(0.96); }
                     to   { opacity: 1; transform: translateY(0) scale(1); }
@@ -712,471 +711,471 @@ function AppContent() {
                   }
                 `}</style>
 
-                {/* Display Screen */}
-                <div
-                  style={{
-                    background: 'var(--bg-secondary, #111215)',
-                    borderRadius: '16px',
-                    padding: '12px 16px',
-                    marginBottom: '12px',
-                    minHeight: '74px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-end',
-                    justifyContent: 'flex-end',
-                    gap: '4px',
-                    border: '1px solid rgba(255, 255, 255, 0.08)',
-                    overflow: 'hidden',
-                    boxShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.4)'
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: '12px',
-                      color: 'var(--text-tertiary, #94A3B8)',
-                      minHeight: '18px',
-                      wordBreak: 'break-all',
-                      textAlign: 'right',
-                      fontFamily: 'monospace',
-                      fontWeight: 600,
-                      opacity: 0.85,
-                    }}
-                  >
-                    {calcExpression}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: calcDisplay.length > 9 ? '22px' : '28px',
-                      fontWeight: 900,
-                      color: calcResult !== null ? '#FF6B1A' : 'var(--text-primary, #FFFFFF)',
-                      wordBreak: 'break-all',
-                      textAlign: 'right',
-                      fontFamily: 'monospace',
-                      lineHeight: 1.1,
-                      letterSpacing: '-0.03em',
-                      transition: 'color 0.2s ease',
-                    }}
-                  >
-                    {calcDisplay}
-                  </div>
-                </div>
-
-                {/* Buttons Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                  {calcRows.map((row, ri) =>
-                    row.map((btn, bi) => {
-                      const isOp = ['/', '*', '-', '+'].includes(btn);
-                      const isClear = btn === 'C';
-                      const isEq = btn === '=';
-                      const isBack = btn === '⌫';
-                      const isPercent = btn === '%';
-                      const isSign = btn === '+/-';
-
-                      let btnBg = 'var(--bg-secondary, #1E1F24)';
-                      let btnColor = 'var(--text-primary, #F1F5F9)';
-                      let btnBorder = '1px solid rgba(255, 255, 255, 0.06)';
-                      let btnShadow = '0 2px 4px rgba(0,0,0,0.15)';
-
-                      if (isEq) {
-                        btnBg = 'linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%)';
-                        btnColor = '#FFFFFF';
-                        btnBorder = 'none';
-                        btnShadow = '0 4px 14px rgba(255, 107, 26, 0.4)';
-                      } else if (isClear) {
-                        btnBg = 'rgba(239, 68, 68, 0.14)';
-                        btnColor = '#EF4444';
-                        btnBorder = '1px solid rgba(239, 68, 68, 0.28)';
-                      } else if (isOp) {
-                        btnBg = 'rgba(255, 107, 26, 0.12)';
-                        btnColor = '#FF6B1A';
-                        btnBorder = '1px solid rgba(255, 107, 26, 0.25)';
-                      } else if (isBack || isPercent || isSign) {
-                        btnBg = 'rgba(255, 255, 255, 0.05)';
-                        btnColor = 'var(--text-secondary, #CBD5E1)';
-                        btnBorder = '1px solid rgba(255, 255, 255, 0.08)';
-                      }
-
-                      return (
-                        <button
-                          key={`${ri}-${bi}`}
-                          type="button"
-                          className="calc-btn-item"
-                          onClick={() => calcHandleSpecial(btn)}
-                          style={{
-                            height: '46px',
-                            borderRadius: '12px',
-                            cursor: 'pointer',
-                            fontSize: isOp || isEq ? '18px' : '15px',
-                            fontWeight: isOp || isClear || isEq ? 850 : 650,
-                            fontFamily: !isOp && !isClear && !isBack && !isSign && !isPercent ? 'monospace' : 'inherit',
-                            background: btnBg,
-                            color: btnColor,
-                            border: btnBorder,
-                            boxShadow: btnShadow,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          {btn}
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Center - Title (True Center Aligned with InfoOS Logo Symbol) */}
-          <div style={{
-            position: 'absolute',
-            left: '50%',
-            top: '50%',
-            transform: 'translate(-50%, -50%)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            maxWidth: 'calc(100% - 660px)',
-            pointerEvents: 'none',
-            zIndex: 1,
-          }}>
-            <h1
-              style={{
-                fontSize: 'calc(1.35rem * var(--display-zoom))',
-                fontWeight: 'var(--font-semibold)',
-                letterSpacing: '0.3px',
-                color: 'var(--primary-500)',
-                textShadow: '0 0 12px rgba(249,115,22,0.25)',
-                margin: 0,
-                cursor: 'default',
-                transition: 'opacity var(--transition-normal) var(--ease-out)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                pointerEvents: 'auto',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
-              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-            >
-              <img
-                src={infoosLogo}
-                alt="InfoOS"
-                style={{
-                  width: 'calc(24px * var(--display-zoom))',
-                  height: 'calc(24px * var(--display-zoom))',
-                  objectFit: 'contain',
-                  flexShrink: 0,
-                  filter: 'drop-shadow(0 2px 6px rgba(249, 115, 22, 0.35))'
-                }}
-              />
-              <span>InfoOS</span>
-              <span style={{
-                fontSize: 'calc(0.85rem * var(--display-zoom))',
-                fontWeight: 'var(--font-normal)',
-                color: 'var(--text-secondary)',
-                opacity: 0.65,
-                marginLeft: '4px',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}>
-                ({settings.shop_name || 'Burger Bhau'})
-              </span>
-            </h1>
-          </div>
-
-          {/* Right Side - Date & Theme */}
-          <div style={{
-            width: '300px',
-            display: 'flex',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            gap: 'var(--spacing-4)'
-          }}>
-            {/* Date Chip */}
-            <div
-              className="rounded-pill"
-              style={{
-                height: 'calc(42px * var(--display-zoom))',
-                display: 'flex',
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '0 calc(16px * var(--display-zoom))',
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--glass-border)',
-                fontSize: 'calc(13px * var(--display-zoom))',
-                fontWeight: 600,
-                color: 'var(--text-secondary)',
-                cursor: 'default',
-                transition: 'all 0.2s ease',
-                backdropFilter: 'var(--glass-blur)',
-                WebkitBackdropFilter: 'var(--glass-blur)',
-                boxShadow: 'var(--shadow-sm)',
-                whiteSpace: 'nowrap',
-                gap: 'calc(8px * var(--display-zoom))'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--glass-header)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
-            >
-              <IoCalendarOutline size={16} style={{ opacity: 0.7 }} />
-              <span>{todayLabel}</span>
-            </div>
-
-              {/* Notification & Theme */}
-            <div style={{ display: 'flex', gap: '8px', position: 'relative' }}>
-              {/* Owner/Worker pill toggle */}
+              {/* Display Screen */}
               <div
-                title={isAdmin ? 'Admin mode active' : 'Worker mode active'}
                 style={{
-                  position: 'relative',
-                  width: 'calc(240px * var(--display-zoom))',
-                  height: 'calc(42px * var(--display-zoom))',
-                  borderRadius: 'calc(48px * var(--display-zoom))',
-                  background: 'var(--bg-secondary)',
-                  border: '1px solid var(--glass-border)',
-                  backdropFilter: 'var(--glass-blur)',
-                  WebkitBackdropFilter: 'var(--glass-blur)',
+                  background: 'var(--bg-secondary, #111215)',
+                  borderRadius: '16px',
+                  padding: '12px 16px',
+                  marginBottom: '12px',
+                  minHeight: '74px',
                   display: 'flex',
-                  alignItems: 'center',
-                  padding: 'calc(4px * var(--display-zoom))',
-                  boxShadow: 'var(--shadow-card)',
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                  justifyContent: 'flex-end',
+                  gap: '4px',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  overflow: 'hidden',
+                  boxShadow: 'inset 0 2px 8px rgba(0, 0, 0, 0.4)'
                 }}
               >
-                {/* Sliding Indicator (CSS-transition driven for zoom scaling correctness) */}
                 <div
                   style={{
-                    position: 'absolute',
-                    top: 'calc(4px * var(--display-zoom))',
-                    left: isAdmin ? 'calc(4px * var(--display-zoom))' : 'calc(120px * var(--display-zoom))',
-                    width: 'calc(116px * var(--display-zoom))',
-                    height: 'calc(34px * var(--display-zoom))',
-                    borderRadius: 'calc(48px* var(--display-zoom))',
-                    background: 'var(--primary-500)',
-                    boxShadow: '0 4px 12px rgba(249, 115, 22, 0.2)',
-                    zIndex: 1,
-                    transition: 'left 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                    fontSize: '12px',
+                    color: 'var(--text-tertiary, #94A3B8)',
+                    minHeight: '18px',
+                    wordBreak: 'break-all',
+                    textAlign: 'right',
+                    fontFamily: 'monospace',
+                    fontWeight: 600,
+                    opacity: 0.85,
                   }}
-                />
-
-                <button
-                  onClick={() => {
-                    if (!isAdmin) openUnlock(pendingPath || null);
-                  }}
+                >
+                  {calcExpression}
+                </div>
+                <div
                   style={{
-                    position: 'relative',
-                    zIndex: 2,
-                    flex: 1,
-                    height: '100%',
-                    border: 'none',
-                    borderRadius: 'calc(48px* var(--display-zoom))',
-                    background: 'transparent',
-                    cursor: 'pointer',
-                    fontSize: 'calc(13px * var(--display-zoom))',
-                    fontWeight: 700,
-                    color: isAdmin ? 'var(--text-inverse)' : 'var(--text-tertiary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 'calc(6px * var(--display-zoom))',
+                    fontSize: calcDisplay.length > 9 ? '22px' : '28px',
+                    fontWeight: 900,
+                    color: calcResult !== null ? '#FF6B1A' : 'var(--text-primary, #FFFFFF)',
+                    wordBreak: 'break-all',
+                    textAlign: 'right',
+                    fontFamily: 'monospace',
+                    lineHeight: 1.1,
+                    letterSpacing: '-0.03em',
                     transition: 'color 0.2s ease',
                   }}
                 >
-                  <IoShieldCheckmarkOutline size={16} />
-                  Owner
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (isAdmin) {
-                      lockToWorker();
-                      navigate('/');
-                    }
-                  }}
-                  style={{
-                    position: 'relative',
-                    zIndex: 2,
-                    flex: 1,
-                    height: '100%',
-                    border: 'none',
-                    borderRadius: 'calc(48px * var(--display-zoom))',
-                    background: 'transparent',
-                    cursor: 'pointer',
-                    fontSize: 'calc(13px * var(--display-zoom))',
-                    fontWeight: 700,
-                    color: !isAdmin ? 'var(--text-inverse)' : 'var(--text-tertiary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 'calc(6px * var(--display-zoom))',
-                    transition: 'color 0.2s ease',
-                  }}
-                >
-                  <IoPersonOutline size={16} />
-                  Worker
-                </button>
+                  {calcDisplay}
+                </div>
               </div>
 
-              {/* Notification Center Bell Button */}
-              <button
-                id="infoos-notification-bell-btn"
-                onClick={toggleCenter}
-                className="rounded-lg"
+              {/* Buttons Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                {calcRows.map((row, ri) =>
+                  row.map((btn, bi) => {
+                    const isOp = ['/', '*', '-', '+'].includes(btn);
+                    const isClear = btn === 'C';
+                    const isEq = btn === '=';
+                    const isBack = btn === '⌫';
+                    const isPercent = btn === '%';
+                    const isSign = btn === '+/-';
+
+                    let btnBg = 'var(--bg-secondary, #1E1F24)';
+                    let btnColor = 'var(--text-primary, #F1F5F9)';
+                    let btnBorder = '1px solid rgba(255, 255, 255, 0.06)';
+                    let btnShadow = '0 2px 4px rgba(0,0,0,0.15)';
+
+                    if (isEq) {
+                      btnBg = 'linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%)';
+                      btnColor = '#FFFFFF';
+                      btnBorder = 'none';
+                      btnShadow = '0 4px 14px rgba(255, 107, 26, 0.4)';
+                    } else if (isClear) {
+                      btnBg = 'rgba(239, 68, 68, 0.14)';
+                      btnColor = '#EF4444';
+                      btnBorder = '1px solid rgba(239, 68, 68, 0.28)';
+                    } else if (isOp) {
+                      btnBg = 'rgba(255, 107, 26, 0.12)';
+                      btnColor = '#FF6B1A';
+                      btnBorder = '1px solid rgba(255, 107, 26, 0.25)';
+                    } else if (isBack || isPercent || isSign) {
+                      btnBg = 'rgba(255, 255, 255, 0.05)';
+                      btnColor = 'var(--text-secondary, #CBD5E1)';
+                      btnBorder = '1px solid rgba(255, 255, 255, 0.08)';
+                    }
+
+                    return (
+                      <button
+                        key={`${ri}-${bi}`}
+                        type="button"
+                        className="calc-btn-item"
+                        onClick={() => calcHandleSpecial(btn)}
+                        style={{
+                          height: '46px',
+                          borderRadius: '12px',
+                          cursor: 'pointer',
+                          fontSize: isOp || isEq ? '18px' : '15px',
+                          fontWeight: isOp || isClear || isEq ? 850 : 650,
+                          fontFamily: !isOp && !isClear && !isBack && !isSign && !isPercent ? 'monospace' : 'inherit',
+                          background: btnBg,
+                          color: btnColor,
+                          border: btnBorder,
+                          boxShadow: btnShadow,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {btn}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Center - Title (True Center Aligned with InfoOS Logo Symbol) */}
+        <div style={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          maxWidth: 'calc(100% - 660px)',
+          pointerEvents: 'none',
+          zIndex: 1,
+        }}>
+          <h1
+            style={{
+              fontSize: 'calc(1.35rem * var(--display-zoom))',
+              fontWeight: 'var(--font-semibold)',
+              letterSpacing: '0.3px',
+              color: 'var(--primary-500)',
+              textShadow: '0 0 12px rgba(249,115,22,0.25)',
+              margin: 0,
+              cursor: 'default',
+              transition: 'opacity var(--transition-normal) var(--ease-out)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              pointerEvents: 'auto',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.85'}
+            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+          >
+            <img
+              src={infoosLogo}
+              alt="InfoOS"
+              style={{
+                width: 'calc(24px * var(--display-zoom))',
+                height: 'calc(24px * var(--display-zoom))',
+                objectFit: 'contain',
+                flexShrink: 0,
+                filter: 'drop-shadow(0 2px 6px rgba(249, 115, 22, 0.35))'
+              }}
+            />
+            <span>InfoOS</span>
+            <span style={{
+              fontSize: 'calc(0.85rem * var(--display-zoom))',
+              fontWeight: 'var(--font-normal)',
+              color: 'var(--text-secondary)',
+              opacity: 0.65,
+              marginLeft: '4px',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              ({settings.shop_name || 'Burger Bhau'})
+            </span>
+          </h1>
+        </div>
+
+        {/* Right Side - Date & Theme */}
+        <div style={{
+          width: '300px',
+          display: 'flex',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          gap: 'var(--spacing-4)'
+        }}>
+          {/* Date Chip */}
+          <div
+            className="rounded-pill"
+            style={{
+              height: 'calc(42px * var(--display-zoom))',
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0 calc(16px * var(--display-zoom))',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--glass-border)',
+              fontSize: 'calc(13px * var(--display-zoom))',
+              fontWeight: 600,
+              color: 'var(--text-secondary)',
+              cursor: 'default',
+              transition: 'all 0.2s ease',
+              backdropFilter: 'var(--glass-blur)',
+              WebkitBackdropFilter: 'var(--glass-blur)',
+              boxShadow: 'var(--shadow-sm)',
+              whiteSpace: 'nowrap',
+              gap: 'calc(8px * var(--display-zoom))'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--glass-header)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-secondary)'}
+          >
+            <IoCalendarOutline size={16} style={{ opacity: 0.7 }} />
+            <span>{todayLabel}</span>
+          </div>
+
+          {/* Notification & Theme */}
+          <div style={{ display: 'flex', gap: '8px', position: 'relative' }}>
+            {/* Owner/Worker pill toggle */}
+            <div
+              title={isAdmin ? 'Admin mode active' : 'Worker mode active'}
+              style={{
+                position: 'relative',
+                width: 'calc(240px * var(--display-zoom))',
+                height: 'calc(42px * var(--display-zoom))',
+                borderRadius: 'calc(48px * var(--display-zoom))',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--glass-border)',
+                backdropFilter: 'var(--glass-blur)',
+                WebkitBackdropFilter: 'var(--glass-blur)',
+                display: 'flex',
+                alignItems: 'center',
+                padding: 'calc(8px * var(--display-zoom))',
+                boxShadow: 'var(--shadow-card)',
+              }}
+            >
+              {/* Sliding Indicator (CSS-transition driven for zoom scaling correctness) */}
+              <div
                 style={{
-                  width: 'calc(40px * var(--display-zoom))',
-                  height: 'calc(40px * var(--display-zoom))',
-                  border: unreadCount > 0
-                    ? (isDark ? '1.5px solid rgba(255, 150, 40, 0.75)' : '1.5px solid #FF8A00')
-                    : (isDark ? '1px solid var(--glass-border)' : '1px solid #CBD5E1'),
-                  background: unreadCount > 0
-                    ? (isDark
-                        ? 'linear-gradient(135deg, rgba(255, 140, 30, 0.28) 0%, rgba(255, 100, 0, 0.14) 50%, rgba(180, 60, 0, 0.24) 100%)'
-                        : '#FFF7ED')
-                    : (isDark ? 'var(--glass-card)' : '#FFFFFF'),
-                  color: unreadCount > 0 ? '#FF7A00' : (isDark ? 'var(--text-primary)' : '#475569'),
-                  boxShadow: unreadCount > 0
-                    ? (isDark
-                        ? '0 0 16px rgba(255, 122, 0, 0.55), 0 0 32px rgba(255, 122, 0, 0.25), inset 0 1.5px 2px rgba(255, 255, 255, 0.4), inset 0 -2px 5px rgba(0, 0, 0, 0.4)'
-                        : '0 2px 8px rgba(249, 115, 22, 0.18)')
-                    : (isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)'),
+                  position: 'absolute',
+                  top: 'calc(4px * var(--display-zoom))',
+                  left: isAdmin ? 'calc(4px * var(--display-zoom))' : 'calc(120px * var(--display-zoom))',
+                  width: 'calc(116px * var(--display-zoom))',
+                  height: 'calc(34px * var(--display-zoom))',
+                  borderRadius: 'calc(48px* var(--display-zoom))',
+                  background: 'var(--primary-500)',
+                  boxShadow: '0 4px 12px rgba(249, 115, 22, 0.2)',
+                  zIndex: 1,
+                  transition: 'left 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
+                }}
+              />
+
+              <button
+                onClick={() => {
+                  if (!isAdmin) openUnlock(pendingPath || null);
+                }}
+                style={{
+                  position: 'relative',
+                  zIndex: 2,
+                  flex: 1,
+                  height: '100%',
+                  border: 'none',
+                  borderRadius: 'calc(48px* var(--display-zoom))',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  fontSize: 'calc(13px * var(--display-zoom))',
+                  fontWeight: 700,
+                  color: isAdmin ? 'var(--text-inverse)' : 'var(--text-tertiary)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  cursor: 'pointer',
-                  position: 'relative',
-                  transform: unreadCount > 0 ? 'translateY(-1px)' : 'none',
-                  transition: 'all 0.2s ease',
+                  gap: 'calc(6px * var(--display-zoom))',
+                  transition: 'color 0.2s ease',
                 }}
-                onMouseEnter={(e) => {
-                  if (unreadCount > 0) {
-                    e.currentTarget.style.transform = 'translateY(-2px) scale(1.03)';
-                    e.currentTarget.style.boxShadow = isDark
-                      ? '0 0 20px rgba(255, 122, 0, 0.75), 0 0 36px rgba(255, 122, 0, 0.35)'
-                      : '0 4px 12px rgba(249, 115, 22, 0.28)';
-                    if (!isDark) e.currentTarget.style.background = '#FFEDD5';
-                  } else {
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                    if (!isDark) {
-                      e.currentTarget.style.background = '#F8FAFC';
-                      e.currentTarget.style.borderColor = '#94A3B8';
-                    }
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (unreadCount > 0) {
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = isDark
-                      ? '0 0 16px rgba(255, 122, 0, 0.55), 0 0 32px rgba(255, 122, 0, 0.25), inset 0 1.5px 2px rgba(255, 255, 255, 0.4), inset 0 -2px 5px rgba(0, 0, 0, 0.4)'
-                      : '0 2px 8px rgba(249, 115, 22, 0.18)';
-                    if (!isDark) e.currentTarget.style.background = '#FFF7ED';
-                  } else {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    if (!isDark) {
-                      e.currentTarget.style.background = '#FFFFFF';
-                      e.currentTarget.style.borderColor = '#CBD5E1';
-                    }
-                  }
-                }}
-                title={unreadCount > 0 ? `${unreadCount} unread notifications` : 'Notifications'}
               >
-                {unreadCount > 0 ? (
-                  <IoNotifications
-                    size={20}
-                    style={{
-                      color: isDark ? '#FF7A00' : '#FF6B00',
-                      filter: isDark ? 'drop-shadow(0 0 6px rgba(255, 122, 0, 0.7))' : 'none',
-                      transition: 'all 0.2s ease',
-                    }}
-                  />
-                ) : (
-                  <IoNotificationsOutline
-                    size={20}
-                    style={{
-                      color: isDark ? 'var(--text-primary)' : '#475569',
-                      transition: 'all 0.2s ease',
-                    }}
-                  />
-                )}
+                <IoShieldCheckmarkOutline size={16} />
+                Owner
               </button>
 
               <button
-                onClick={toggleTheme}
-                className="rounded-lg"
+                onClick={() => {
+                  if (isAdmin) {
+                    lockToWorker();
+                    navigate('/');
+                  }
+                }}
                 style={{
-                  width: 'calc(40px * var(--display-zoom))',
-                  height: 'calc(40px * var(--display-zoom))',
-                  padding: 0,
-                  background: isDark ? 'var(--glass-card)' : '#FFFFFF',
-                  color: isDark ? 'var(--text-primary)' : '#334155',
+                  position: 'relative',
+                  zIndex: 2,
+                  flex: 1,
+                  height: '100%',
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  fontSize: 'calc(13px * var(--display-zoom))',
+                  borderRadius: 'calc(48px* var(--display-zoom))',
+                  fontWeight: 700,
+                  color: !isAdmin ? 'var(--text-inverse)' : 'var(--text-tertiary)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  cursor: 'pointer',
-                  border: isDark ? '1px solid var(--glass-border)' : '1px solid #CBD5E1',
-                  boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
-                  transition: 'all var(--transition-normal) var(--ease-out)',
+                  gap: 'calc(6px * var(--display-zoom))',
+                  transition: 'color 0.2s ease',
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
+              >
+                <IoPersonOutline size={16} />
+                Worker
+              </button>
+            </div>
+
+            {/* Notification Center Bell Button */}
+            <button
+              id="infoos-notification-bell-btn"
+              onClick={toggleCenter}
+              className="rounded-lg"
+              style={{
+                width: 'calc(40px * var(--display-zoom))',
+                height: 'calc(40px * var(--display-zoom))',
+                border: unreadCount > 0
+                  ? (isDark ? '1.5px solid rgba(255, 150, 40, 0.75)' : '1.5px solid #FF8A00')
+                  : (isDark ? '1px solid var(--glass-border)' : '1px solid #CBD5E1'),
+                background: unreadCount > 0
+                  ? (isDark
+                    ? 'linear-gradient(135deg, rgba(255, 140, 30, 0.28) 0%, rgba(255, 100, 0, 0.14) 50%, rgba(180, 60, 0, 0.24) 100%)'
+                    : '#FFF7ED')
+                  : (isDark ? 'var(--glass-card)' : '#FFFFFF'),
+                color: unreadCount > 0 ? '#FF7A00' : (isDark ? 'var(--text-primary)' : '#475569'),
+                boxShadow: unreadCount > 0
+                  ? (isDark
+                    ? '0 0 16px rgba(255, 122, 0, 0.55), 0 0 32px rgba(255, 122, 0, 0.25), inset 0 1.5px 2px rgba(255, 255, 255, 0.4), inset 0 -2px 5px rgba(0, 0, 0, 0.4)'
+                    : '0 2px 8px rgba(249, 115, 22, 0.18)')
+                  : (isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)'),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                position: 'relative',
+                transform: unreadCount > 0 ? 'translateY(-1px)' : 'none',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (unreadCount > 0) {
+                  e.currentTarget.style.transform = 'translateY(-2px) scale(1.03)';
+                  e.currentTarget.style.boxShadow = isDark
+                    ? '0 0 20px rgba(255, 122, 0, 0.75), 0 0 36px rgba(255, 122, 0, 0.35)'
+                    : '0 4px 12px rgba(249, 115, 22, 0.28)';
+                  if (!isDark) e.currentTarget.style.background = '#FFEDD5';
+                } else {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
                   if (!isDark) {
                     e.currentTarget.style.background = '#F8FAFC';
                     e.currentTarget.style.borderColor = '#94A3B8';
                   }
-                }}
-                onMouseLeave={(e) => {
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (unreadCount > 0) {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = isDark
+                    ? '0 0 16px rgba(255, 122, 0, 0.55), 0 0 32px rgba(255, 122, 0, 0.25), inset 0 1.5px 2px rgba(255, 255, 255, 0.4), inset 0 -2px 5px rgba(0, 0, 0, 0.4)'
+                    : '0 2px 8px rgba(249, 115, 22, 0.18)';
+                  if (!isDark) e.currentTarget.style.background = '#FFF7ED';
+                } else {
                   e.currentTarget.style.transform = 'translateY(0)';
                   if (!isDark) {
                     e.currentTarget.style.background = '#FFFFFF';
                     e.currentTarget.style.borderColor = '#CBD5E1';
                   }
-                }}
-                title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              >
-                {isDark ? (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
-                ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1E293B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
-                )}
-              </button>
-            </div>
+                }
+              }}
+              title={unreadCount > 0 ? `${unreadCount} unread notifications` : 'Notifications'}
+            >
+              {unreadCount > 0 ? (
+                <IoNotifications
+                  size={20}
+                  style={{
+                    color: isDark ? '#FF7A00' : '#FF6B00',
+                    filter: isDark ? 'drop-shadow(0 0 6px rgba(255, 122, 0, 0.7))' : 'none',
+                    transition: 'all 0.2s ease',
+                  }}
+                />
+              ) : (
+                <IoNotificationsOutline
+                  size={20}
+                  style={{
+                    color: isDark ? 'var(--text-primary)' : '#475569',
+                    transition: 'all 0.2s ease',
+                  }}
+                />
+              )}
+            </button>
+
+            <button
+              onClick={toggleTheme}
+              className="rounded-lg"
+              style={{
+                width: 'calc(40px * var(--display-zoom))',
+                height: 'calc(40px * var(--display-zoom))',
+                padding: 0,
+                background: isDark ? 'var(--glass-card)' : '#FFFFFF',
+                color: isDark ? 'var(--text-primary)' : '#334155',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                border: isDark ? '1px solid var(--glass-border)' : '1px solid #CBD5E1',
+                boxShadow: isDark ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.04)',
+                transition: 'all var(--transition-normal) var(--ease-out)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                if (!isDark) {
+                  e.currentTarget.style.background = '#F8FAFC';
+                  e.currentTarget.style.borderColor = '#94A3B8';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                if (!isDark) {
+                  e.currentTarget.style.background = '#FFFFFF';
+                  e.currentTarget.style.borderColor = '#CBD5E1';
+                }
+              }}
+              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {isDark ? (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5" /><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" /></svg>
+              ) : (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1E293B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+              )}
+            </button>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* Main Content */}
-        <main style={{
-          flex: 1,
-          display: 'flex', // Enable flex for children to stretch
-          flexDirection: 'column',
-          minHeight: 0,
-          margin: 0,
-          padding: 0,
-          overflow: 'hidden', // Disable global scroll, handle per-screen
-          position: 'relative'
-        }}>
-          <Routes>
-            <Route path="/" element={<WorkingPOSInterface key={posKey} onBillCreated={handleBillCreated} />} />
-            <Route path="/live" element={<LiveOrders />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/inventory" element={<AdminRoute><Inventory /></AdminRoute>} />
-            <Route path="/management" element={<AdminRoute><ProductManagement /></AdminRoute>} />
+      {/* Main Content */}
+      <main style={{
+        flex: 1,
+        display: 'flex', // Enable flex for children to stretch
+        flexDirection: 'column',
+        minHeight: 0,
+        margin: 0,
+        padding: 0,
+        overflow: 'hidden', // Disable global scroll, handle per-screen
+        position: 'relative'
+      }}>
+        <Routes>
+          <Route path="/" element={<WorkingPOSInterface key={posKey} onBillCreated={handleBillCreated} />} />
+          <Route path="/live" element={<LiveOrders />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/inventory" element={<AdminRoute><Inventory /></AdminRoute>} />
+          <Route path="/management" element={<AdminRoute><ProductManagement /></AdminRoute>} />
 
-            {/* Worker Routes */}
-            <Route path="/workers" element={<AdminRoute><WorkersDashboard /></AdminRoute>} />
-            <Route path="/workers/list" element={<AdminRoute><WorkerList /></AdminRoute>} /> {/* Optional alias if needed, but dashboard is main entry */}
-            <Route path="/workers/:id" element={<AdminRoute><WorkerProfile /></AdminRoute>} />
-            <Route path="/workers/attendance" element={<AdminRoute><Attendance /></AdminRoute>} />
-            <Route path="/workers/salary" element={<AdminRoute><SalaryManager /></AdminRoute>} />
+          {/* Worker Routes */}
+          <Route path="/workers" element={<AdminRoute><WorkersDashboard /></AdminRoute>} />
+          <Route path="/workers/list" element={<AdminRoute><WorkerList /></AdminRoute>} /> {/* Optional alias if needed, but dashboard is main entry */}
+          <Route path="/workers/:id" element={<AdminRoute><WorkerProfile /></AdminRoute>} />
+          <Route path="/workers/attendance" element={<AdminRoute><Attendance /></AdminRoute>} />
+          <Route path="/workers/salary" element={<AdminRoute><SalaryManager /></AdminRoute>} />
 
-            <Route path="/expenses" element={<AdminRoute><Expenses /></AdminRoute>} />
-            <Route path="/reminders" element={<Reminders />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<WorkingPOSInterface key={posKey} onBillCreated={handleBillCreated} />} />
-          </Routes>
-        </main>
+          <Route path="/expenses" element={<AdminRoute><Expenses /></AdminRoute>} />
+          <Route path="/reminders" element={<Reminders />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="*" element={<WorkingPOSInterface key={posKey} onBillCreated={handleBillCreated} />} />
+        </Routes>
+      </main>
 
 
 
@@ -1196,260 +1195,260 @@ function AppContent() {
       {/* Global Admin Agentic AI Assistant */}
       <AgentChatPanel />
       {showAttendancePrompt && (
-          <div style={{
-            position: 'fixed', inset: 0, zIndex: 2000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backgroundColor: isDark ? 'rgba(8, 9, 13, 0.72)' : 'rgba(15, 23, 42, 0.45)',
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
-            padding: '16px'
-          }}>
-            <div
-              style={{
-                padding: '28px 30px',
-                maxWidth: '440px',
-                width: '100%',
-                borderRadius: '24px',
-                border: isDark ? '1px solid rgba(255, 107, 26, 0.25)' : '1.5px solid #E2E8F0',
-                background: isDark ? 'linear-gradient(165deg, #161A26 0%, #0E1018 100%)' : '#FFFFFF',
-                boxShadow: isDark
-                  ? '0 24px 60px -10px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 107, 26, 0.08)'
-                  : '0 20px 50px -10px rgba(15, 23, 42, 0.15), 0 0 1px 1px rgba(0, 0, 0, 0.04)',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-            >
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 2000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backgroundColor: isDark ? 'rgba(8, 9, 13, 0.72)' : 'rgba(15, 23, 42, 0.45)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          padding: '16px'
+        }}>
+          <div
+            style={{
+              padding: '28px 30px',
+              maxWidth: '440px',
+              width: '100%',
+              borderRadius: '24px',
+              border: isDark ? '1px solid rgba(255, 107, 26, 0.25)' : '1.5px solid #E2E8F0',
+              background: isDark ? 'linear-gradient(165deg, #161A26 0%, #0E1018 100%)' : '#FFFFFF',
+              boxShadow: isDark
+                ? '0 24px 60px -10px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 107, 26, 0.08)'
+                : '0 20px 50px -10px rgba(15, 23, 42, 0.15), 0 0 1px 1px rgba(0, 0, 0, 0.04)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+          >
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              marginBottom: '16px'
+            }}>
               <div style={{
+                width: '50px',
+                height: '50px',
+                borderRadius: '16px',
+                background: isDark ? 'rgba(255, 107, 26, 0.15)' : '#FFF7ED',
+                border: isDark ? '1px solid rgba(255, 107, 26, 0.3)' : '1.5px solid #FDBA74',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '16px',
-                marginBottom: '16px'
+                justifyContent: 'center',
+                flexShrink: 0,
+                boxShadow: '0 4px 12px rgba(255, 107, 26, 0.15)'
               }}>
-                <div style={{
-                  width: '50px',
-                  height: '50px',
-                  borderRadius: '16px',
-                  background: isDark ? 'rgba(255, 107, 26, 0.15)' : '#FFF7ED',
-                  border: isDark ? '1px solid rgba(255, 107, 26, 0.3)' : '1.5px solid #FDBA74',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  boxShadow: '0 4px 12px rgba(255, 107, 26, 0.15)'
-                }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EA580C" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 style={{
-                    margin: 0,
-                    color: isDark ? '#FFFFFF' : '#0F172A',
-                    fontSize: '1.25rem',
-                    fontWeight: 800,
-                    letterSpacing: '-0.02em',
-                    lineHeight: '1.3'
-                  }}>
-                    Mark Attendance?
-                  </h2>
-                  <p style={{
-                    margin: '2px 0 0 0',
-                    color: '#EA580C',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em'
-                  }}>
-                    Daily Reminder
-                  </p>
-                </div>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#EA580C" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <polyline points="12 6 12 12 16 14" />
+                </svg>
               </div>
-              <p style={{
-                color: isDark ? '#94A3B8' : '#475569',
-                fontSize: '0.92rem',
-                lineHeight: '1.6',
-                margin: '0 0 24px 0',
-                fontWeight: 500
-              }}>
-                You haven't marked worker attendance for today yet. Would you like to do it now?
-              </p>
-              <div style={{
-                display: 'flex',
-                gap: '10px',
-                justifyContent: 'flex-end'
-              }}>
-                <button
-                  onClick={() => setShowAttendancePrompt(false)}
-                  style={{
-                    padding: '10px 20px',
-                    fontSize: '0.88rem',
-                    fontWeight: 700,
-                    borderRadius: '12px',
-                    border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1.5px solid #CBD5E1',
-                    background: isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC',
-                    color: isDark ? '#E2E8F0' : '#475569',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  Later
-                </button>
-                <button
-                  onClick={() => {
-                    setShowAttendancePrompt(false);
-                    navigate('/workers/attendance');
-                  }}
-                  style={{
-                    background: 'linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%)',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '10px 22px',
-                    fontSize: '0.88rem',
-                    fontWeight: 800,
-                    color: '#FFFFFF',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(255, 107, 26, 0.35)',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  Yes, Mark Now
-                </button>
+              <div>
+                <h2 style={{
+                  margin: 0,
+                  color: isDark ? '#FFFFFF' : '#0F172A',
+                  fontSize: '1.25rem',
+                  fontWeight: 800,
+                  letterSpacing: '-0.02em',
+                  lineHeight: '1.3'
+                }}>
+                  Mark Attendance?
+                </h2>
+                <p style={{
+                  margin: '2px 0 0 0',
+                  color: '#EA580C',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em'
+                }}>
+                  Daily Reminder
+                </p>
               </div>
             </div>
+            <p style={{
+              color: isDark ? '#94A3B8' : '#475569',
+              fontSize: '0.92rem',
+              lineHeight: '1.6',
+              margin: '0 0 24px 0',
+              fontWeight: 500
+            }}>
+              You haven't marked worker attendance for today yet. Would you like to do it now?
+            </p>
+            <div style={{
+              display: 'flex',
+              gap: '10px',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                onClick={() => setShowAttendancePrompt(false)}
+                style={{
+                  padding: '10px 20px',
+                  fontSize: '0.88rem',
+                  fontWeight: 700,
+                  borderRadius: '12px',
+                  border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1.5px solid #CBD5E1',
+                  background: isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC',
+                  color: isDark ? '#E2E8F0' : '#475569',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                Later
+              </button>
+              <button
+                onClick={() => {
+                  setShowAttendancePrompt(false);
+                  navigate('/workers/attendance');
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #FF6B1A 0%, #EA580C 100%)',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '10px 22px',
+                  fontSize: '0.88rem',
+                  fontWeight: 800,
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(255, 107, 26, 0.35)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                Yes, Mark Now
+              </button>
+            </div>
           </div>
-        )}
+        </div>
+      )}
 
       {/* Salary Day Notification */}
       {salaryNotification && (
-          <div style={{
-            position: 'fixed', inset: 0, zIndex: 2000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backgroundColor: isDark ? 'rgba(8, 9, 13, 0.72)' : 'rgba(15, 23, 42, 0.45)',
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
-            padding: '16px'
-          }}>
-            <div
-              style={{
-                padding: '28px 30px',
-                maxWidth: '440px',
-                width: '100%',
-                borderRadius: '24px',
-                border: isDark ? '1px solid rgba(16, 185, 129, 0.25)' : '1.5px solid #E2E8F0',
-                background: isDark ? 'linear-gradient(165deg, #161A26 0%, #0E1018 100%)' : '#FFFFFF',
-                boxShadow: isDark
-                  ? '0 24px 60px -10px rgba(0, 0, 0, 0.8), 0 0 30px rgba(16, 185, 129, 0.08)'
-                  : '0 20px 50px -10px rgba(15, 23, 42, 0.15), 0 0 1px 1px rgba(0, 0, 0, 0.04)',
-                position: 'relative',
-                overflow: 'hidden'
-              }}
-            >
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 2000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          backgroundColor: isDark ? 'rgba(8, 9, 13, 0.72)' : 'rgba(15, 23, 42, 0.45)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          padding: '16px'
+        }}>
+          <div
+            style={{
+              padding: '28px 30px',
+              maxWidth: '440px',
+              width: '100%',
+              borderRadius: '24px',
+              border: isDark ? '1px solid rgba(16, 185, 129, 0.25)' : '1.5px solid #E2E8F0',
+              background: isDark ? 'linear-gradient(165deg, #161A26 0%, #0E1018 100%)' : '#FFFFFF',
+              boxShadow: isDark
+                ? '0 24px 60px -10px rgba(0, 0, 0, 0.8), 0 0 30px rgba(16, 185, 129, 0.08)'
+                : '0 20px 50px -10px rgba(15, 23, 42, 0.15), 0 0 1px 1px rgba(0, 0, 0, 0.04)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+          >
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              marginBottom: '16px'
+            }}>
               <div style={{
+                width: '50px',
+                height: '50px',
+                borderRadius: '16px',
+                background: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5',
+                border: isDark ? '1px solid rgba(16, 185, 129, 0.3)' : '1.5px solid #A7F3D0',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '16px',
-                marginBottom: '16px'
+                justifyContent: 'center',
+                flexShrink: 0,
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)'
               }}>
-                <div style={{
-                  width: '50px',
-                  height: '50px',
-                  borderRadius: '16px',
-                  background: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ECFDF5',
-                  border: isDark ? '1px solid rgba(16, 185, 129, 0.3)' : '1.5px solid #A7F3D0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.15)'
-                }}>
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="5" width="20" height="14" rx="2" />
-                    <line x1="2" y1="10" x2="22" y2="10" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 style={{
-                    margin: 0,
-                    color: isDark ? '#FFFFFF' : '#0F172A',
-                    fontSize: '1.25rem',
-                    fontWeight: 800,
-                    letterSpacing: '-0.02em',
-                    lineHeight: '1.3'
-                  }}>
-                    It's Salary Day!
-                  </h2>
-                  <p style={{
-                    margin: '2px 0 0 0',
-                    color: '#059669',
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.04em'
-                  }}>
-                    Monthly Reminder
-                  </p>
-                </div>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="5" width="20" height="14" rx="2" />
+                  <line x1="2" y1="10" x2="22" y2="10" />
+                </svg>
               </div>
-              <p style={{
-                color: isDark ? '#94A3B8' : '#475569',
-                fontSize: '0.92rem',
-                lineHeight: '1.6',
-                margin: '0 0 24px 0',
-                fontWeight: 500
-              }}>
-                Today is designated salary day. Would you like to review and process worker salaries now?
-              </p>
-              <div style={{
-                display: 'flex',
-                gap: '10px',
-                justifyContent: 'flex-end'
-              }}>
-                <button
-                  onClick={() => setSalaryNotification(false)}
-                  style={{
-                    padding: '10px 20px',
-                    fontSize: '0.88rem',
-                    fontWeight: 700,
-                    borderRadius: '12px',
-                    border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1.5px solid #CBD5E1',
-                    background: isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC',
-                    color: isDark ? '#E2E8F0' : '#475569',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  Later
-                </button>
-                <button
-                  onClick={() => {
-                    setSalaryNotification(false);
-                    navigate('/workers/salary');
-                  }}
-                  style={{
-                    background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-                    border: 'none',
-                    borderRadius: '12px',
-                    padding: '10px 22px',
-                    fontSize: '0.88rem',
-                    fontWeight: 800,
-                    color: '#FFFFFF',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  Process Salaries
-                </button>
+              <div>
+                <h2 style={{
+                  margin: 0,
+                  color: isDark ? '#FFFFFF' : '#0F172A',
+                  fontSize: '1.25rem',
+                  fontWeight: 800,
+                  letterSpacing: '-0.02em',
+                  lineHeight: '1.3'
+                }}>
+                  It's Salary Day!
+                </h2>
+                <p style={{
+                  margin: '2px 0 0 0',
+                  color: '#059669',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em'
+                }}>
+                  Monthly Reminder
+                </p>
               </div>
             </div>
+            <p style={{
+              color: isDark ? '#94A3B8' : '#475569',
+              fontSize: '0.92rem',
+              lineHeight: '1.6',
+              margin: '0 0 24px 0',
+              fontWeight: 500
+            }}>
+              Today is designated salary day. Would you like to review and process worker salaries now?
+            </p>
+            <div style={{
+              display: 'flex',
+              gap: '10px',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                onClick={() => setSalaryNotification(false)}
+                style={{
+                  padding: '10px 20px',
+                  fontSize: '0.88rem',
+                  fontWeight: 700,
+                  borderRadius: '12px',
+                  border: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1.5px solid #CBD5E1',
+                  background: isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC',
+                  color: isDark ? '#E2E8F0' : '#475569',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                Later
+              </button>
+              <button
+                onClick={() => {
+                  setSalaryNotification(false);
+                  navigate('/workers/salary');
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '10px 22px',
+                  fontSize: '0.88rem',
+                  fontWeight: 800,
+                  color: '#FFFFFF',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                Process Salaries
+              </button>
+            </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Global Reminders are now integrated into NotificationSystem */}
-        
-        {/* Offline Badge */}
-        <OfflineBadge />
+      {/* Global Reminders are now integrated into NotificationSystem */}
+
+      {/* Offline Badge */}
+      <OfflineBadge />
     </div>
   );
 }

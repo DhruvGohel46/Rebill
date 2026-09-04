@@ -255,6 +255,7 @@
   --glass-modal: var(--glass-light-modal);
   --glass-border: var(--glass-light-border);
   
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
   --shadow-card: var(--shadow-light-card);
   --shadow-hover: var(--shadow-light-hover);
   --shadow-modal: var(--shadow-light-modal);
@@ -292,6 +293,7 @@
   --glass-modal: var(--glass-dark-modal);
   --glass-border: var(--glass-dark-border);
   
+  --shadow-sm: 0 2px 6px -1px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   --shadow-card: var(--shadow-dark-card);
   --shadow-hover: var(--shadow-dark-hover);
   --shadow-modal: var(--shadow-dark-modal);
