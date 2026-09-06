@@ -323,3 +323,53 @@ def test_csv_exports_group_and_category(app, setup_catalog_and_bills):
         sum_content = excel_svc.get_csv_content(sum_csv_path)
         assert "=== GROUP WISE SALES ===" in sum_content
         assert "Beverages" in sum_content
+
+
+def test_group_subtotals_in_reports(app, setup_catalog_and_bills):
+    """Test that downloaded Excel reports include subtotal rows for individual groups with correct values and styling."""
+    with app.app_context():
+        xlsx_svc = ExcelXLSXService()
+        filepath = xlsx_svc.export_daily_sales_report(date.today().strftime("%Y-%m-%d"))
+
+        wb = openpyxl.load_workbook(filepath)
+        ws_sum = wb["Summary"]
+
+        # Find Group & Category table rows
+        rows_data = []
+        found_gc = False
+        for r in range(1, 45):
+            val = ws_sum.cell(row=r, column=1).value
+            if val and "Group & Category" in str(val):
+                found_gc = True
+                continue
+            if found_gc:
+                first_cell = ws_sum.cell(row=r, column=1).value
+                if first_cell == "TOTAL":
+                    rows_data.append((first_cell, ws_sum.cell(row=r, column=3).value, ws_sum.cell(row=r, column=4).value))
+                    break
+                if first_cell:
+                    rows_data.append((
+                        first_cell,
+                        ws_sum.cell(row=r, column=2).value,
+                        ws_sum.cell(row=r, column=3).value,  # Qty
+                        ws_sum.cell(row=r, column=4).value,  # Revenue
+                    ))
+
+        # Check that Beverages Subtotal row exists
+        bev_subtotals = [row for row in rows_data if row[0] == "Beverages Subtotal"]
+        assert len(bev_subtotals) == 1, f"Beverages Subtotal row not found in {rows_data}"
+        assert bev_subtotals[0][2] == 4.0  # 2 chai + 2 shakes
+        assert bev_subtotals[0][3] == 160.0  # 40 + 120
+
+        # Check that Main Kitchen Subtotal row exists
+        food_subtotals = [row for row in rows_data if row[0] == "Main Kitchen Subtotal"]
+        assert len(food_subtotals) == 1, f"Main Kitchen Subtotal row not found in {rows_data}"
+        assert food_subtotals[0][2] == 1.0  # 1 burger
+        assert food_subtotals[0][3] == 120.0  # 120
+
+        # Check grand total row
+        grand_totals = [row for row in rows_data if row[0] == "TOTAL"]
+        assert len(grand_totals) == 1
+        assert grand_totals[0][1] == 5.0  # total units
+        assert grand_totals[0][2] == 280.0  # total sales
+

@@ -34,6 +34,21 @@ class LLMAdapterError(Exception):
     pass
 
 
+def _log_raw_llm_request(provider: str, model: str, payload: Dict[str, Any]):
+    try:
+        _log.info("RAW LLM REQUEST [%s - %s]: %s", provider, model, json.dumps(payload, default=str))
+    except Exception as e:
+        _log.warning("Failed to log raw LLM request: %s", e)
+
+
+def _log_raw_llm_response(provider: str, model: str, res_data: Dict[str, Any]):
+    try:
+        _log.info("RAW LLM RESPONSE [%s - %s]: %s", provider, model, json.dumps(res_data, default=str))
+    except Exception as e:
+        _log.warning("Failed to log raw LLM response: %s", e)
+
+
+
 class LLMAdapter:
     """Base abstract adapter for BYO-Key LLM providers."""
 
@@ -111,12 +126,14 @@ class OpenAIAdapter(LLMAdapter):
         }
 
         try:
+            _log_raw_llm_request("openai", use_model, payload)
             req = urllib.request.Request(
                 endpoint, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST"
             )
             ctx = ssl.create_default_context()
             with urllib.request.urlopen(req, timeout=self.timeout, context=ctx) as response:
                 res_data = json.loads(response.read().decode("utf-8"))
+            _log_raw_llm_response("openai", use_model, res_data)
 
             choice = res_data.get("choices", [{}])[0]
             msg = choice.get("message", {})
@@ -237,12 +254,14 @@ class AnthropicAdapter(LLMAdapter):
         }
 
         try:
+            _log_raw_llm_request("anthropic", use_model, payload)
             req = urllib.request.Request(
                 endpoint, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST"
             )
             ctx = ssl.create_default_context()
             with urllib.request.urlopen(req, timeout=self.timeout, context=ctx) as response:
                 res_data = json.loads(response.read().decode("utf-8"))
+            _log_raw_llm_response("anthropic", use_model, res_data)
 
             content_blocks = res_data.get("content", [])
             text_pieces = []
@@ -347,12 +366,14 @@ class GoogleAdapter(LLMAdapter):
         headers = {"Content-Type": "application/json"}
 
         try:
+            _log_raw_llm_request("google", use_model, payload)
             req = urllib.request.Request(
                 endpoint, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST"
             )
             ctx = ssl.create_default_context()
             with urllib.request.urlopen(req, timeout=self.timeout, context=ctx) as response:
                 res_data = json.loads(response.read().decode("utf-8"))
+            _log_raw_llm_response("google", use_model, res_data)
 
             candidates = res_data.get("candidates", [{}])
             if not candidates:

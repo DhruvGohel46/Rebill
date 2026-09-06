@@ -224,22 +224,44 @@ class ExcelXLSXService:
             ws_sum, start_row=7, metrics=metrics, cols_per_card=2
         )
 
-        # Group & Category Breakdown Table
+        # Group & Category Breakdown Table with Group Subtotals
+        groups_dict = {}
+        for (g_name, c_name), gc_data in group_cat_agg.items():
+            if g_name not in groups_dict:
+                groups_dict[g_name] = []
+            groups_dict[g_name].append((c_name, gc_data))
+
         grp_cat_rows = []
         tot_grp_qty = 0.0
         tot_grp_rev = 0.0
         tot_grp_profit = 0.0
-        for (g_name, c_name), gc_data in sorted(
-            group_cat_agg.items(), key=lambda x: (x[0][0].lower(), -x[1]["revenue"])
-        ):
-            gc_profit = gc_data["revenue"] - gc_data["cog"]
-            gc_share = (gc_data["revenue"] / total_sales) if total_sales > 0 else 0.0
+
+        for g_name in sorted(groups_dict.keys(), key=lambda x: x.lower()):
+            cat_list = groups_dict[g_name]
+            cat_list.sort(key=lambda x: -x[1]["revenue"])
+
+            sub_qty = 0.0
+            sub_rev = 0.0
+            sub_profit = 0.0
+
+            for c_name, gc_data in cat_list:
+                gc_profit = gc_data["revenue"] - gc_data["cog"]
+                gc_share = (gc_data["revenue"] / total_sales) if total_sales > 0 else 0.0
+                grp_cat_rows.append(
+                    [g_name, c_name, gc_data["qty"], gc_data["revenue"], gc_share, gc_profit]
+                )
+                sub_qty += gc_data["qty"]
+                sub_rev += gc_data["revenue"]
+                sub_profit += gc_profit
+
+            sub_share = (sub_rev / total_sales) if total_sales > 0 else 0.0
             grp_cat_rows.append(
-                [g_name, c_name, gc_data["qty"], gc_data["revenue"], gc_share, gc_profit]
+                [f"{g_name} Subtotal", "", sub_qty, sub_rev, sub_share, sub_profit]
             )
-            tot_grp_qty += gc_data["qty"]
-            tot_grp_rev += gc_data["revenue"]
-            tot_grp_profit += gc_profit
+
+            tot_grp_qty += sub_qty
+            tot_grp_rev += sub_rev
+            tot_grp_profit += sub_profit
 
         grp_cat_totals = [
             "TOTAL",
@@ -646,17 +668,34 @@ class ExcelXLSXService:
             freeze_header=False,
         )
 
-        # Overview Group & Category rollup table
+        # Overview Group & Category rollup table with Group Subtotals
+        groups_dict_week = {}
+        for (g_name, c_name), gc_info in curr_group_cat.items():
+            if g_name not in groups_dict_week:
+                groups_dict_week[g_name] = []
+            groups_dict_week[g_name].append((c_name, gc_info))
+
         overview_gc_rows = []
         tot_gc_units = 0.0
-        for (g_name, c_name), gc_info in sorted(
-            curr_group_cat.items(), key=lambda x: (x[0][0].lower(), -x[1]["revenue"])
-        ):
-            gc_rev = gc_info["revenue"]
-            gc_units = gc_info["units"]
-            gc_share = (gc_rev / total_sales) if total_sales > 0 else 0.0
-            overview_gc_rows.append([g_name, c_name, gc_units, gc_rev, gc_share])
-            tot_gc_units += gc_units
+        for g_name in sorted(groups_dict_week.keys(), key=lambda x: x.lower()):
+            cat_list = groups_dict_week[g_name]
+            cat_list.sort(key=lambda x: -x[1]["revenue"])
+
+            sub_units = 0.0
+            sub_rev = 0.0
+            for c_name, gc_info in cat_list:
+                gc_rev = gc_info["revenue"]
+                gc_units = gc_info["units"]
+                gc_share = (gc_rev / total_sales) if total_sales > 0 else 0.0
+                overview_gc_rows.append([g_name, c_name, gc_units, gc_rev, gc_share])
+                sub_units += gc_units
+                sub_rev += gc_rev
+
+            sub_share = (sub_rev / total_sales) if total_sales > 0 else 0.0
+            overview_gc_rows.append(
+                [f"{g_name} Subtotal", "", sub_units, sub_rev, sub_share]
+            )
+            tot_gc_units += sub_units
 
         overview_gc_totals = [
             "TOTAL",
@@ -691,21 +730,39 @@ class ExcelXLSXService:
         )
 
         gc_sheet_rows = []
-        for (g_name, c_name), gc_info in sorted(
-            curr_group_cat.items(), key=lambda x: (x[0][0].lower(), -x[1]["revenue"])
-        ):
-            gc_rev = gc_info["revenue"]
-            gc_units = gc_info["units"]
-            gc_share = (gc_rev / total_sales) if total_sales > 0 else 0.0
-            prior_rev = prior_group_cat.get((g_name, c_name), 0.0)
-            if prior_rev > 0:
-                pct_change = ((gc_rev - prior_rev) / prior_rev) * 100.0
-                trend_str = (
-                    f"▲ {pct_change:+.1f}%" if pct_change >= 0 else f"▼ {abs(pct_change):.1f}%"
+        for g_name in sorted(groups_dict_week.keys(), key=lambda x: x.lower()):
+            cat_list = groups_dict_week[g_name]
+            cat_list.sort(key=lambda x: -x[1]["revenue"])
+
+            sub_units = 0.0
+            sub_rev = 0.0
+            sub_prior_rev = 0.0
+            for c_name, gc_info in cat_list:
+                gc_rev = gc_info["revenue"]
+                gc_units = gc_info["units"]
+                gc_share = (gc_rev / total_sales) if total_sales > 0 else 0.0
+                prior_rev = prior_group_cat.get((g_name, c_name), 0.0)
+                if prior_rev > 0:
+                    pct_change = ((gc_rev - prior_rev) / prior_rev) * 100.0
+                    trend_str = (
+                        f"▲ {pct_change:+.1f}%" if pct_change >= 0 else f"▼ {abs(pct_change):.1f}%"
+                    )
+                else:
+                    trend_str = "NEW"
+                gc_sheet_rows.append([g_name, c_name, gc_units, gc_rev, gc_share, trend_str])
+                sub_units += gc_units
+                sub_rev += gc_rev
+                sub_prior_rev += prior_rev
+
+            sub_share = (sub_rev / total_sales) if total_sales > 0 else 0.0
+            if sub_prior_rev > 0:
+                sub_pct_change = ((sub_rev - sub_prior_rev) / sub_prior_rev) * 100.0
+                sub_trend = (
+                    f"▲ {sub_pct_change:+.1f}%" if sub_pct_change >= 0 else f"▼ {abs(sub_pct_change):.1f}%"
                 )
             else:
-                trend_str = "NEW"
-            gc_sheet_rows.append([g_name, c_name, gc_units, gc_rev, gc_share, trend_str])
+                sub_trend = "NEW" if sub_rev > 0 else "-"
+            gc_sheet_rows.append([f"{g_name} Subtotal", "", sub_units, sub_rev, sub_share, sub_trend])
 
         gc_sheet_totals = [
             "TOTAL",
@@ -954,18 +1011,37 @@ class ExcelXLSXService:
             freeze_header=False,
         )
 
-        # Group & Category Summary on Sheet 1
+        # Group & Category Summary on Sheet 1 (with Group Subtotals)
+        groups_dict_month = {}
+        for (g_name, c_name), gc_val in group_cat_agg.items():
+            if g_name not in groups_dict_month:
+                groups_dict_month[g_name] = []
+            groups_dict_month[g_name].append((c_name, gc_val))
+
         gc_overview_rows = []
         tot_gc_units = 0.0
         tot_gc_profit = 0.0
-        for (g_name, c_name), gc_val in sorted(
-            group_cat_agg.items(), key=lambda x: (x[0][0].lower(), -x[1]["rev"])
-        ):
-            profit = gc_val["rev"] - gc_val["cog"]
-            share = (gc_val["rev"] / total_sales) if total_sales > 0 else 0.0
-            gc_overview_rows.append([g_name, c_name, gc_val["qty"], gc_val["rev"], profit, share])
-            tot_gc_units += gc_val["qty"]
-            tot_gc_profit += profit
+        for g_name in sorted(groups_dict_month.keys(), key=lambda x: x.lower()):
+            cat_list = groups_dict_month[g_name]
+            cat_list.sort(key=lambda x: -x[1]["rev"])
+
+            sub_units = 0.0
+            sub_rev = 0.0
+            sub_profit = 0.0
+            for c_name, gc_val in cat_list:
+                profit = gc_val["rev"] - gc_val["cog"]
+                share = (gc_val["rev"] / total_sales) if total_sales > 0 else 0.0
+                gc_overview_rows.append([g_name, c_name, gc_val["qty"], gc_val["rev"], profit, share])
+                sub_units += gc_val["qty"]
+                sub_rev += gc_val["rev"]
+                sub_profit += profit
+
+            sub_share = (sub_rev / total_sales) if total_sales > 0 else 0.0
+            gc_overview_rows.append(
+                [f"{g_name} Subtotal", "", sub_units, sub_rev, sub_profit, sub_share]
+            )
+            tot_gc_units += sub_units
+            tot_gc_profit += sub_profit
 
         gc_overview_totals = [
             "TOTAL",
@@ -1798,31 +1874,53 @@ class ExcelXLSXService:
             ws_grp_sales, "Annual Group & Category Sales Breakdown", year_label, num_columns=7
         )
 
+        # Group & Category Breakdown with Group Subtotals
+        groups_dict_ann = {}
+        for (g_name, c_name), gc_info in annual_grp_cat.items():
+            if g_name not in groups_dict_ann:
+                groups_dict_ann[g_name] = []
+            groups_dict_ann[g_name].append((c_name, gc_info))
+
         annual_gc_rows = []
         tot_ann_units = 0.0
         tot_ann_rev = 0.0
         tot_ann_cog = 0.0
         tot_ann_profit = 0.0
-        for (g_name, c_name), gc_info in sorted(
-            annual_grp_cat.items(), key=lambda x: (x[0][0].lower(), -x[1]["revenue"])
-        ):
-            gc_profit = gc_info["revenue"] - gc_info["cog"]
-            gc_share = (gc_info["revenue"] / gross_sales) if gross_sales > 0 else 0.0
+        for g_name in sorted(groups_dict_ann.keys(), key=lambda x: x.lower()):
+            cat_list = groups_dict_ann[g_name]
+            cat_list.sort(key=lambda x: -x[1]["revenue"])
+
+            sub_units = 0.0
+            sub_rev = 0.0
+            sub_cog = 0.0
+            sub_profit = 0.0
+            for c_name, gc_info in cat_list:
+                gc_profit = gc_info["revenue"] - gc_info["cog"]
+                gc_share = (gc_info["revenue"] / gross_sales) if gross_sales > 0 else 0.0
+                annual_gc_rows.append(
+                    [
+                        g_name,
+                        c_name,
+                        gc_info["units"],
+                        gc_info["revenue"],
+                        gc_info["cog"],
+                        gc_profit,
+                        gc_share,
+                    ]
+                )
+                sub_units += gc_info["units"]
+                sub_rev += gc_info["revenue"]
+                sub_cog += gc_info["cog"]
+                sub_profit += gc_profit
+
+            sub_share = (sub_rev / gross_sales) if gross_sales > 0 else 0.0
             annual_gc_rows.append(
-                [
-                    g_name,
-                    c_name,
-                    gc_info["units"],
-                    gc_info["revenue"],
-                    gc_info["cog"],
-                    gc_profit,
-                    gc_share,
-                ]
+                [f"{g_name} Subtotal", "", sub_units, sub_rev, sub_cog, sub_profit, sub_share]
             )
-            tot_ann_units += gc_info["units"]
-            tot_ann_rev += gc_info["revenue"]
-            tot_ann_cog += gc_info["cog"]
-            tot_ann_profit += gc_profit
+            tot_ann_units += sub_units
+            tot_ann_rev += sub_rev
+            tot_ann_cog += sub_cog
+            tot_ann_profit += sub_profit
 
         annual_gc_totals = [
             "TOTAL",

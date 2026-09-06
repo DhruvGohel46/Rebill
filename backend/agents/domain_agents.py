@@ -418,11 +418,77 @@ class DomainAgent:
                 _log.error("Follow-up LLM turn failed for %s agent: %s", self.name, e)
                 break
 
-        final_text = res.content or (
-            f"I have prepared the action for your approval: {tool_results_summary[0]}"
-            if tool_results_summary
-            else "I have processed your request."
+        # Determine whether final_text is valid or if it leaked an internal execution placeholder
+        raw_candidate = (res.content or "").strip()
+        is_leaked_status = (
+            not raw_candidate
+            or "I am executing the tool" in raw_candidate
+            or any(raw_candidate == get_status_label(s.get("tool", "")) for s in steps)
         )
+
+        if is_leaked_status:
+            if pending_actions:
+                action = pending_actions[0]
+                summary = action.get("diff_summary") or "Action proposal staged for approval."
+                fallback_obj = {
+                    "title": {"icon": self.name, "text": "Action Staged for Approval"},
+                    "sections": [
+                        {
+                            "type": "insight_block",
+                            "icon": "alert_warning",
+                            "heading": "Approval Required",
+                            "body": f"{summary} Please review the details below and click Approve & Apply to save changes.",
+                        }
+                    ],
+                    "meta": {"status": "warning", "statusIcon": "status_warning"},
+                }
+                final_text = json.dumps(fallback_obj)
+            elif executed_actions:
+                action = executed_actions[0]
+                summary = action.get("diff_summary") or "Action executed successfully."
+                fallback_obj = {
+                    "title": {"icon": self.name, "text": "Action Completed"},
+                    "sections": [
+                        {
+                            "type": "insight_block",
+                            "icon": "alert_success",
+                            "heading": "Action Executed",
+                            "body": summary,
+                        }
+                    ],
+                    "meta": {"status": "normal", "statusIcon": "status_normal"},
+                }
+                final_text = json.dumps(fallback_obj)
+            elif steps:
+                fallback_obj = {
+                    "title": {"icon": self.name, "text": f"{self.name.capitalize()} Summary"},
+                    "sections": [
+                        {
+                            "type": "insight_block",
+                            "icon": "ai_review",
+                            "heading": "Data Retrieved",
+                            "body": steps[0].get("details") or "Successfully retrieved store data.",
+                        }
+                    ],
+                    "meta": {"status": "normal", "statusIcon": "status_normal"},
+                }
+                final_text = json.dumps(fallback_obj)
+            else:
+                fallback_obj = {
+                    "title": {"icon": "insight", "text": "Request Processed"},
+                    "sections": [
+                        {
+                            "type": "insight_block",
+                            "icon": "ai_review",
+                            "heading": "Information",
+                            "body": "I have processed your request.",
+                        }
+                    ],
+                    "meta": {"status": "normal", "statusIcon": "status_normal"},
+                }
+                final_text = json.dumps(fallback_obj)
+        else:
+            final_text = raw_candidate
 
         yield (
             "final",
@@ -1099,7 +1165,7 @@ class OrchestratorAgent:
 
         # 3. Deterministic Pre-LLM Intent Routing (Saves an LLM Orchestrator call!)
         yield ("status", {"label": ROUTING_LABEL})
-        domain = classify_intent_deterministic(user_message)
+        domain = classify_intent_deterministic(user_message, history=history)
         if not domain:
             domain = cls.classify_intent_fallback_llm(user_message, adapter, default_model)
 

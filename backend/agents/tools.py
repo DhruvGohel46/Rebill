@@ -495,7 +495,7 @@ class AgentToolRegistry:
         return [
             {
                 "name": "search_products",
-                "description": "Search product catalog with price, category, variations, and active status (max 20).",
+                "description": "Search the product catalog for menu items, pricing, variations, and active status (max 20). NOTE: For sales figures, revenue, or top/best selling products, use the analytics agent tools.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -1201,7 +1201,16 @@ class AgentToolRegistry:
                     "properties": {
                         "period": {
                             "type": "string",
-                            "enum": ["today", "yesterday", "last_7_days", "this_month"],
+                            "enum": [
+                                "today",
+                                "yesterday",
+                                "last_7_days",
+                                "last_30_days",
+                                "this_month",
+                                "last_month",
+                                "this_year",
+                                "all",
+                            ],
                             "default": "today",
                         }
                     },
@@ -1209,7 +1218,7 @@ class AgentToolRegistry:
             },
             {
                 "name": "get_sales_trend",
-                "description": "Get multi-day sales and order volume comparison (last N days).",
+                "description": "Get multi-day sales and order volume comparison (last N days). Use this to compare daily or monthly sales trends over time.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -2301,40 +2310,141 @@ def _execute_read_tool_uncached(tool_name: str, args: Dict[str, Any]) -> Dict[st
             }
 
         elif tool_name == "get_sales_kpi_summary":
+            import calendar
             period = args.get("period", "today")
             today = date.today()
-            target_date = today
 
             if period == "yesterday":
                 target_date = today - timedelta(days=1)
                 summary = DailySalesSummary.query.filter_by(date=target_date).first()
-            elif period == "today":
-                summary = DailySalesSummary.query.filter_by(date=today).first()
-            else:
-                summary = None
-
-            if summary:
+                if summary:
+                    return {
+                        "period": period,
+                        "date": str(summary.date),
+                        "total_sales": summary.total_sales,
+                        "total_orders": summary.total_orders,
+                        "total_expenses": summary.total_expenses,
+                        "net_profit": summary.net_profit,
+                        "average_bill_value": summary.average_bill_value,
+                    }
+                bills = Bill.query.filter(func.date(Bill.created_at) == target_date).all()
+                tot_sales = sum(b.total_amount for b in bills)
+                tot_orders = len(bills)
+                exps = Expense.query.filter(func.date(Expense.date) == target_date).all()
+                tot_exp = sum(e.amount for e in exps)
+                net_prof = tot_sales - tot_exp
+                avg_bill = (tot_sales / tot_orders) if tot_orders > 0 else 0.0
                 return {
                     "period": period,
-                    "date": str(summary.date),
-                    "total_sales": summary.total_sales,
-                    "total_orders": summary.total_orders,
-                    "total_expenses": summary.total_expenses,
-                    "net_profit": summary.net_profit,
-                    "average_bill_value": summary.average_bill_value,
+                    "date": str(target_date),
+                    "total_sales": round(tot_sales, 2),
+                    "total_orders": tot_orders,
+                    "total_expenses": round(tot_exp, 2),
+                    "net_profit": round(net_prof, 2),
+                    "average_bill_value": round(avg_bill, 2),
                 }
 
-            bills = Bill.query.filter(func.date(Bill.created_at) == target_date).all()
+            elif period == "today":
+                summary = DailySalesSummary.query.filter_by(date=today).first()
+                if summary:
+                    return {
+                        "period": period,
+                        "date": str(summary.date),
+                        "total_sales": summary.total_sales,
+                        "total_orders": summary.total_orders,
+                        "total_expenses": summary.total_expenses,
+                        "net_profit": summary.net_profit,
+                        "average_bill_value": summary.average_bill_value,
+                    }
+                bills = Bill.query.filter(func.date(Bill.created_at) == today).all()
+                tot_sales = sum(b.total_amount for b in bills)
+                tot_orders = len(bills)
+                exps = Expense.query.filter(func.date(Expense.date) == today).all()
+                tot_exp = sum(e.amount for e in exps)
+                net_prof = tot_sales - tot_exp
+                avg_bill = (tot_sales / tot_orders) if tot_orders > 0 else 0.0
+                return {
+                    "period": period,
+                    "date": str(today),
+                    "total_sales": round(tot_sales, 2),
+                    "total_orders": tot_orders,
+                    "total_expenses": round(tot_exp, 2),
+                    "net_profit": round(net_prof, 2),
+                    "average_bill_value": round(avg_bill, 2),
+                }
+
+            # Range-based periods:
+            start_date = None
+            end_date = today
+
+            if period == "last_7_days":
+                start_date = today - timedelta(days=6)
+            elif period == "last_30_days":
+                start_date = today - timedelta(days=29)
+            elif period == "this_month":
+                start_date = date(today.year, today.month, 1)
+            elif period == "last_month":
+                if today.month == 1:
+                    lm_year = today.year - 1
+                    lm_month = 12
+                else:
+                    lm_year = today.year
+                    lm_month = today.month - 1
+                start_date = date(lm_year, lm_month, 1)
+                last_day = calendar.monthrange(lm_year, lm_month)[1]
+                end_date = date(lm_year, lm_month, last_day)
+            elif period == "this_year":
+                start_date = date(today.year, 1, 1)
+            elif period == "all":
+                start_date = None
+                end_date = None
+
+            query = DailySalesSummary.query
+            if start_date:
+                query = query.filter(DailySalesSummary.date >= start_date)
+            if end_date:
+                query = query.filter(DailySalesSummary.date <= end_date)
+            summaries = query.all()
+
+            if summaries:
+                tot_sales = sum(s.total_sales for s in summaries)
+                tot_orders = sum(s.total_orders for s in summaries)
+                tot_exp = sum(s.total_expenses for s in summaries)
+                net_prof = tot_sales - tot_exp
+                avg_bill = (tot_sales / tot_orders) if tot_orders > 0 else 0.0
+                return {
+                    "period": period,
+                    "start_date": str(start_date) if start_date else "all_time",
+                    "end_date": str(end_date) if end_date else str(today),
+                    "total_sales": round(tot_sales, 2),
+                    "total_orders": tot_orders,
+                    "total_expenses": round(tot_exp, 2),
+                    "net_profit": round(net_prof, 2),
+                    "average_bill_value": round(avg_bill, 2),
+                }
+
+            # Fallback to direct Bill and Expense records if no DailySalesSummary exists
+            bill_q = Bill.query
+            exp_q = Expense.query
+            if start_date:
+                bill_q = bill_q.filter(func.date(Bill.created_at) >= start_date)
+                exp_q = exp_q.filter(func.date(Expense.date) >= start_date)
+            if end_date:
+                bill_q = bill_q.filter(func.date(Bill.created_at) <= end_date)
+                exp_q = exp_q.filter(func.date(Expense.date) <= end_date)
+
+            bills = bill_q.all()
             tot_sales = sum(b.total_amount for b in bills)
             tot_orders = len(bills)
-            exps = Expense.query.filter(func.date(Expense.date) == target_date).all()
+            exps = exp_q.all()
             tot_exp = sum(e.amount for e in exps)
             net_prof = tot_sales - tot_exp
             avg_bill = (tot_sales / tot_orders) if tot_orders > 0 else 0.0
 
             return {
                 "period": period,
-                "date": str(target_date),
+                "start_date": str(start_date) if start_date else "all_time",
+                "end_date": str(end_date) if end_date else str(today),
                 "total_sales": round(tot_sales, 2),
                 "total_orders": tot_orders,
                 "total_expenses": round(tot_exp, 2),

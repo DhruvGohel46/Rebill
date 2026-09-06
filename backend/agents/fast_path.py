@@ -8,35 +8,57 @@ Optimizes token usage and latency by:
 import json
 import re
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, List
 from agents.tools import execute_read_tool
 
-# Regex patterns for deterministic domain classification
-# Note: Specific action domains (like expense, worker, inventory) are checked before generic billing
+# =============================================================================
+# ORDER-DEPENDENT DOMAIN CLASSIFICATION PATTERNS
+#
+# CRITICAL NOTICE ON MATCH ORDER:
+# Python dict iteration preserves insertion order (Python 3.7+). The ordering
+# of keys in DOMAIN_PATTERNS is strictly order-dependent and intentional:
+#
+# 1. 'analytics' MUST precede 'product' and 'billing':
+#    Queries like "What are the top 5 best selling products today?" or "whats
+#    the sales of foods group" contain product-level nouns ('products', 'group')
+#    AND analytics intents ('best selling', 'sales', 'revenue', 'earn'). If
+#    'product' is checked first, the user's intent is misrouted to the catalog
+#    agent which lacks financial/sales tools, inducing tool hallucination.
+#
+# 2. 'expense' MUST precede generic 'billing':
+#    Queries like "today i give 1000 to raju bhai for coldrink bill" contain
+#    the word 'bill' which would otherwise trigger POS customer billing. Vendor,
+#    supplier, utility, and petty cash spending must resolve to 'expense'.
+#
+# 3. Vendor indicators MUST disambiguate from worker-adjacent words:
+#    Phrases like "workers lunch bill to tiffin provider" contain "workers"
+#    but describe third-party vendor expenses, not staff salary/advances.
+# =============================================================================
 DOMAIN_PATTERNS = {
+    "analytics": [
+        r"\b(sales?|revenue|profit|income|turnover|earnings?|orders?\s+count|summary\s+for|kpi|business\s+performance)\b",
+        r"\b(how\s+much\s+(did\s+we\s+(make|sell|earn)|we\s+made|sold|earned)|sell\s+today|sold\s+today|top\s+selling|best\s+selling|most\s+selling|worst\s+selling|dead\s+stock)\b",
+        r"\b(money\s+i\s+earn|earn\s+from|sales\s+of|sales\s+details?)\b",
+    ],
     "expense": [
         r"\b(log\s+expense|record\s+expense|add\s+expense|spent\s+on|paid\s+out|cost\s+spent|petty\s+cash)\b",
         r"\b(give|gave|giving|paid|pay|payment|spent|bought|purchased|kharch|kharcha)\b.*\b(to|for|bhai|ben|vendor|supplier|bill|cash|rs|rupees?|\d+k?)\b",
-        r"\b(expenses?|spends?|utility\s+bill|rent\s+payment|maintenance\s+cost|dairy\s+bill|milk\s+bill|coldrink\s+bill)\b",
+        r"\b(expenses?|spends?|utility\s+bill|rent\s+payment|maintenance\s+cost|dairy\s+bill|milk\s+bill|coldrink\s+bill|tiffin\s+(bill|provider))\b",
     ],
     "worker": [
         r"\b(workers?|staffs?|employees?|attendance|present|absent|salary|payroll|advance|wage|shift)\b",
-        r"\b(who is (here|working|present|absent)|mark (in|out|present))\b",
+        r"\b(who\s+is\s+(here|working|present|absent)|mark\s+(in|out|present))\b",
     ],
     "inventory": [
-        r"\b(inventory|stocks?|quantity|units left|low stock|out of stock|restock|threshold|spoilage|shrinkage)\b",
-        r"\b(how many .+ (left|in stock))\b",
+        r"\b(inventory|stocks?|quantity|units\s+left|low\s+stock|out\s+of\s+stock|restock|threshold|spoilage|shrinkage)\b",
+        r"\b(how\s+many\s+.+\s+(left|in\s+stock))\b",
     ],
     "product": [
-        r"\b(products?|items?|menus?|catalogs?|price of|category|categories|groups?|recipes?|variations?|addons?)\b",
-        r"\b(add (new )?(item|product|dish)|update price|toggle group)\b",
-    ],
-    "analytics": [
-        r"\b(sales?|revenue|profit|income|turnover|earnings?|orders? count|summary for|kpi|business performance)\b",
-        r"\b(how much (did we (make|sell|earn)|we made|sold|earned)|sell today|sold today|top selling|best selling)\b",
+        r"\b(products?|items?|menus?|catalogs?|prices?|price\s+of|category|categories|groups?|recipes?|variations?|addons?)\b",
+        r"\b(add\s+(new\s+)?(item|product|dish)|update\s+price|toggle\s+group|change\s+.+\s+price)\b",
     ],
     "reminder": [
-        r"\b(reminders?|tasks?|alerts?|alarms?|schedules?|notify me|remind me|todo)\b",
+        r"\b(reminders?|tasks?|alerts?|alarms?|schedules?|notify\s+me|remind\s+me|todo)\b",
     ],
     "billing": [
         r"\b(customer\s+bills?|pos\s+bills?|recent\s+bills?|bill\s+history|sales?\s+bills?|table\s+no|void\s+bill|cancel\s+order|refund|kots?|pos\s+receipt)\b",
@@ -45,7 +67,23 @@ DOMAIN_PATTERNS = {
 }
 
 
-ADVANCE_SALARY_KEYWORDS = {
+VENDOR_EXPENSE_INDICATORS = {
+    "tiffin provider",
+    "tiffin",
+    "coldrink bill",
+    "dairy bill",
+    "milk bill",
+    "tea bill",
+    "lunch bill",
+    "dinner bill",
+    "raw material",
+    "vendor",
+    "supplier",
+    "electricity bill",
+    "rent payment",
+}
+
+EMPLOYEE_PAYROLL_KEYWORDS = {
     "advance",
     "salary",
     "attendance",
@@ -53,34 +91,103 @@ ADVANCE_SALARY_KEYWORDS = {
     "absent",
     "shift",
     "payroll",
-    "workers",
-    "worker",
-    "staff",
-    "employee",
-    "employees",
+    "wage",
 }
 
 
-def classify_intent_deterministic(query: str) -> Optional[str]:
+def _extract_prior_domain(history: List[Dict[str, Any]]) -> Optional[str]:
+    """Inspect recent turns in history to extract the last active domain agent."""
+    if not history:
+        return None
+    for turn in reversed(history):
+        # 1. Direct agent attribute
+        agent = turn.get("agent") or turn.get("routed_agent")
+        if agent and agent in DOMAIN_PATTERNS:
+            return agent
+        # 2. Check content for structured JSON icon/title hints from assistant turn
+        content = turn.get("content") or turn.get("text") or ""
+        if isinstance(content, str) and content.strip().startswith("{"):
+            try:
+                parsed = json.loads(content)
+                icon = parsed.get("title", {}).get("icon", "")
+                icon_map = {
+                    "attendance": "worker",
+                    "staff": "worker",
+                    "expense": "expense",
+                    "sales_comparison": "analytics",
+                    "finance": "analytics",
+                    "prediction": "analytics",
+                    "product": "product",
+                    "inventory": "inventory",
+                    "low_stock": "inventory",
+                    "bill": "billing",
+                    "task": "reminder",
+                }
+                if icon in icon_map:
+                    return icon_map[icon]
+            except Exception:
+                pass
+        # 3. Check text of the prior turn against domain patterns
+        if isinstance(content, str) and len(content.strip()) > 3:
+            for domain, patterns in DOMAIN_PATTERNS.items():
+                for pat in patterns:
+                    if re.search(pat, content, re.IGNORECASE):
+                        return domain
+    return None
+
+
+def classify_intent_deterministic(
+    query: str, history: Optional[List[Dict[str, Any]]] = None
+) -> Optional[str]:
     """Classify user intent into target domain without invoking an LLM.
 
     Returns the domain name or None if ambiguous.
     """
     text = query.lower().strip()
+    words = text.split()
 
-    # Disambiguation: Check worker-specific keywords BEFORE generic expense "give money" pattern
-    if any(kw in text for kw in ADVANCE_SALARY_KEYWORDS):
+    # Disambiguation Step 0: Explicit reminder commands take precedence over topics mentioned within
+    # (e.g. "Remind me to call supplier at 4 PM" -> reminder, not expense)
+    if re.search(r"\b(reminders?|tasks?|alerts?|alarms?|schedules?|notify\s+me|remind\s+me|todo)\b", text):
+        return "reminder"
+
+    # Disambiguation Step 1: Vendor expenses take precedence over incidental worker words
+    # (e.g. "i give 3450 for the workers lunch bill to tiffin provider" -> expense)
+    has_vendor_indicator = any(ind in text for ind in VENDOR_EXPENSE_INDICATORS)
+    has_employee_advance = any(kw in text for kw in ["advance", "salary", "payroll", "wage"])
+
+    if has_vendor_indicator and not has_employee_advance:
+        return "expense"
+
+    # Disambiguation Step 2: Check worker payroll / attendance keywords
+    if any(kw in text for kw in EMPLOYEE_PAYROLL_KEYWORDS):
         return "worker"
 
-    # Handle direct bill creation requests
+    # Disambiguation Step 3: Handle direct bill creation requests
     if re.search(r"\b(create|make|new|generate)\s+(a\s+)?bill\b", text):
         return "billing"
 
+    # Disambiguation Step 4: Check ordered domain patterns (Analytics before Product/Billing)
+    matched_domain = None
     for domain, patterns in DOMAIN_PATTERNS.items():
         for pat in patterns:
             if re.search(pat, text, re.IGNORECASE):
-                return domain
-    return None
+                matched_domain = domain
+                break
+        if matched_domain:
+            break
+
+    # Additional requirement for short follow-up continuity:
+    # If the user input is short (<= 3 words, e.g. "dsmiuddin", "tandoori", "yes"):
+    # - If matched_domain is ALREADY found from domain-specific keywords (e.g. "pizza price" -> product),
+    #   do NOT inherit; switch to the new domain.
+    # - Only if matched_domain is None, AND history has a prior active domain, inherit that prior domain.
+    if len(words) <= 3 and matched_domain is None and history:
+        prior_domain = _extract_prior_domain(history)
+        if prior_domain:
+            return prior_domain
+
+    return matched_domain
 
 
 def try_zero_cost_fast_path(query: str) -> Optional[Dict[str, Any]]:

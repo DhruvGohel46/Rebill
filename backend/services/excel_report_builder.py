@@ -19,6 +19,7 @@ class ExcelReportBuilder:
     COLOR_BRAND_ORANGE = "F97316"
     COLOR_DARK_HEADER = "1E2025"
     COLOR_TOTALS_FILL = "FFF3E8"
+    COLOR_SUBTOTAL_FILL = "F1F5F9"
     COLOR_ZEBRA_ODD = "FFFFFF"
     COLOR_ZEBRA_EVEN = "FAFAFA"
     COLOR_METRIC_BG = "F3F4F6"
@@ -217,6 +218,7 @@ class ExcelReportBuilder:
         totals_row: Optional[List[Any]] = None,
         section_title: Optional[str] = None,
         freeze_header: bool = True,
+        subtotal_indices: Optional[List[int]] = None,
     ) -> int:
         """
         Write a publication-quality data table with:
@@ -224,6 +226,7 @@ class ExcelReportBuilder:
         - Frozen dark column header row (#1E2025, bold white text)
         - Zebra-striped data rows
         - Configured column number formats & alignments
+        - Styled subtotal rows (#F1F5F9 fill, bold text, dark borders)
         - Styled totals row (#FFF3E8 fill, top/bottom border)
         Returns next available row index.
         """
@@ -269,7 +272,7 @@ class ExcelReportBuilder:
 
         current_row += 1
 
-        # Write Data Rows (Zebra striped)
+        # Write Data Rows (Zebra striped, with subtotal row handling)
         thin_border = Border(
             left=Side(style="thin", color=self.COLOR_BORDER),
             right=Side(style="thin", color=self.COLOR_BORDER),
@@ -285,15 +288,49 @@ class ExcelReportBuilder:
         )
         data_font = Font(name="Calibri", size=10, color="1F2937")
 
+        subtotal_fill = PatternFill(
+            start_color=self.COLOR_SUBTOTAL_FILL,
+            end_color=self.COLOR_SUBTOTAL_FILL,
+            fill_type="solid",
+        )
+        subtotal_font = Font(name="Calibri", size=10, bold=True, color="0F172A")
+        subtotal_border = Border(
+            left=Side(style="thin", color=self.COLOR_BORDER),
+            right=Side(style="thin", color=self.COLOR_BORDER),
+            top=Side(style="thin", color=self.COLOR_BORDER_DARK),
+            bottom=Side(style="thin", color=self.COLOR_BORDER_DARK),
+        )
+
+        data_row_counter = 0
+        subtotal_set = set(subtotal_indices) if subtotal_indices else None
+
         for row_idx, row_data in enumerate(data_rows):
-            ws.row_dimensions[current_row].height = 20
-            row_fill = fill_even if row_idx % 2 == 1 else fill_odd
+            is_subtotal = (
+                subtotal_set is not None and row_idx in subtotal_set
+            ) or (
+                row_data
+                and len(row_data) > 0
+                and isinstance(row_data[0], str)
+                and ("Subtotal" in row_data[0] or row_data[0].endswith(" Total"))
+            )
+
+            if is_subtotal:
+                ws.row_dimensions[current_row].height = 21
+                current_font = subtotal_font
+                current_fill = subtotal_fill
+                current_border = subtotal_border
+            else:
+                ws.row_dimensions[current_row].height = 20
+                current_font = data_font
+                current_fill = fill_even if data_row_counter % 2 == 1 else fill_odd
+                current_border = thin_border
+                data_row_counter += 1
 
             for col_idx, val in enumerate(row_data, 1):
                 cell = ws.cell(row=current_row, column=col_idx, value=val)
-                cell.font = data_font
-                cell.fill = row_fill
-                cell.border = thin_border
+                cell.font = current_font
+                cell.fill = current_fill
+                cell.border = current_border
 
                 align = (
                     col_alignments[col_idx - 1]
